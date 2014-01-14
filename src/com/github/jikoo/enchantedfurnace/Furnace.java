@@ -13,8 +13,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 /**
+ * Class for tracking custom furnace properties and
+ * applying certain effects.
+ * 
  * @author Jikoo
- *
  */
 public class Furnace {
 
@@ -25,14 +27,15 @@ public class Furnace {
 	private boolean canPause;
 	private short frozenTicks = 0;
 
-	protected Furnace(Block b, int cookModifier, int burnModifier, int fortune, boolean canPause) {
+	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, boolean canPause) {
 		this.b = b;
 		this.cookModifier = cookModifier;
 		this.burnModifier = burnModifier;
 		this.fortune = fortune;
 		this.canPause = canPause;
 	}
-	protected Furnace(Block b, int cookModifier, int burnModifier, int fortune, short frozenTicks) {
+
+	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, short frozenTicks) {
 		this.b = b;
 		this.cookModifier = cookModifier;
 		this.burnModifier = burnModifier;
@@ -41,34 +44,34 @@ public class Furnace {
 		this.frozenTicks = frozenTicks;
 	}
 
-	protected Block getBlock() {
+	public Block getBlock() {
 		return b;
 	}
 
-	protected org.bukkit.block.Furnace getFurnaceTile() {
+	public org.bukkit.block.Furnace getFurnaceTile() {
 		if (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE) {
 			return (org.bukkit.block.Furnace) b.getState();
 		}
 		return null;
 	}
 
-	protected int getCookModifier() {
+	public int getCookModifier() {
 		return this.cookModifier;
 	}
 
-	protected int getBurnModifier() {
+	public int getBurnModifier() {
 		return this.burnModifier;
 	}
 
-	protected int getFortune() {
+	public int getFortune() {
 		return this.fortune;
 	}
 
-	protected boolean canPause() {
+	public boolean canPause() {
 		return this.canPause;
 	}
 
-	protected void pause() {
+	public void pause() {
 		if (!this.canPause) {
 			return;
 		}
@@ -79,16 +82,20 @@ public class Furnace {
 	}
 
 	@SuppressWarnings("deprecation")
-	protected void resume() {
+	public void resume() {
 		org.bukkit.block.Furnace f = this.getFurnaceTile();
+		// Is furnace unfrozen already?
 		if (f.getBurnTime() > 0 || this.frozenTicks < 1) {
 			return;
 		}
 
+		// Is there an input?
 		FurnaceInventory i = f.getInventory();
 		if (i.getSmelting() == null) {
 			return;
 		}
+
+		// Verify result can be obtained from input before restarting
 		if (i.getResult() != null) {
 			Iterator<Recipe> ri = Bukkit.recipeIterator();
 			while (ri.hasNext()) {
@@ -104,6 +111,8 @@ public class Furnace {
 			}
 		}
 
+		// Update block to burning furnace. Stupidly complex to avoid spitting out contents.
+		// Bukkit pls2 make Furnace.setBurning() or something >.>
 		ItemStack[] items = i.getContents().clone();
 		HashSet<HumanEntity> viewers = new HashSet<HumanEntity>(i.getViewers());
 		f.getInventory().clear();
@@ -123,11 +132,11 @@ public class Furnace {
 		}
 	}
 
-	protected boolean isPaused() {
+	public boolean isPaused() {
 		return this.frozenTicks > 0;
 	}
 
-	protected short getFrozenTicks() {
+	public short getFrozenTicks() {
 		return this.frozenTicks;
 	}
 }

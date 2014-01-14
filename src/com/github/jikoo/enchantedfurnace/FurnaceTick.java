@@ -1,8 +1,9 @@
 package com.github.jikoo.enchantedfurnace;
 
 /**
+ * Runnable used to tick all efficiency-enchanted furnaces.
+ * 
  * @author Jikoo
- *
  */
 public class FurnaceTick implements Runnable {
 	@Override

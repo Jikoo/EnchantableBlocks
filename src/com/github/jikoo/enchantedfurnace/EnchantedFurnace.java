@@ -14,8 +14,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
+ * Plugin for adding effects to furnaces based on enchantments.
+ * 
  * @author Jikoo
- *
  */
 public class EnchantedFurnace extends JavaPlugin {
 
@@ -28,7 +29,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		furnaces = new HashMap<Block, Furnace>();
 		this.load();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
-		getServer().getScheduler().scheduleSyncRepeatingTask(this, new FurnaceTick(), 1, 1);
+		getServer().getScheduler().scheduleSyncRepeatingTask(this, new FurnaceTick(), 1, 2);
 	}
 
 	@Override
@@ -38,7 +39,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		instance = null;
 	}
 
-	protected void createFurnace(Block b, ItemStack is) {
+	public void createFurnace(Block b, ItemStack is) {
 		if (is.getType() != Material.FURNACE) {
 			return;
 		}
@@ -52,7 +53,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 	}
 
-	protected ItemStack destroyFurnace(Block b) {
+	public ItemStack destroyFurnace(Block b) {
 		Furnace f = furnaces.remove(b);
 		if (f == null) {
 			return null;
@@ -75,19 +76,19 @@ public class EnchantedFurnace extends JavaPlugin {
 		return drop;
 	}
 
-	protected Collection<Furnace> getFurnaces() {
+	public Collection<Furnace> getFurnaces() {
 		return furnaces.values();
 	}
 
-	protected Furnace getFurnace(Block b) {
+	public Furnace getFurnace(Block b) {
 		return furnaces.get(b);
 	}
 
-	protected boolean isFurnace(Block b) {
+	public boolean isFurnace(Block b) {
 		return furnaces.containsKey(b);
 	}
 
-	protected static EnchantedFurnace getInstance() {
+	public static EnchantedFurnace getInstance() {
 		return instance;
 	}
 
@@ -113,7 +114,7 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	private void save() {
 		for (Furnace f : furnaces.values()) {
-			String loc =blockToLocString(f.getBlock());
+			String loc = blockToLocString(f.getBlock());
 			getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
 			getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
 			getConfig().set("furnaces." + loc + ".fortune", f.getFortune());

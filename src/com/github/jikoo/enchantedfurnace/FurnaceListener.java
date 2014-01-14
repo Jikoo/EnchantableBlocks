@@ -22,8 +22,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 /**
+ * Listener for all furnace-related events.
+ * 
  * @author Jikoo
- *
  */
 public class FurnaceListener implements Listener {
 	@EventHandler
