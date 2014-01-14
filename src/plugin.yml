@@ -1,0 +1,5 @@
+name: EnchantedFurnace
+
+main: com.github.jikoo.enchantedfurnace.EnchantedFurnace
+version: 1.0.0
+author: Jikoo
