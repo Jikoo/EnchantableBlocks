@@ -39,9 +39,8 @@ public class FurnaceListener implements Listener {
 			return;
 		}
 		if (f.getBurnModifier() > 0) {
-			org.bukkit.block.Furnace tile = f.getFurnaceTile();
-			tile.setBurnTime((short) (f.getBurnModifier() * e.getBurnTime()));
-			tile.update(true);
+			// + 1/5 fuel burn length per level unbreaking
+			e.setBurnTime((int) ((1 + .2 * f.getBurnModifier()) * e.getBurnTime()));
 		}
 	}
 
@@ -53,16 +52,20 @@ public class FurnaceListener implements Listener {
 		}
 
 		org.bukkit.block.Furnace tile = f.getFurnaceTile();
+		FurnaceInventory i = tile.getInventory();
 		if (f.getFortune() > 0) {
-			int extraResults = f.getFortune() / 2;
-			extraResults += (int) ((f.getFortune() % 2 + 1) * Math.random());
-			ItemStack newResult = tile.getInventory().getResult();
+			int extraResults = 0;
+			for (int j = 0; j < f.getFortune(); j++) {
+				// 1/3 chance per level fortune
+				extraResults += (int) (1.50 * Math.random());
+			}
+			ItemStack newResult = i.getResult();
 			if (newResult == null ) {
 				Iterator<Recipe> ri = Bukkit.recipeIterator();
 				while (ri.hasNext()) {
 					Recipe r = ri.next();
 					if (r instanceof FurnaceRecipe) {
-						if (((FurnaceRecipe) r).getInput().getType() == tile.getInventory().getSmelting().getType()) {
+						if (((FurnaceRecipe) r).getInput().getType() == i.getSmelting().getType()) {
 							newResult = new ItemStack(r.getResult());
 							extraResults -= 1;
 							break;
@@ -72,11 +75,10 @@ public class FurnaceListener implements Listener {
 			}
 			int newAmount = newResult.getAmount() + extraResults;
 			newResult.setAmount(newAmount > 64 ? 64 : newAmount);
-			tile.getInventory().setResult(newResult);
+			i.setResult(newResult);
 			tile.update(true);
 		}
 
-		FurnaceInventory i = tile.getInventory();
 		if (i.getSmelting().getAmount() == 1 || (i.getResult() != null && i.getResult().getAmount() == 64)) {
 			f.pause();
 		}
