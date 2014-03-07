@@ -65,7 +65,7 @@ public class FurnaceListener implements Listener {
 				while (ri.hasNext()) {
 					Recipe r = ri.next();
 					if (r instanceof FurnaceRecipe) {
-						if (((FurnaceRecipe) r).getInput().getType() == i.getSmelting().getType()) {
+						if (((FurnaceRecipe) r).getInput().getData().equals(i.getSmelting().getData())) {
 							newResult = new ItemStack(r.getResult());
 							extraResults -= 1;
 							break;
