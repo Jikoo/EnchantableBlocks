@@ -1,6 +1,8 @@
 package com.github.jikoo.enchantedfurnace;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -62,14 +64,20 @@ public class FurnaceListener implements Listener {
 			ItemStack newResult = i.getResult();
 			if (newResult == null ) {
 				Iterator<Recipe> ri = Bukkit.recipeIterator();
+				Set<FurnaceRecipe> matches = new HashSet<FurnaceRecipe>();
+				extraResults -= 1;
 				while (ri.hasNext()) {
 					Recipe r = ri.next();
 					if (r instanceof FurnaceRecipe) {
-						if (((FurnaceRecipe) r).getInput().getData().equals(i.getSmelting().getData())) {
-							newResult = new ItemStack(r.getResult());
-							extraResults -= 1;
-							break;
+						if (((FurnaceRecipe) r).getInput().getType() == i.getSmelting().getType()) {
+							matches.add((FurnaceRecipe) r);
 						}
+					}
+				}
+				for (FurnaceRecipe r : matches) {
+					newResult = new ItemStack(r.getResult());
+					if (r.getInput().getData().equals(i.getSmelting().getData())) {
+						break;
 					}
 				}
 			}
