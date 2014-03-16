@@ -3,3 +3,7 @@ name: EnchantedFurnace
 main: com.github.jikoo.enchantedfurnace.EnchantedFurnace
 version: 1.1.0
 author: Jikoo
+
+permissions:
+ enchantedfurnace.enchant:
+  default: true

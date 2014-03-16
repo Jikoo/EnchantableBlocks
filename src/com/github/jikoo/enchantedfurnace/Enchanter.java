@@ -16,7 +16,8 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 /**
  * This class is an adaptation of @andrepl's
  * <a href=https://gist.github.com/andrepl/5522053>example plugin</a>
- * for his Craftbukkit pull. Changed Enchantments and Material.
+ * for his Craftbukkit pull. Changed Enchantments and Material, added
+ * prevention for Silk Touch and Fortune together.
  * 
  * @author andrepl, Jikoo
  */
@@ -40,8 +41,8 @@ public class Enchanter  implements Listener {
 			shelves = 15;
 		}
 		int var6 = rand.nextInt(8) + 1 + (shelves >> 1) + rand.nextInt(shelves + 1);
-		return slot == 0 ? Math.max(var6 / 3, 1) : (slot == 1 ? var6 * 2 / 3 + 1 : Math.max(var6,
-				shelves * 2));
+		return slot == 0 ? Math.max(var6 / 3, 1)
+				: (slot == 1 ? var6 * 2 / 3 + 1 : Math.max(var6, shelves * 2));
 	}
 
 	@EventHandler(ignoreCancelled = false)
@@ -58,6 +59,9 @@ public class Enchanter  implements Listener {
 	@EventHandler
 	public void onItemEnchant(EnchantItemEvent event) {
 		if (event.getItem().getType().equals(Material.FURNACE)) {
+			if (!event.getEnchanter().hasPermission("enchantedfurnace.enchant")) {
+				return;
+			}
 			int cost = event.getExpLevelCost();
 			List<Enchantment> shuffled = new ArrayList<Enchantment>(enchantments.keySet());
 			Collections.shuffle(shuffled);
@@ -65,14 +69,20 @@ public class Enchanter  implements Listener {
 				if (event.getEnchantsToAdd().size() == 3) {
 					break;
 				}
-				int lvl = 0;
-				while (rand.nextDouble() < 0.7 && lvl < ench.getMaxLevel()
-						&& cost >= enchantments.get(ench) * lvl * lvl) {
-					lvl++;
-				}
-				if (lvl > 0) {
-					cost -= enchantments.get(ench) * lvl * lvl;
-					event.getEnchantsToAdd().put(ench, lvl);
+				if (ench != Enchantment.SILK_TOUCH && ench != Enchantment.LOOT_BONUS_BLOCKS 
+						|| (ench == Enchantment.SILK_TOUCH
+						&& !event.getEnchantsToAdd().containsKey(Enchantment.LOOT_BONUS_BLOCKS))
+						|| (ench == Enchantment.LOOT_BONUS_BLOCKS
+						&& !event.getEnchantsToAdd().containsKey(Enchantment.SILK_TOUCH))) {
+					int lvl = 0;
+					while (rand.nextDouble() < 0.7 && lvl < ench.getMaxLevel()
+							&& cost >= enchantments.get(ench) * lvl * lvl) {
+						lvl++;
+					}
+					if (lvl > 0) {
+						cost -= enchantments.get(ench) * lvl * lvl;
+						event.getEnchantsToAdd().put(ench, lvl);
+					}
 				}
 			}
 		}
