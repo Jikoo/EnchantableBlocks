@@ -30,6 +30,14 @@ public class EnchantedFurnace extends JavaPlugin {
 		this.load();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new FurnaceTick(), 1, 2);
+		int spigot = spigot();
+		if (spigot != -1) {
+			if (spigot < 1336) {
+				getLogger().warning("Your version of Spigot does not have the enchanting patch. Please update to #1336 or higher.");
+			} else {
+				getServer().getPluginManager().registerEvents(new Enchanter(), this);
+			}
+		}
 	}
 
 	@Override
@@ -37,6 +45,13 @@ public class EnchantedFurnace extends JavaPlugin {
 		getServer().getScheduler().cancelAllTasks();;
 		this.save();
 		instance = null;
+	}
+
+	public int spigot() {
+		if (getServer().getVersion().contains("Spigot")) {
+			return Integer.parseInt(getServer().getVersion().replaceAll("git-Spigot-([0-9]+).*", "$1"));
+		}
+		return -1;
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
