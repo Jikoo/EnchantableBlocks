@@ -2,6 +2,7 @@ package com.github.jikoo.enchantedfurnace;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,8 +43,7 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
-		getServer().getScheduler().cancelAllTasks();;
-		this.save();
+		getServer().getScheduler().cancelTasks(this);
 		instance = null;
 	}
 
@@ -65,6 +65,7 @@ public class EnchantedFurnace extends JavaPlugin {
 				is.getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0);
 		if (f.getCookModifier() > 0 || f.getBurnModifier() > 0 || f.getFortune() > 0 || f.canPause()) {
 			this.furnaces.put(b, f);
+			save(f);
 		}
 	}
 
@@ -73,6 +74,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		if (f == null) {
 			return null;
 		}
+		deleteSave(f);
 		ItemStack drop = new ItemStack(Material.FURNACE);
 		ItemMeta im = drop.getItemMeta();
 		if (f.getCookModifier() > 0) {
@@ -123,19 +125,27 @@ public class EnchantedFurnace extends JavaPlugin {
 						(short) getConfig().getInt("furnaces." + s + ".silk")));
 			}
 		}
-		getConfig().set("furnaces", null);
+	}
+
+	private void save(Furnace f) {
+		String loc = blockToLocString(f.getBlock());
+		getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
+		getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
+		getConfig().set("furnaces." + loc + ".fortune", f.getFortune());
+		getConfig().set("furnaces." + loc + ".silk", f.canPause() ? f.getFrozenTicks() : -1);
 		saveConfig();
 	}
 
-	private void save() {
-		for (Furnace f : furnaces.values()) {
-			String loc = blockToLocString(f.getBlock());
-			getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
-			getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
-			getConfig().set("furnaces." + loc + ".fortune", f.getFortune());
-			getConfig().set("furnaces." + loc + ".silk", f.canPause() ? f.getFrozenTicks() : -1);
+	private void deleteSave(Furnace f) {
+		HashSet<String> furnaceLocs;
+		try {
+			furnaceLocs = new HashSet<String>(getConfig().getConfigurationSection("furnaces").getKeys(false));
+		} catch (NullPointerException e) {
+			return; // Config nonexistant or set empty
 		}
-		saveConfig();
+		if (furnaceLocs.remove("furnaces." + blockToLocString(f.getBlock()))) {
+			saveConfig();
+		}
 	}
 
 	private String blockToLocString(Block b) {
