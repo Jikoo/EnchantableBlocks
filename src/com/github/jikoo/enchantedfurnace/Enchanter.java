@@ -48,7 +48,8 @@ public class Enchanter  implements Listener {
 	@EventHandler(ignoreCancelled = false)
 	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
 		if (event.getItem().getEnchantments().size() == 0
-				&& event.getItem().getType().equals(Material.FURNACE)) {
+				&& event.getItem().getType().equals(Material.FURNACE)
+				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant")) {
 			event.setCancelled(false);
 			for (int i = 0; i < 3; i++) {
 				event.getExpLevelCostsOffered()[i] = getEnchantingLevel(i, event.getEnchantmentBonus());
@@ -69,11 +70,14 @@ public class Enchanter  implements Listener {
 				if (event.getEnchantsToAdd().size() == 3) {
 					break;
 				}
-				if (ench != Enchantment.SILK_TOUCH && ench != Enchantment.LOOT_BONUS_BLOCKS 
-						|| (ench == Enchantment.SILK_TOUCH
-						&& !event.getEnchantsToAdd().containsKey(Enchantment.LOOT_BONUS_BLOCKS))
-						|| (ench == Enchantment.LOOT_BONUS_BLOCKS
-						&& !event.getEnchantsToAdd().containsKey(Enchantment.SILK_TOUCH))) {
+				boolean conflict = false;
+				for (Enchantment e : event.getEnchantsToAdd().keySet()) {
+					if (ench.conflictsWith(e)) {
+						conflict = true;
+						break;
+					}
+				}
+				if (!conflict) {
 					int lvl = 0;
 					while (rand.nextDouble() < 0.7 && lvl < ench.getMaxLevel()
 							&& cost >= enchantments.get(ench) * lvl * lvl) {
