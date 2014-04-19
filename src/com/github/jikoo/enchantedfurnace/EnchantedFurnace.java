@@ -29,6 +29,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		furnaces = new HashMap<Block, Furnace>();
 		this.load();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
+		getServer().getPluginManager().registerEvents(new Enchanter(), this);
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new FurnaceTick(), 1, 2);
 	}
 
