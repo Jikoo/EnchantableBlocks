@@ -37,7 +37,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	public void onDisable() {
 		getServer().getScheduler().cancelTasks(this);
 		instance = null;
-		for (Furnace furnace :  this.furnaces.values()) {
+		for (Furnace furnace : this.furnaces.values()) {
 			this.save(furnace);
 		}
 	}

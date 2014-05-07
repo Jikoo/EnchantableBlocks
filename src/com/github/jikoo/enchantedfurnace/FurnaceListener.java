@@ -1,8 +1,6 @@
 package com.github.jikoo.enchantedfurnace;
 
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -64,30 +62,37 @@ public class FurnaceListener implements Listener {
 			ItemStack newResult = i.getResult();
 			if (newResult == null ) {
 				Iterator<Recipe> ri = Bukkit.recipeIterator();
-				Set<FurnaceRecipe> matches = new HashSet<FurnaceRecipe>();
 				extraResults -= 1;
 				while (ri.hasNext()) {
 					Recipe r = ri.next();
-					if (r instanceof FurnaceRecipe) {
-						if (((FurnaceRecipe) r).getInput().getType() == i.getSmelting().getType()) {
-							matches.add((FurnaceRecipe) r);
-						}
+					if (!(r instanceof FurnaceRecipe)) {
+						continue;
 					}
-				}
-				for (FurnaceRecipe r : matches) {
-					newResult = new ItemStack(r.getResult());
-					if (r.getInput().getData().equals(i.getSmelting().getData())) {
-						break;
+					ItemStack input = ((FurnaceRecipe) r).getInput();
+					if (input.getType() != i.getSmelting().getType()) {
+						continue;
+					}
+					if (input.getDurability() > 0) {
+						if (input.getData().equals(i.getSmelting().getData())) {
+							// Exact match
+							newResult = new ItemStack(r.getResult());
+							break;
+						}
+						// Incorrect data, not a match
+					} else {
+						// Inexact match, continue iterating
+						newResult = new ItemStack(r.getResult());
 					}
 				}
 			}
 			int newAmount = newResult.getAmount() + extraResults;
-			newResult.setAmount(newAmount > 64 ? 64 : newAmount);
+			// Smelting will complete after event finishes, stack will increment to 64.
+			newResult.setAmount(newAmount > 63 ? 63 : newAmount);
 			i.setResult(newResult);
 			tile.update(true);
 		}
 
-		if (i.getSmelting().getAmount() == 1 || (i.getResult() != null && i.getResult().getAmount() == 64)) {
+		if (i.getSmelting().getAmount() == 1 || (i.getResult() != null && i.getResult().getAmount() == 63)) {
 			f.pause();
 		}
 	}
@@ -107,7 +112,6 @@ public class FurnaceListener implements Listener {
 		ItemStack is = EnchantedFurnace.getInstance().destroyFurnace(e.getBlock());
 		if (is != null) {
 			e.setCancelled(true);
-			// TODO does furnace drop contents on set air?
 			e.getBlock().setType(Material.AIR);
 			if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
 				e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
@@ -149,12 +153,11 @@ public class FurnaceListener implements Listener {
 	}
 
 	private void updateSilk(final Furnace f) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(EnchantedFurnace.getInstance(),
-				new Runnable() {
-					@Override
-					public void run() {
-						f.resume();
-					}
-				});
+		Bukkit.getScheduler().scheduleSyncDelayedTask(EnchantedFurnace.getInstance(), new Runnable() {
+			@Override
+			public void run() {
+				f.resume();
+			}
+		});
 	}
 }
