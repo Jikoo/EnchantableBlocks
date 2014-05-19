@@ -99,7 +99,7 @@ public class FurnaceListener implements Listener {
 
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
-		if (e.getItemInHand().getType() == Material.FURNACE) {
+		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
 			EnchantedFurnace.getInstance().createFurnace(e.getBlock(), e.getItemInHand());
 		}
 	}
