@@ -44,6 +44,7 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onItemSmelt(FurnaceSmeltEvent e) {
 		Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
@@ -72,7 +73,7 @@ public class FurnaceListener implements Listener {
 					if (input.getType() != i.getSmelting().getType()) {
 						continue;
 					}
-					if (input.getDurability() > 0) {
+					if (input.getData().getData() > -1) {
 						if (input.getData().equals(i.getSmelting().getData())) {
 							// Exact match
 							newResult = new ItemStack(r.getResult());
@@ -85,11 +86,16 @@ public class FurnaceListener implements Listener {
 					}
 				}
 			}
-			int newAmount = newResult.getAmount() + extraResults;
-			// Smelting will complete after event finishes, stack will increment to 64.
-			newResult.setAmount(newAmount > 63 ? 63 : newAmount);
-			i.setResult(newResult);
-			tile.update(true);
+			if (newResult == null) {
+				EnchantedFurnace.getInstance().getLogger().warning("Unable to obtain fortune result for MaterialData "
+						+ i.getSmelting().getData() + ". Please report this error.");
+			} else {
+				int newAmount = newResult.getAmount() + extraResults;
+				// Smelting will complete after event finishes, stack will increment to 64.
+				newResult.setAmount(newAmount > 63 ? 63 : newAmount);
+				i.setResult(newResult);
+				tile.update(true);
+			}
 		}
 
 		if (i.getSmelting().getAmount() == 1 || (i.getResult() != null && i.getResult().getAmount() == 63)) {
