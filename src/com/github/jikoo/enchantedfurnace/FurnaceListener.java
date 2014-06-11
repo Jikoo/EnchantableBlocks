@@ -87,8 +87,8 @@ public class FurnaceListener implements Listener {
 				}
 			}
 			if (newResult == null) {
-				EnchantedFurnace.getInstance().getLogger().warning("Unable to look up fortune result for "
-						+ i.getSmelting().getData() + ". Please report this issue!");
+				EnchantedFurnace.getInstance().getLogger().warning("Unable to obtain fortune result for MaterialData "
+						+ i.getSmelting().getData() + ". Please report this error.");
 			} else {
 				int newAmount = newResult.getAmount() + extraResults;
 				// Smelting will complete after event finishes, stack will increment to 64.
