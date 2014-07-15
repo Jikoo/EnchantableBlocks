@@ -26,11 +26,11 @@ public class EnchantedFurnace extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
-		furnaces = new HashMap<Block, Furnace>();
-		this.load();
+		this.furnaces = new HashMap<Block, Furnace>();
+		this.loadFurnaces();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
-		getServer().getScheduler().scheduleSyncRepeatingTask(this, new FurnaceTick(), 1, 2);
+		new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
 	}
 
 	@Override
@@ -38,8 +38,10 @@ public class EnchantedFurnace extends JavaPlugin {
 		getServer().getScheduler().cancelTasks(this);
 		instance = null;
 		for (Furnace furnace : this.furnaces.values()) {
-			this.save(furnace);
+			this.saveFurnace(furnace);
 		}
+		this.furnaces.clear();
+		this.furnaces = null;
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
@@ -53,7 +55,7 @@ public class EnchantedFurnace extends JavaPlugin {
 				is.getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0);
 		if (f.getCookModifier() > 0 || f.getBurnModifier() > 0 || f.getFortune() > 0 || f.canPause()) {
 			this.furnaces.put(b, f);
-			save(f);
+			saveFurnace(f);
 		}
 	}
 
@@ -98,7 +100,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		return instance;
 	}
 
-	private void load() {
+	private void loadFurnaces() {
 		Set<String> furnaceLocs;
 		try {
 			furnaceLocs = getConfig().getConfigurationSection("furnaces").getKeys(false);
@@ -116,7 +118,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 	}
 
-	private void save(Furnace f) {
+	private void saveFurnace(Furnace f) {
 		String loc = blockToLocString(f.getBlock());
 		getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
 		getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
