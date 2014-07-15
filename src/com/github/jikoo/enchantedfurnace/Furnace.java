@@ -75,10 +75,18 @@ public class Furnace {
 		if (!this.canPause) {
 			return;
 		}
-		org.bukkit.block.Furnace f = this.getFurnaceTile();
-		this.frozenTicks = f.getBurnTime();
-		f.setBurnTime((short) 0);
-		f.update(true);
+
+		// Delay to fix silk touch sometimes spitting out all items instead of smelting
+		Bukkit.getScheduler().scheduleSyncDelayedTask(EnchantedFurnace.getInstance(), new Runnable() {
+
+			@Override
+			public void run() {
+				org.bukkit.block.Furnace f = getFurnaceTile();
+				frozenTicks = f.getBurnTime();
+				f.setBurnTime((short) 0);
+				f.update(true);
+			}
+		});
 	}
 
 	@SuppressWarnings("deprecation")
@@ -95,9 +103,10 @@ public class Furnace {
 			return;
 		}
 
-		// Verify result can be obtained from input before restarting
+		boolean viableMatch = false;
 		if (i.getResult() != null) {
-			Iterator<Recipe> ri = Bukkit.recipeIterator();
+			// Verify existing result can be obtained from input before restarting
+			Iterator<Recipe> ri = Bukkit.getRecipesFor(i.getResult()).iterator();
 			while (ri.hasNext()) {
 				Recipe r = ri.next();
 				if (r instanceof FurnaceRecipe) {
@@ -109,6 +118,28 @@ public class Furnace {
 					}
 				}
 			}
+		} else {
+			// If there is no result, verify that the smelting item can produce a result
+			Iterator<Recipe> ri = Bukkit.recipeIterator();
+			while (ri.hasNext()) {
+				Recipe r = ri.next();
+				if (!(r instanceof FurnaceRecipe)) {
+					continue;
+				}
+				ItemStack input = ((FurnaceRecipe) r).getInput();
+				if (input.getType() != i.getSmelting().getType()) {
+					continue;
+				}
+				if (input.getData().getData() > -1 && !input.getData().equals(i.getSmelting().getData())) {
+					continue;
+				}
+				// Unlike fortune, we don't need to find the exact match so long as there is a working match.
+				viableMatch = true;
+				break;
+			}
+		}
+		if (!viableMatch) {
+			return;
 		}
 
 		// Update block to burning furnace. Stupidly complex to avoid spitting out contents.

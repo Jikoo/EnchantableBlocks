@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -27,7 +28,7 @@ import org.bukkit.inventory.Recipe;
  * @author Jikoo
  */
 public class FurnaceListener implements Listener {
-	@EventHandler
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onFurnaceConsumeFuel(FurnaceBurnEvent e) {
 		Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
 		if (f == null) {
@@ -45,7 +46,7 @@ public class FurnaceListener implements Listener {
 	}
 
 	@SuppressWarnings("deprecation")
-	@EventHandler
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onItemSmelt(FurnaceSmeltEvent e) {
 		Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
 		if (f == null) {
@@ -103,33 +104,34 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
 			EnchantedFurnace.getInstance().createFurnace(e.getBlock(), e.getItemInHand());
 		}
 	}
 
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (e.getBlock().getType() != Material.FURNACE && e.getBlock().getType() != Material.BURNING_FURNACE) {
 			return;
 		}
 		ItemStack is = EnchantedFurnace.getInstance().destroyFurnace(e.getBlock());
 		if (is != null) {
-			e.setCancelled(true);
-			e.getBlock().setType(Material.AIR);
-			if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
+			if (e.getPlayer().getGameMode() != GameMode.CREATIVE
+					&& !e.getBlock().getDrops(e.getPlayer().getItemInHand()).isEmpty()) {
 				e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
 			}
+			e.setCancelled(true);
+			e.getBlock().setType(Material.AIR);
 		}
 	}
 
 	@EventHandler
-	public void onInventoryInteract(InventoryClickEvent e) {
+	public void onInventoryClick(InventoryClickEvent e) {
 		Inventory top = e.getView().getTopInventory();
 		if (top instanceof FurnaceInventory) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace)top.getHolder()).getBlock());
+			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
 				updateSilk(f);
 			}
@@ -140,7 +142,7 @@ public class FurnaceListener implements Listener {
 	public void onInventoryDrag(InventoryDragEvent e) {
 		Inventory top = e.getView().getTopInventory();
 		if (top instanceof FurnaceInventory) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace)top.getHolder()).getBlock());
+			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
 				updateSilk(f);
 			}
@@ -148,10 +150,10 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler
-	public void onInventoryDrag(InventoryMoveItemEvent e) {
+	public void onHopperMove(InventoryMoveItemEvent e) {
 		Inventory top = e.getDestination().getType() == InventoryType.HOPPER ? e.getSource() : e.getDestination();
 		if (top.getType() == InventoryType.FURNACE) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace)top.getHolder()).getBlock());
+			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
 				updateSilk(f);
 			}

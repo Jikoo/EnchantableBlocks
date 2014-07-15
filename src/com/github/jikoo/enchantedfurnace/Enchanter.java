@@ -60,7 +60,7 @@ public class Enchanter  implements Listener {
 	}
 
 	@EventHandler
-	public void onItemEnchant(EnchantItemEvent event) {
+	public void onEnchantItem(EnchantItemEvent event) {
 		if (event.getItem().getType().equals(Material.FURNACE)) {
 			if (!event.getEnchanter().hasPermission("enchantedfurnace.enchant")) {
 				return;
