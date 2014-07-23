@@ -10,19 +10,22 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class FurnaceEfficiencyIncrement extends BukkitRunnable {
 	@Override
 	public void run() {
-		try {
-			for (Furnace f : EnchantedFurnace.getInstance().getFurnaces()) {
-				org.bukkit.block.Furnace tile = f.getFurnaceTile();
-				if (tile == null) {
-					continue;
-				}
-				// Update cook progress only if furnace is efficiency, there is fuel, and something is smelting.
-				if (f.getCookModifier() > 0 && tile.getBurnTime() > 0 && tile.getInventory().getSmelting() != null) {
-					tile.setCookTime((short) (tile.getCookTime() + f.getCookModifier()));
-					tile.update();
-				}
+		for (Furnace f : EnchantedFurnace.getInstance().getFurnaces()) {
+			if (f.getCookModifier() <= 0) {
+				// Ain't fortune, gtfo
+				continue;
 			}
-		} catch (Exception e) {
+			org.bukkit.block.Furnace tile = f.getFurnaceTile();
+			if (tile == null) {
+				// Unloaded furnace or not a furnace
+				continue;
+			}
+			// Update cook progress only if there is fuel and something is cooking
+			// tile.getInventory().getSmelting() != null incorrectly returns true sometimes
+			if (tile.getBurnTime() > 0 && tile.getCookTime() > 0) {
+				tile.setCookTime((short) (tile.getCookTime() + f.getCookModifier()));
+				tile.update();
+			}
 		}
 	}
 }

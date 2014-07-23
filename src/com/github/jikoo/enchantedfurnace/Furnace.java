@@ -49,6 +49,10 @@ public class Furnace {
 	}
 
 	public org.bukkit.block.Furnace getFurnaceTile() {
+		if (!b.getWorld().isChunkLoaded(b.getChunk())) {
+			// Chunk must be loaded to get BlockState
+			return null;
+		}
 		if (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE) {
 			return (org.bukkit.block.Furnace) b.getState();
 		}
