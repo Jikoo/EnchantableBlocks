@@ -21,6 +21,7 @@ import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Listener for all furnace-related events.
@@ -133,7 +134,9 @@ public class FurnaceListener implements Listener {
 		if (top instanceof FurnaceInventory) {
 			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
-				updateSilk(f);
+				// The Javadoc of runTask is worded as though task schedules on a 1 tick delay. Not what I want.
+				// TODO Too lazy to read the OBC atm.
+				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
 			}
 		}
 	}
@@ -144,7 +147,7 @@ public class FurnaceListener implements Listener {
 		if (top instanceof FurnaceInventory) {
 			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
-				updateSilk(f);
+				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
 			}
 		}
 	}
@@ -155,17 +158,18 @@ public class FurnaceListener implements Listener {
 		if (top.getType() == InventoryType.FURNACE) {
 			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
 			if (f != null && f.isPaused()) {
-				updateSilk(f);
+				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
 			}
 		}
 	}
 
-	private void updateSilk(final Furnace f) {
-		Bukkit.getScheduler().scheduleSyncDelayedTask(EnchantedFurnace.getInstance(), new Runnable() {
-			@Override
-			public void run() {
-				f.resume();
-			}
-		});
+	private class SilkUpdate extends BukkitRunnable {
+		private Furnace f;
+		public SilkUpdate(Furnace furnace) {
+			f = furnace;
+		}
+		public void run() {
+			f.resume();
+		}
 	}
 }
