@@ -112,7 +112,7 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (e.getBlock().getType() != Material.FURNACE && e.getBlock().getType() != Material.BURNING_FURNACE) {
 			return;
