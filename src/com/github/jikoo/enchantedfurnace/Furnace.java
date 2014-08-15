@@ -1,12 +1,10 @@
 package com.github.jikoo.enchantedfurnace;
 
-import java.util.HashSet;
 import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
@@ -144,26 +142,6 @@ public class Furnace {
 		}
 		if (!viableMatch) {
 			return;
-		}
-
-		// Update block to burning furnace. Stupidly complex to avoid spitting out contents.
-		// Bukkit pls2 make Furnace.setBurning() or something >.>
-		ItemStack[] items = i.getContents().clone();
-		HashSet<HumanEntity> viewers = new HashSet<HumanEntity>(i.getViewers());
-		f.getInventory().clear();
-		byte rotation = f.getData().getData();
-		f.update(true);
-		f.setType(Material.BURNING_FURNACE);
-		f.setRawData(rotation);
-		f.update(true);
-		f = this.getFurnaceTile();
-		i = f.getInventory();
-		i.setContents(items);
-		f.setBurnTime(frozenTicks);
-		f.update(true);
-		this.frozenTicks = 0;
-		for (HumanEntity v : viewers) {
-			v.openInventory(i);
 		}
 	}
 
