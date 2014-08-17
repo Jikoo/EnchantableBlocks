@@ -12,24 +12,28 @@ import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 
 /**
- * Originally based on @andrepl's
- * <a href=https://gist.github.com/andrepl/5522053>example plugin</a>
- * for his Craftbukkit pull, overhauled completely for EnchantedFurnace 1.2.0
+ * Handles enchantments in enchantment tables.
  * 
  * @author Jikoo
  */
 public class Enchanter  implements Listener {
 
-	private HashSet<Enchantment> enchantments;
 	private Random rand;
 
 	public Enchanter() {
-		enchantments = new HashSet<Enchantment>();
-		enchantments.add(Enchantment.DIG_SPEED);
-		enchantments.add(Enchantment.DURABILITY);
-		enchantments.add(Enchantment.LOOT_BONUS_BLOCKS);
-		enchantments.add(Enchantment.SILK_TOUCH);
 		rand = new Random();
+	}
+
+	@EventHandler(ignoreCancelled = false)
+	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
+		if (event.getItem().getEnchantments().size() == 0
+				&& event.getItem().getType().equals(Material.FURNACE)
+				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
+			event.setCancelled(false);
+			for (int i = 0; i < 3; i++) {
+				event.getExpLevelCostsOffered()[i] = getButtonLevel(i, event.getEnchantmentBonus());
+			}
+		}
 	}
 
 	private int getButtonLevel(int slot, int shelves) {
@@ -47,18 +51,6 @@ public class Enchanter  implements Listener {
 		return Math.max(j, shelves * 2);
 	}
 
-	@EventHandler(ignoreCancelled = false)
-	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
-		if (event.getItem().getEnchantments().size() == 0
-				&& event.getItem().getType().equals(Material.FURNACE)
-				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant")) {
-			event.setCancelled(false);
-			for (int i = 0; i < 3; i++) {
-				event.getExpLevelCostsOffered()[i] = getButtonLevel(i, event.getEnchantmentBonus());
-			}
-		}
-	}
-
 	@EventHandler
 	public void onEnchantItem(EnchantItemEvent event) {
 		if (event.getItem().getType().equals(Material.FURNACE)) {
@@ -66,8 +58,7 @@ public class Enchanter  implements Listener {
 				return;
 			}
 			int effectiveLevel = getEnchantingLevel(event.getExpLevelCost());
-			@SuppressWarnings("unchecked")
-			HashSet<Enchantment> possibleEnchants = (HashSet<Enchantment>) enchantments.clone();
+			HashSet<Enchantment> possibleEnchants = EnchantedFurnace.getInstance().getEnchantments();
 			Iterator<Enchantment> iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
 				if (getEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {

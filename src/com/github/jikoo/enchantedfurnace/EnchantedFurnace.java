@@ -2,6 +2,7 @@ package com.github.jikoo.enchantedfurnace;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,16 +21,23 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class EnchantedFurnace extends JavaPlugin {
 
-	private Map<Block, Furnace> furnaces;
 	private static EnchantedFurnace instance;
+	private HashSet<Enchantment> enchantments;
+	private Map<Block, Furnace> furnaces;
 
 	@Override
 	public void onEnable() {
 		instance = this;
+		enchantments = new HashSet<Enchantment>();
+		enchantments.add(Enchantment.DIG_SPEED);
+		enchantments.add(Enchantment.DURABILITY);
+		enchantments.add(Enchantment.LOOT_BONUS_BLOCKS);
+		enchantments.add(Enchantment.SILK_TOUCH);
 		this.furnaces = new HashMap<Block, Furnace>();
 		this.loadFurnaces();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
+		getServer().getPluginManager().registerEvents(new AnvilEnchanter(), this);
 		new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
 	}
 
@@ -42,6 +50,13 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 		this.furnaces.clear();
 		this.furnaces = null;
+		this.enchantments.clear();
+		this.enchantments = null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public HashSet<Enchantment> getEnchantments() {
+		return (HashSet<Enchantment>) enchantments.clone();
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
@@ -123,7 +138,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
 		getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
 		getConfig().set("furnaces." + loc + ".fortune", f.getFortune());
-		getConfig().set("furnaces." + loc + ".silk", f.canPause() ? f.getFrozenTicks() : -1);
+		getConfig().set("furnaces." + loc + ".silk", f.getFrozenTicks());
 		saveConfig();
 	}
 

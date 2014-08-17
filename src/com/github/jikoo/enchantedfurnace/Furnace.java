@@ -11,8 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 /**
- * Class for tracking custom furnace properties and
- * applying certain effects.
+ * Class for tracking custom furnace properties and applying certain effects.
  * 
  * @author Jikoo
  */
@@ -26,11 +25,7 @@ public class Furnace {
 	private short frozenTicks = 0;
 
 	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, boolean canPause) {
-		this.b = b;
-		this.cookModifier = cookModifier;
-		this.burnModifier = burnModifier;
-		this.fortune = fortune;
-		this.canPause = canPause;
+		this(b, cookModifier, burnModifier, fortune, (short) (canPause ? 0 : -1));
 	}
 
 	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, short frozenTicks) {
