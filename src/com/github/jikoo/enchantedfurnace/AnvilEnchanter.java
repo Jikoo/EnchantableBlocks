@@ -48,7 +48,7 @@ public class AnvilEnchanter implements Listener {
 		@Override
 		public void run() {
 			if (inv.getItem(0) == null || inv.getItem(1) == null
-					|| inv.getItem(0).getType() != Material.FURNACE
+					|| inv.getItem(0).getType() != Material.FURNACE || inv.getItem(0).getAmount() > 1
 					|| inv.getItem(1).getType() != Material.ENCHANTED_BOOK) {
 				return;
 			}

@@ -76,13 +76,17 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	public ItemStack destroyFurnace(Block b) {
 		Furnace f = furnaces.remove(b);
-		if (f == null) {
+		if (f == null || b.getType() != Material.FURNACE && b.getType() != Material.BURNING_FURNACE) {
 			return null;
 		}
 		getConfig().set("furnaces." + blockToLocString(f.getBlock()), null);
 		saveConfig();
 		ItemStack drop = new ItemStack(Material.FURNACE);
 		ItemMeta im = drop.getItemMeta();
+		String furnaceName = ((org.bukkit.block.Furnace) b.getState()).getInventory().getTitle();
+		if (!furnaceName.equals("container.furnace")) {
+			im.setDisplayName(furnaceName);
+		}
 		if (f.getCookModifier() > 0) {
 			im.addEnchant(Enchantment.DIG_SPEED, f.getCookModifier(), true);
 		}
