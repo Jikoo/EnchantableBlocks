@@ -65,7 +65,50 @@ public class Furnace {
 	}
 
 	public boolean canPause() {
-		return this.canPause;
+		if (!this.canPause) {
+			return false;
+		}
+
+		org.bukkit.block.Furnace f = this.getFurnaceTile();
+		if (f == null || f.getBurnTime() <= 0) {
+			return false;
+		}
+
+		// Is there an input?
+		FurnaceInventory i = f.getInventory();
+		if (i.getSmelting() == null) {
+			return true;
+		}
+
+		if (i.getResult() != null && i.getResult().getAmount() >= i.getResult().getType().getMaxStackSize()) {
+			return true;
+		}
+
+		// Verify that the smelting item cannot produce a result
+		return !canProduceResult(i.getResult() != null ? Bukkit.getRecipesFor(i.getResult()).iterator() : Bukkit.recipeIterator(), i.getSmelting(), i.getResult());
+	}
+
+	@SuppressWarnings("deprecation")
+	private boolean canProduceResult(Iterator<Recipe> ri, ItemStack smelting, ItemStack result) {
+		while (ri.hasNext()) {
+			Recipe r = ri.next();
+			if (!(r instanceof FurnaceRecipe)) {
+				continue;
+			}
+			ItemStack input = ((FurnaceRecipe) r).getInput();
+			ItemStack output = ((FurnaceRecipe) r).getResult();
+			if (input.getType() != smelting.getType()) {
+				continue;
+			}
+			if (input.getData().getData() > -1 && !input.getData().equals(smelting.getData())) {
+				continue;
+			}
+			if (result != null && !result.isSimilar(output)) {
+				continue;
+			}
+			return true;
+		}
+		return false;
 	}
 
 	public void pause() {
@@ -73,71 +116,33 @@ public class Furnace {
 			return;
 		}
 
-		// Delay to fix silk touch sometimes spitting out all items instead of smelting
-		Bukkit.getScheduler().scheduleSyncDelayedTask(EnchantedFurnace.getInstance(), new Runnable() {
-
-			@Override
-			public void run() {
-				org.bukkit.block.Furnace f = getFurnaceTile();
-				frozenTicks = f.getBurnTime();
-				f.setBurnTime((short) 0);
-				f.update(true);
-			}
-		});
+		org.bukkit.block.Furnace f = this.getFurnaceTile();
+		frozenTicks = f.getBurnTime();
+		f.setBurnTime((short) 0);
+		f.update(true);
 	}
 
-	@SuppressWarnings("deprecation")
-	public void resume() {
+	public boolean resume() {
 		org.bukkit.block.Furnace f = this.getFurnaceTile();
 		// Is furnace unfrozen already?
 		if (f.getBurnTime() > 0 || this.frozenTicks < 1) {
-			return;
+			return false;
 		}
 
 		// Is there an input?
 		FurnaceInventory i = f.getInventory();
 		if (i.getSmelting() == null) {
-			return;
+			return false;
 		}
 
-		boolean viableMatch = false;
-		if (i.getResult() != null) {
-			// Verify existing result can be obtained from input before restarting
-			Iterator<Recipe> ri = Bukkit.getRecipesFor(i.getResult()).iterator();
-			while (ri.hasNext()) {
-				Recipe r = ri.next();
-				if (r instanceof FurnaceRecipe) {
-					if (((FurnaceRecipe) r).getInput().getType() == f.getInventory().getSmelting().getType()) {
-						if (r.getResult().getType() != i.getResult().getType()) {
-							return;
-						}
-						break;
-					}
-				}
-			}
-		} else {
-			// If there is no result, verify that the smelting item can produce a result
-			Iterator<Recipe> ri = Bukkit.recipeIterator();
-			while (ri.hasNext()) {
-				Recipe r = ri.next();
-				if (!(r instanceof FurnaceRecipe)) {
-					continue;
-				}
-				ItemStack input = ((FurnaceRecipe) r).getInput();
-				if (input.getType() != i.getSmelting().getType()) {
-					continue;
-				}
-				if (input.getData().getData() > -1 && !input.getData().equals(i.getSmelting().getData())) {
-					continue;
-				}
-				// Unlike fortune, we don't need to find the exact match so long as there is a working match.
-				viableMatch = true;
-				break;
-			}
+		if (!canProduceResult(i.getResult() != null ? Bukkit.getRecipesFor(i.getResult()).iterator() : Bukkit.recipeIterator(), i.getSmelting(), i.getResult())) {
+			return false;
 		}
-		if (!viableMatch) {
-			return;
-		}
+
+		f.setBurnTime(frozenTicks);
+		f.update(true);
+		frozenTicks = 0;
+		return true;
 	}
 
 	public boolean isPaused() {

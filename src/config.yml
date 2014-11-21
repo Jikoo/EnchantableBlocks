@@ -1,0 +1,17 @@
+fortune_list_mode: blacklist
+fortune_list:
+- SPONGE
+- SMOOTH_BRICK
+
+# UNIMPLEMENTED
+#furnace_enchantments:
+#- DIG_SPEED
+#- DURABILITY
+#- LOOT_BONUS_BLOCKS
+#- SILK_TOUCH
+#enchantment_incompatibilities:
+#- SILK_TOUCH: LOOT_BONUS_BLOCKS
+# Enchantability is how easily enchantable an object is.
+# leather/wood: 15, stone: 5, iron armor: 9, iron tools: 14, chain: 12, gold armor: 25, gold tools: 22, diamond: 10
+#furnace_enchantability: 5
+#furnace_durability

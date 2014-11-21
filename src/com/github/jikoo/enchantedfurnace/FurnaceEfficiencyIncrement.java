@@ -12,7 +12,7 @@ public class FurnaceEfficiencyIncrement extends BukkitRunnable {
 	public void run() {
 		for (Furnace f : EnchantedFurnace.getInstance().getFurnaces()) {
 			if (f.getCookModifier() <= 0) {
-				// Ain't fortune, gtfo
+				// Not efficiency, we're done here
 				continue;
 			}
 			org.bukkit.block.Furnace tile = f.getFurnaceTile();

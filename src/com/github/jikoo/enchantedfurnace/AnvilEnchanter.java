@@ -54,33 +54,27 @@ public class AnvilEnchanter implements Listener {
 			}
 
 			EnchantmentStorageMeta enchbook = (EnchantmentStorageMeta) inv.getItem(1).getItemMeta();
-			ItemStack result = new ItemStack(Material.FURNACE);
+			ItemStack result = inv.getItem(0).clone();
 
 			Set<Enchantment> legalEnchants = EnchantedFurnace.getInstance().getEnchantments();
 
-			for (Entry<Enchantment, Integer> entry : inv.getItem(0).getEnchantments().entrySet()) {
-				if (!legalEnchants.contains(entry.getKey())) {
-					continue;
-				}
-				if (enchbook.getStoredEnchantLevel(entry.getKey()) > entry.getValue()) {
-					result.addUnsafeEnchantment(entry.getKey(), enchbook.getStoredEnchantLevel(entry.getKey()));
-				} else if (entry.getKey().getMaxLevel() > entry.getValue() && entry.getValue() == enchbook.getStoredEnchantLevel(entry.getKey())) {
-					result.addUnsafeEnchantment(entry.getKey(), entry.getValue() + 1);
-				} else {
-					result.addUnsafeEnchantment(entry.getKey(), entry.getValue());
-				}
-			}
-
-			secondItem: for (Entry<Enchantment, Integer> entry : enchbook.getStoredEnchants().entrySet()) {
+			nextEnchant: for (Entry<Enchantment, Integer> entry : enchbook.getStoredEnchants().entrySet()) {
 				if (!legalEnchants.contains(entry.getKey())) {
 					continue;
 				}
 				for (Enchantment e : result.getEnchantments().keySet()) {
-					if (e == entry.getKey() || e.conflictsWith(entry.getKey())) {
-						continue secondItem;
+					if (e.conflictsWith(entry.getKey())) {
+						continue nextEnchant;
 					}
 				}
-				result.addUnsafeEnchantment(entry.getKey(), entry.getValue());
+				if (result.getEnchantmentLevel(entry.getKey()) > entry.getValue()){
+					continue;
+				}
+				if (entry.getKey().getMaxLevel() > entry.getValue() && entry.getValue() == result.getEnchantmentLevel(entry.getKey())) {
+					result.addUnsafeEnchantment(entry.getKey(), entry.getValue() + 1);
+				} else {
+					result.addUnsafeEnchantment(entry.getKey(), entry.getValue());
+				}
 			}
 			inv.setItem(2, result);
 		}

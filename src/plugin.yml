@@ -9,4 +9,4 @@ permissions:
   default: true
   children:
    enchantedfurnace.enchant.table: true
-   enchantedfurnace.enchant.anvil: true
+   enchantedfurnace.enchant.anvil: false

@@ -41,48 +41,47 @@ public class Enchanter  implements Listener {
 		if (shelves > 15) {
 			shelves = 15;
 		}
-		int j = rand.nextInt(8) + 1 + (shelves >> 1) + rand.nextInt(shelves + 1);
+		int i = rand.nextInt(8) + 1 + (shelves >> 1) + rand.nextInt(shelves + 1);
 		if (slot == 0) {
-			return Math.max(j / 3, 1);
+			return Math.max(i / 3, 1);
 		}
 		if (slot == 1) {
-			return (j * 2 / 3 + 1);
+			return (i * 2 / 3 + 1);
 		}
-		return Math.max(j, shelves * 2);
+		return Math.max(i, shelves * 2);
 	}
 
 	@EventHandler
 	public void onEnchantItem(EnchantItemEvent event) {
-		if (event.getItem().getType().equals(Material.FURNACE)) {
-			if (!event.getEnchanter().hasPermission("enchantedfurnace.enchant")) {
-				return;
+		if (event.getItem().getType() != Material.FURNACE
+				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
+			return;
+		}
+		int effectiveLevel = getEnchantingLevel(event.getExpLevelCost());
+		HashSet<Enchantment> possibleEnchants = EnchantedFurnace.getInstance().getEnchantments();
+		Iterator<Enchantment> iterator = possibleEnchants.iterator();
+		while (iterator.hasNext()) {
+			if (getEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {
+				iterator.remove();
 			}
-			int effectiveLevel = getEnchantingLevel(event.getExpLevelCost());
-			HashSet<Enchantment> possibleEnchants = EnchantedFurnace.getInstance().getEnchantments();
-			Iterator<Enchantment> iterator = possibleEnchants.iterator();
-			while (iterator.hasNext()) {
-				if (getEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {
-					iterator.remove();
-				}
+		}
+		Enchantment ench = getWeightedEnchant(possibleEnchants);
+		event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
+		possibleEnchants.remove(ench);
+		iterator = possibleEnchants.iterator();
+		while (iterator.hasNext()) {
+			if (ench.conflictsWith(iterator.next())) {
+				iterator.remove();
 			}
-			Enchantment ench = getWeightedEnchant(possibleEnchants);
+		}
+		while (rand.nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
+			ench = getWeightedEnchant(possibleEnchants);
 			event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
 				if (ench.conflictsWith(iterator.next())) {
 					iterator.remove();
-				}
-			}
-			while (rand.nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
-				ench = getWeightedEnchant(possibleEnchants);
-				event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
-				possibleEnchants.remove(ench);
-				iterator = possibleEnchants.iterator();
-				while (iterator.hasNext()) {
-					if (ench.conflictsWith(iterator.next())) {
-						iterator.remove();
-					}
 				}
 			}
 		}

@@ -12,8 +12,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.FurnaceInventory;
@@ -35,9 +33,8 @@ public class FurnaceListener implements Listener {
 		if (f == null) {
 			return;
 		}
-		if (f.isPaused()) {
+		if (f.isPaused() && f.resume()) {
 			e.setCancelled(true);
-			f.resume();
 			return;
 		}
 		if (f.getBurnModifier() > 0) {
@@ -46,66 +43,81 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onItemSmelt(FurnaceSmeltEvent e) {
-		Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
+		final Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
 		if (f == null) {
 			return;
 		}
 
-		org.bukkit.block.Furnace tile = f.getFurnaceTile();
-		FurnaceInventory i = tile.getInventory();
 		if (f.getFortune() > 0) {
-			int extraResults = 0;
-			for (int j = 0; j < f.getFortune(); j++) {
-				// 1/3 chance per level fortune
-				extraResults += (int) (1.50 * Math.random());
+			boolean listContains = EnchantedFurnace.getInstance().getFortuneList().contains(e.getSource().getType().name());
+			if (EnchantedFurnace.getInstance().isBlacklist() ? !listContains : listContains) {
+				applyFortune(e, f);
 			}
-			ItemStack newResult = i.getResult();
-			if (newResult == null ) {
-				Iterator<Recipe> ri = Bukkit.recipeIterator();
-				extraResults -= 1;
-				while (ri.hasNext()) {
-					Recipe r = ri.next();
-					if (!(r instanceof FurnaceRecipe)) {
-						continue;
-					}
-					ItemStack input = ((FurnaceRecipe) r).getInput();
-					if (input.getType() != i.getSmelting().getType()) {
-						continue;
-					}
-					if (input.getData().getData() > -1) {
-						if (input.getData().equals(i.getSmelting().getData())) {
-							// Exact match
-							newResult = new ItemStack(r.getResult());
-							break;
-						}
-						// Incorrect data, not a match
-					} else {
-						// Inexact match, continue iterating
+		}
+
+		if (f.canPause()) {
+			new BukkitRunnable() {
+				public void run() {
+					f.pause();
+				}
+			}.runTask(EnchantedFurnace.getInstance());
+		}
+	}
+
+	@SuppressWarnings("deprecation")
+	private void applyFortune(FurnaceSmeltEvent e, Furnace f) {
+		FurnaceInventory i = f.getFurnaceTile().getInventory();
+		int extraResults = 0;
+		for (int j = 0; j < f.getFortune(); j++) {
+			// 1/3 chance per level fortune
+			extraResults += (int) (1.50 * Math.random());
+		}
+		// There's always going to be 1 item created, check extras against max - 1
+		if (i.getResult() != null && i.getResult().getAmount() + extraResults > i.getResult().getType().getMaxStackSize() - 1) {
+			extraResults = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
+		}
+		if (extraResults == 0) {
+			return;
+		}
+		ItemStack newResult = null;
+		if (i.getResult() == null) {
+			Iterator<Recipe> ri = Bukkit.recipeIterator();
+			while (ri.hasNext()) {
+				Recipe r = ri.next();
+				if (!(r instanceof FurnaceRecipe)) {
+					continue;
+				}
+				ItemStack input = ((FurnaceRecipe) r).getInput();
+				if (input.getType() != i.getSmelting().getType()) {
+					continue;
+				}
+				if (input.getData().getData() > -1) {
+					if (input.getData().equals(i.getSmelting().getData())) {
+						// Exact match
 						newResult = new ItemStack(r.getResult());
+						break;
 					}
+					// Incorrect data, not a match
+				} else {
+					// Inexact match, continue iterating
+					newResult = new ItemStack(r.getResult());
 				}
 			}
 			if (newResult == null) {
 				EnchantedFurnace.getInstance().getLogger().warning("Unable to obtain fortune result for MaterialData "
 						+ i.getSmelting().getData() + ". Please report this error.");
-			} else {
-				int newAmount = newResult.getAmount() + extraResults;
-				// Smelting will complete after event finishes, stack will increment to 64.
-				newResult.setAmount(newAmount > 63 ? 63 : newAmount);
-				i.setResult(newResult);
-				tile.update(true);
+				return;
 			}
+		} else {
+			newResult = i.getResult().clone();
 		}
-
-		if (i.getSmelting().getAmount() == 1 || (i.getResult() != null && i.getResult().getAmount() == 63)) {
-			f.pause();
-		}
+		newResult.setAmount(1 + extraResults);
+		e.setResult(newResult);
 	}
 
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
 			EnchantedFurnace.getInstance().createFurnace(e.getBlock(), e.getItemInHand());
@@ -128,48 +140,32 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent e) {
-		Inventory top = e.getView().getTopInventory();
-		if (top instanceof FurnaceInventory) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
-			if (f != null && f.isPaused()) {
-				// The Javadoc of runTask is worded as though task schedules on a 1 tick delay. Not what I want.
-				// TODO Too lazy to read the OBC atm.
-				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
-			}
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onInventoryMoveItem(InventoryMoveItemEvent e) {
+		Inventory furnace;
+		if (e.getDestination().getType() == InventoryType.FURNACE) {
+			furnace = e.getDestination();
+		} else if (e.getSource().getType() == InventoryType.FURNACE) {
+			furnace = e.getSource();
+		} else {
+			return;
 		}
-	}
-
-	@EventHandler
-	public void onInventoryDrag(InventoryDragEvent e) {
-		Inventory top = e.getView().getTopInventory();
-		if (top instanceof FurnaceInventory) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
-			if (f != null && f.isPaused()) {
-				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
-			}
+		final Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) furnace.getHolder()).getBlock());
+		if (f == null || !f.canPause()) {
+			return;
 		}
-	}
-
-	@EventHandler
-	public void onHopperMove(InventoryMoveItemEvent e) {
-		Inventory top = e.getDestination().getType() == InventoryType.HOPPER ? e.getSource() : e.getDestination();
-		if (top.getType() == InventoryType.FURNACE) {
-			Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) top.getHolder()).getBlock());
-			if (f != null && f.isPaused()) {
-				new SilkUpdate(f).runTaskLater(EnchantedFurnace.getInstance(), 0);
-			}
-		}
-	}
-
-	private class SilkUpdate extends BukkitRunnable {
-		private Furnace f;
-		public SilkUpdate(Furnace furnace) {
-			f = furnace;
-		}
-		public void run() {
-			f.resume();
+		if (f.isPaused()) {
+			new BukkitRunnable() {
+				public void run() {
+					f.resume();
+				}
+			}.runTask(EnchantedFurnace.getInstance());
+		} else {
+			new BukkitRunnable() {
+				public void run() {
+					f.pause();
+				}
+			}.runTask(EnchantedFurnace.getInstance());
 		}
 	}
 }

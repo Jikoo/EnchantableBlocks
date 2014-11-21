@@ -1,14 +1,20 @@
 package com.github.jikoo.enchantedfurnace;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -22,17 +28,43 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class EnchantedFurnace extends JavaPlugin {
 
 	private static EnchantedFurnace instance;
+	private YamlConfiguration furnaceSaves;
 	private HashSet<Enchantment> enchantments;
 	private Map<Block, Furnace> furnaces;
+	private ArrayList<String> fortuneList;
+	private boolean isBlacklist;
 
 	@Override
 	public void onEnable() {
 		instance = this;
+		saveDefaultConfig();
+
 		enchantments = new HashSet<Enchantment>();
 		enchantments.add(Enchantment.DIG_SPEED);
 		enchantments.add(Enchantment.DURABILITY);
 		enchantments.add(Enchantment.LOOT_BONUS_BLOCKS);
 		enchantments.add(Enchantment.SILK_TOUCH);
+
+		String listType = getConfig().getString("fortune_list_mode");
+		if (listType == null) {
+			isBlacklist = true;
+			getConfig().set("fortune_list_mode", "blacklist");
+			saveConfig();
+		} else {
+			isBlacklist = listType.matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+		}
+		// TODO compare string to MaterialData
+		List<String> list = getConfig().getStringList("fortune_list");
+		if (list == null) {
+			isBlacklist = true; // If server owners don't want to config properly, I'm still not allowing sponge duplication.
+			fortuneList = new ArrayList<String>();
+			fortuneList.add("SPONGE");
+			fortuneList.add("SMOOTH_BRICK");
+			getConfig().set("fortune_list", fortuneList);
+			saveConfig();
+		} else {
+			fortuneList = new ArrayList<String>(list);
+		}
 		this.furnaces = new HashMap<Block, Furnace>();
 		this.loadFurnaces();
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
@@ -59,6 +91,17 @@ public class EnchantedFurnace extends JavaPlugin {
 		return (HashSet<Enchantment>) enchantments.clone();
 	}
 
+	/**
+	 * @return the isBlacklist
+	 */
+	public boolean isBlacklist() {
+		return isBlacklist;
+	}
+
+	public List<String> getFortuneList() {
+		return fortuneList;
+	}
+
 	public void createFurnace(Block b, ItemStack is) {
 		if (is.getType() != Material.FURNACE) {
 			return;
@@ -79,8 +122,8 @@ public class EnchantedFurnace extends JavaPlugin {
 		if (f == null || b.getType() != Material.FURNACE && b.getType() != Material.BURNING_FURNACE) {
 			return null;
 		}
-		getConfig().set("furnaces." + blockToLocString(f.getBlock()), null);
-		saveConfig();
+		getFurnaceStorage().set("furnaces." + blockToLocString(f.getBlock()), null);
+		saveFurnaceStorage();
 		ItemStack drop = new ItemStack(Material.FURNACE);
 		ItemMeta im = drop.getItemMeta();
 		String furnaceName = ((org.bukkit.block.Furnace) b.getState()).getInventory().getTitle();
@@ -120,30 +163,76 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	private void loadFurnaces() {
-		Set<String> furnaceLocs;
-		try {
-			furnaceLocs = getConfig().getConfigurationSection("furnaces").getKeys(false);
-		} catch (NullPointerException e) {
-			return; // Config nonexistant
+		ConfigurationSection furnaceSection = getFurnaceStorage().getConfigurationSection("furnaces");
+		loadFurnacesFromConfigSection(furnaceSection, false);
+
+		// Backwards compatibility for version < 1.3.0
+		furnaceSection = getConfig().getConfigurationSection("furnaces");
+		loadFurnacesFromConfigSection(furnaceSection, true);
+		// Wipe old newly loaded and saved furnaces.
+		getConfig().set("furnaces", null);
+		saveConfig();
+	}
+
+	private void loadFurnacesFromConfigSection(ConfigurationSection section, boolean save) {
+		if (section == null) {
+			// No saves here
+			return;
 		}
+		Set<String> furnaceLocs = section.getKeys(false);
 		for (String s : furnaceLocs) {
 			Block b = locStringToBlock(s);
 			if (b != null && (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE)) {
-				furnaces.put(b, new Furnace(b, getConfig().getInt("furnaces." + s + ".efficiency"),
+				Furnace furnace = new Furnace(b, getConfig().getInt("furnaces." + s + ".efficiency"),
 						getConfig().getInt("furnaces." + s + ".unbreaking"),
 						getConfig().getInt("furnaces." + s + ".fortune"),
-						(short) getConfig().getInt("furnaces." + s + ".silk")));
+						(short) getConfig().getInt("furnaces." + s + ".silk"));
+				furnaces.put(b, furnace);
+				if (save) {
+					saveFurnace(furnace);
+				}
 			}
+		}
+	}
+
+	private YamlConfiguration getFurnaceStorage() {
+		if (furnaceSaves != null) {
+			return furnaceSaves;
+		}
+		File file = new File(getDataFolder(), "furnaces.yml");
+		if (!file.exists()) {
+			try {
+				file.createNewFile();
+			} catch (IOException e) {
+				throw new RuntimeException("Cannot write furnace save file! Make sure your file permissions are set up properly.", e);
+			}
+		}
+		furnaceSaves = YamlConfiguration.loadConfiguration(file);
+		return furnaceSaves;
+	}
+
+	private void saveFurnaceStorage() {
+		if (furnaceSaves == null) {
+			return;
+		}
+		File file = new File(getDataFolder(), "furnaces.yml");
+		try {
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			furnaceSaves.save(file);
+		} catch (IOException e) {
+			throw new RuntimeException("Cannot write furnace save file! Make sure your file permissions are set up properly.", e);
 		}
 	}
 
 	private void saveFurnace(Furnace f) {
 		String loc = blockToLocString(f.getBlock());
-		getConfig().set("furnaces." + loc + ".efficiency", f.getCookModifier());
-		getConfig().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
-		getConfig().set("furnaces." + loc + ".fortune", f.getFortune());
-		getConfig().set("furnaces." + loc + ".silk", f.getFrozenTicks());
-		saveConfig();
+		getFurnaceStorage().set("furnaces." + loc + ".efficiency", f.getCookModifier());
+		getFurnaceStorage().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
+		getFurnaceStorage().set("furnaces." + loc + ".fortune", f.getFortune());
+		getFurnaceStorage().set("furnaces." + loc + ".silk", f.getFrozenTicks());
+		saveFurnaceStorage();
 	}
 
 	private String blockToLocString(Block b) {
@@ -156,6 +245,7 @@ public class EnchantedFurnace extends JavaPlugin {
 			return new Location(getServer().getWorld(loc[0]), Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3])).getBlock();
 		} catch (Exception e) {
 			getLogger().warning("Invalid saved furnace: " + s);
+			getConfig().set("furnaces." + s, null);
 			return null;
 		}
 	}
