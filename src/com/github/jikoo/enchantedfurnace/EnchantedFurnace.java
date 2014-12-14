@@ -37,7 +37,6 @@ public class EnchantedFurnace extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
-		saveDefaultConfig();
 
 		enchantments = new HashSet<Enchantment>();
 		enchantments.add(Enchantment.DIG_SPEED);
@@ -45,28 +44,16 @@ public class EnchantedFurnace extends JavaPlugin {
 		enchantments.add(Enchantment.LOOT_BONUS_BLOCKS);
 		enchantments.add(Enchantment.SILK_TOUCH);
 
-		String listType = getConfig().getString("fortune_list_mode");
-		if (listType == null) {
-			isBlacklist = true;
-			getConfig().set("fortune_list_mode", "blacklist");
-			saveConfig();
-		} else {
-			isBlacklist = listType.matches(".*[Bb][Ll][Aa][Cc][Kk].*");
-		}
-		// TODO compare string to MaterialData
-		List<String> list = getConfig().getStringList("fortune_list");
-		if (list == null) {
-			isBlacklist = true; // If server owners don't want to config properly, I'm still not allowing sponge duplication.
-			fortuneList = new ArrayList<String>();
-			fortuneList.add("SPONGE");
-			fortuneList.add("SMOOTH_BRICK");
-			getConfig().set("fortune_list", fortuneList);
-			saveConfig();
-		} else {
-			fortuneList = new ArrayList<String>(list);
-		}
 		this.furnaces = new HashMap<Block, Furnace>();
 		this.loadFurnaces();
+
+		updateConfig();
+
+		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+
+		// TODO compare string to MaterialData
+		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
+
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(), this);
@@ -247,6 +234,32 @@ public class EnchantedFurnace extends JavaPlugin {
 			getLogger().warning("Invalid saved furnace: " + s);
 			getConfig().set("furnaces." + s, null);
 			return null;
+		}
+	}
+
+	private void updateConfig() {
+		Set<String> options = getConfig().getDefaults().getKeys(false);
+		Set<String> current = getConfig().getKeys(false);
+		boolean changed = false;
+
+		for (String s : options) {
+			if (!current.contains(s)) {
+				getConfig().set(s, getConfig().getDefaults().get(s));
+				changed = true;
+			}
+		}
+
+		for (String s : current) {
+			if (!options.contains(s)) {
+				getConfig().set(s, null);
+				changed = true;
+			}
+		}
+
+		getConfig().options().copyHeader(true);
+
+		if (changed) {
+			saveConfig();
 		}
 	}
 }
