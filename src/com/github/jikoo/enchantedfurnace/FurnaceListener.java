@@ -69,16 +69,26 @@ public class FurnaceListener implements Listener {
 	@SuppressWarnings("deprecation")
 	private void applyFortune(FurnaceSmeltEvent e, Furnace f) {
 		FurnaceInventory i = f.getFurnaceTile().getInventory();
-		int extraResults = 0;
+		int extraResults = 1;
+		// Fortune 1 is 30% chance of product, 2 is 25%, and 3+ is 20% for vanilla picks.
+		double fortuneChance = f.getFortune() < 2 ? .33 : f.getFortune() == 2 ? .25 : .2;
 		for (int j = 0; j < f.getFortune(); j++) {
-			// 1/3 chance per level fortune
-			extraResults += (int) (1.50 * Math.random());
+			if (Math.random() >= fortuneChance) {
+				continue;
+			}
+			if (EnchantedFurnace.getInstance().isDefaultFortune()) {
+				extraResults++;
+			} else {
+				extraResults *= 2;
+			}
 		}
-		// There's always going to be 1 item created, check extras against max - 1
+		// There's always going to be 1 item created, extra output is 1 less than total.
+		extraResults--;
+		// Check extras against max - 1 because of guaranteed single output
 		if (i.getResult() != null && i.getResult().getAmount() + extraResults > i.getResult().getType().getMaxStackSize() - 1) {
 			extraResults = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
 		}
-		if (extraResults == 0) {
+		if (extraResults <= 0) {
 			return;
 		}
 		ItemStack newResult = null;

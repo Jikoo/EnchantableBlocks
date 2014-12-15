@@ -1,8 +1,23 @@
 # http://dev.bukkit.org/bukkit-plugins/enchantedfurnace/
+# 
+# 
+# fortune_list_mode controls the fortune black/whitelist functionality.
+# In blacklist mode, the materials specified cannot be affected by fortune.
+# In whitelist mode, only the materials specified can be affected by fortune.
+# 
+# To disable fortune entirely, set fortune_list_mode: whitelist and fortune_list: []
+# 
+# 
+# fortune_mode controls how fortune calculates the number of additional items created.
+# Fortune in vanilla is output number * 2 per success.
+# This means that a fortune 3 furnace could create a maximum of <output quantity> * 2 * 2 * 2
+# EnchantedFurnace's default mode is to add 1 per success, or max of <output quantity> + <fortune level>
+# Possible modes are vanilla or default.
 fortune_list_mode: blacklist
 fortune_list:
 - SPONGE
 - SMOOTH_BRICK
+fortune_mode: default
 
 #UNIMPLEMENTED
 #furnace_enchantments:

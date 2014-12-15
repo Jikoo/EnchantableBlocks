@@ -32,7 +32,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	private HashSet<Enchantment> enchantments;
 	private Map<Block, Furnace> furnaces;
 	private ArrayList<String> fortuneList;
-	private boolean isBlacklist;
+	private boolean isBlacklist, isDefaultFortune;
 
 	@Override
 	public void onEnable() {
@@ -50,6 +50,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		updateConfig();
 
 		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+
+		// Only use vanilla fortune if explicitly defined as it results in higher average production
+		isDefaultFortune = !getConfig().getString("fortune_mode").matches("[Vv][Aa][Nn][Ii][Ll][Ll][Aa]");
 
 		// TODO compare string to MaterialData
 		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
@@ -78,11 +81,12 @@ public class EnchantedFurnace extends JavaPlugin {
 		return (HashSet<Enchantment>) enchantments.clone();
 	}
 
-	/**
-	 * @return the isBlacklist
-	 */
 	public boolean isBlacklist() {
 		return isBlacklist;
+	}
+
+	public boolean isDefaultFortune() {
+		return isDefaultFortune;
 	}
 
 	public List<String> getFortuneList() {
