@@ -13,7 +13,7 @@
 # Enchantments obtained prior to changes will still be present and functional.
 # 
 # 
-# furnace_enchantability controls how easily enchantable furnaces are. Defaults to stone equivalent. Must be > 0.
+# furnace_enchantability controls how easily enchantable furnaces are. Defaults to stone equivalent.
 # leather/wood: 15, stone: 5, iron armor: 9, iron tools: 14, chain: 12, gold armor: 25, gold tools: 22, diamond: 10
 # See http://minecraft.gamepedia.com/Enchantment_mechanics#Step_One_-_Applying_modifiers_to_the_enchantment_level
 # Setting this value to 0 will NOT make furnaces unenchantable. To disable all enchantments, set furnace_enchantments: []
@@ -30,11 +30,7 @@ fortune_list_mode: blacklist
 fortune_list:
 - SPONGE
 - SMOOTH_BRICK
-furnace_enchantments:
-- DIG_SPEED
-- DURABILITY
-- LOOT_BONUS_BLOCKS
-- SILK_TOUCH
+disabled_furnace_enchantments: []
 furnace_enchantability: 5
 enchantment_incompatibilities:
  SILK_TOUCH: LOOT_BONUS_BLOCKS

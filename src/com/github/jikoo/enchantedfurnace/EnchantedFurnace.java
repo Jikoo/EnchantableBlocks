@@ -52,28 +52,36 @@ public class EnchantedFurnace extends JavaPlugin {
 		// TODO compare string to MaterialData
 		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
 
-		enchantments = new HashSet<Enchantment>();
-		List<String> defaultEnchantments = getConfig().getDefaults().getStringList("furnace_enchantments");
+		HashSet<String> allowedEnchantments = new HashSet<String>();
+		allowedEnchantments.add("DIG_SPEED");
+		allowedEnchantments.add("DURABILITY");
+		allowedEnchantments.add("LOOT_BONUS_BLOCKS");
+		allowedEnchantments.add("SILK_TOUCH");
 		for (String enchantment : getConfig().getStringList("furnace_enchantments")) {
-			if (defaultEnchantments.contains(enchantment)) {
-				enchantments.add(Enchantment.getByName(enchantment));
+			if (allowedEnchantments.contains(enchantment)) {
+				allowedEnchantments.remove(enchantment);
 			}
+		}
+		enchantments = new HashSet<Enchantment>();
+		for (String enchantment : allowedEnchantments) {
+			enchantments.add(Enchantment.getByName(enchantment));
 		}
 
 		enchantability = getConfig().getInt("furnace_enchantability");
-		// Enchantability cannot be <= 0 or we won't be able to generate random numbers for enchanting.
-		if (enchantability < 1) {
-			enchantability = 1;
+		// Enchantability < 4 would pass a Random 0 or lower.
+		// Enchantablity < 8 has no effect on end enchantments.
+		if (enchantability < 4) {
+			enchantability = 4;
 		}
 
 		incompatibleEnchants = HashMultimap.create();
-		for (String enchantment : getConfig().getConfigurationSection("incompatible_enchantments").getKeys(false)) {
+		for (String enchantment : getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
 			Enchantment key = Enchantment.getByName(enchantment);
-			String enchantmentValue = getConfig().getString("incompatible_enchantments." + enchantment);
+			String enchantmentValue = getConfig().getString("enchantment_incompatibilities." + enchantment);
 			Enchantment value = Enchantment.getByName(enchantmentValue);
 			if (key == null || value == null) {
 				getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
-				getConfig().set("incompatible_enchantments." + enchantment, null);
+				getConfig().set("enchantment_incompatibilities." + enchantment, null);
 				saveConfig();
 			}
 			if (incompatibleEnchants.containsEntry(key, value)) {
@@ -121,7 +129,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public boolean areEnchantmentsCompatible(Enchantment ench1, Enchantment ench2) {
-		return !incompatibleEnchants.containsEntry(ench1, ench2);
+		return ench1 != ench2 && !incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
