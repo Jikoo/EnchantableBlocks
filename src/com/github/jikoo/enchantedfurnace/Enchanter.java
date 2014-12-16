@@ -89,11 +89,9 @@ public class Enchanter  implements Listener {
 	}
 
 	private int getEnchantingLevel(int displayedLevel) {
-		// Furnaces are (logically) as enchantable as stone.
 		// Vanilla: enchant level = button level + rand(enchantabity / 4) + rand(enchantabity / 4) + 1
-		// Stone is 5 enchantability. No need to redo division each time, comes to 1 with int rounding.
-		// Random.nextInt(int i) is 0 inclusive to i exclusive, so nextInt(1) is 0.
-		int enchantingLevel = displayedLevel + 1;
+		int enchantability = EnchantedFurnace.getInstance().getFurnaceEnchantability() / 4;
+		int enchantingLevel = displayedLevel + 1 + rand.nextInt(enchantability) + rand.nextInt(enchantability);
 		// Vanilla: random enchantability bonus 85-115%
 		double bonus = (rand.nextDouble() + rand.nextDouble() - 1) * 0.15 + 1;
 		return (int) (enchantingLevel * bonus + 0.5);

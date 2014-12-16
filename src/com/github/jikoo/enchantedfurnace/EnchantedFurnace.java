@@ -33,6 +33,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	private Map<Block, Furnace> furnaces;
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
+	private int enchantability;
 
 	@Override
 	public void onEnable() {
@@ -43,6 +44,11 @@ public class EnchantedFurnace extends JavaPlugin {
 
 		updateConfig();
 
+		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+
+		// TODO compare string to MaterialData
+		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
+
 		enchantments = new HashSet<Enchantment>();
 		List<String> defaultEnchantments = getConfig().getDefaults().getStringList("furnace_enchantments");
 		for (String enchantment : getConfig().getStringList("furnace_enchantments")) {
@@ -51,10 +57,11 @@ public class EnchantedFurnace extends JavaPlugin {
 			}
 		}
 
-		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
-
-		// TODO compare string to MaterialData
-		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
+		enchantability = getConfig().getInt("furnace_enchantability");
+		// Enchantability cannot be <= 0 or we won't be able to generate random numbers for enchanting.
+		if (enchantability < 1) {
+			enchantability = 1;
+		}
 
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
@@ -67,7 +74,6 @@ public class EnchantedFurnace extends JavaPlugin {
 	@Override
 	public void onDisable() {
 		getServer().getScheduler().cancelTasks(this);
-		instance = null;
 		for (Furnace furnace : this.furnaces.values()) {
 			this.saveFurnace(furnace);
 		}
@@ -75,6 +81,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		this.furnaces = null;
 		this.enchantments.clear();
 		this.enchantments = null;
+		instance = null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -88,6 +95,10 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	public List<String> getFortuneList() {
 		return fortuneList;
+	}
+
+	public int getFurnaceEnchantability() {
+		return enchantability;
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
