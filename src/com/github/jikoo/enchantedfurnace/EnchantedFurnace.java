@@ -174,10 +174,10 @@ public class EnchantedFurnace extends JavaPlugin {
 		for (String s : furnaceLocs) {
 			Block b = locStringToBlock(s);
 			if (b != null && (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE)) {
-				Furnace furnace = new Furnace(b, getConfig().getInt("furnaces." + s + ".efficiency"),
-						getConfig().getInt("furnaces." + s + ".unbreaking"),
-						getConfig().getInt("furnaces." + s + ".fortune"),
-						(short) getConfig().getInt("furnaces." + s + ".silk"));
+				Furnace furnace = new Furnace(b, section.getInt("furnaces." + s + ".efficiency", 0),
+						section.getInt("furnaces." + s + ".unbreaking", 0),
+						section.getInt("furnaces." + s + ".fortune", 0),
+						(short) section.getInt("furnaces." + s + ".silk", -1));
 				furnaces.put(b, furnace);
 				if (save) {
 					saveFurnace(furnace);
