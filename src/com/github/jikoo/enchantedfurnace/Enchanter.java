@@ -71,7 +71,7 @@ public class Enchanter  implements Listener {
 		possibleEnchants.remove(ench);
 		iterator = possibleEnchants.iterator();
 		while (iterator.hasNext()) {
-			if (ench.conflictsWith(iterator.next())) {
+			if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(ench, iterator.next())) {
 				iterator.remove();
 			}
 		}
@@ -81,7 +81,7 @@ public class Enchanter  implements Listener {
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
-				if (ench.conflictsWith(iterator.next())) {
+				if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(ench, iterator.next())) {
 					iterator.remove();
 				}
 			}

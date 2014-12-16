@@ -20,6 +20,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.google.common.collect.HashMultimap;
+
 /**
  * Plugin for adding effects to furnaces based on enchantments.
  * 
@@ -34,6 +36,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
 	private int enchantability;
+	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
 
 	@Override
 	public void onEnable() {
@@ -63,12 +66,28 @@ public class EnchantedFurnace extends JavaPlugin {
 			enchantability = 1;
 		}
 
+		incompatibleEnchants = HashMultimap.create();
+		for (String enchantment : getConfig().getConfigurationSection("incompatible_enchantments").getKeys(false)) {
+			Enchantment key = Enchantment.getByName(enchantment);
+			String enchantmentValue = getConfig().getString("incompatible_enchantments." + enchantment);
+			Enchantment value = Enchantment.getByName(enchantmentValue);
+			if (key == null || value == null) {
+				getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
+				getConfig().set("incompatible_enchantments." + enchantment, null);
+				saveConfig();
+			}
+			if (incompatibleEnchants.containsEntry(key, value)) {
+				// User probably included reverse mapping
+				continue;
+			}
+			incompatibleEnchants.put(key, value);
+			incompatibleEnchants.put(value, key);
+		}
+
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(), this);
-		if (enchantments.contains(Enchantment.DIG_SPEED)) {
-			new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
-		}
+		new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
 	}
 
 	@Override
@@ -99,6 +118,10 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	public int getFurnaceEnchantability() {
 		return enchantability;
+	}
+
+	public boolean areEnchantmentsCompatible(Enchantment ench1, Enchantment ench2) {
+		return !incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
@@ -263,6 +286,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		boolean changed = false;
 
 		for (String s : options) {
+			if (s.equals("enchantment_incompatibilities")) {
+				continue;
+			}
 			if (!current.contains(s)) {
 				getConfig().set(s, getConfig().getDefaults().get(s));
 				changed = true;

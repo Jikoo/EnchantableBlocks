@@ -17,6 +17,15 @@
 # leather/wood: 15, stone: 5, iron armor: 9, iron tools: 14, chain: 12, gold armor: 25, gold tools: 22, diamond: 10
 # See http://minecraft.gamepedia.com/Enchantment_mechanics#Step_One_-_Applying_modifiers_to_the_enchantment_level
 # Setting this value to 0 will NOT make furnaces unenchantable. To disable all enchantments, set furnace_enchantments: []
+# 
+# 
+# enchantment_incompatibilities affects which enchantments cannot be recieved when certain others are present.
+# On vanilla tools, silk touch and fortune are incompatible.
+# This doesn't make too much sense for furnaces given the differences
+# in function, but it's enabled by default to match vanilla.
+# You do not need to add the reversed mapping of an incompatibility.
+# 
+
 fortune_list_mode: blacklist
 fortune_list:
 - SPONGE
@@ -27,8 +36,8 @@ furnace_enchantments:
 - LOOT_BONUS_BLOCKS
 - SILK_TOUCH
 furnace_enchantability: 5
+enchantment_incompatibilities:
+ SILK_TOUCH: LOOT_BONUS_BLOCKS
 
 #UNIMPLEMENTED
-#enchantment_incompatibilities:
-#- SILK_TOUCH: LOOT_BONUS_BLOCKS
 #furnace_durability
