@@ -6,25 +6,22 @@
 # In whitelist mode, only the materials specified can be affected by fortune.
 # 
 # To disable fortune entirely, set fortune_list_mode: whitelist and fortune_list: []
+# You should also remove LOOT_BONUS_BLOCKS from furnace_enchantments.
 # 
 # 
-# fortune_mode controls how fortune calculates the number of additional items created.
-# Fortune in vanilla is output number * 2 per success.
-# This means that a fortune 3 furnace could create a maximum of <output quantity> * 2 * 2 * 2
-# EnchantedFurnace's default mode is to add 1 per success, or max of <output quantity> + <fortune level>
-# Possible modes are vanilla or default.
+# furnace_enchantments controls which enchantments can be gotten from an enchanting table.
+# Enchantments obtained prior to changes will still be present and functional.
 fortune_list_mode: blacklist
 fortune_list:
 - SPONGE
 - SMOOTH_BRICK
-fortune_mode: default
+furnace_enchantments:
+- DIG_SPEED
+- DURABILITY
+- LOOT_BONUS_BLOCKS
+- SILK_TOUCH
 
 #UNIMPLEMENTED
-#furnace_enchantments:
-#- DIG_SPEED
-#- DURABILITY
-#- LOOT_BONUS_BLOCKS
-#- SILK_TOUCH
 #enchantment_incompatibilities:
 #- SILK_TOUCH: LOOT_BONUS_BLOCKS
 ## Enchantability is how easily enchantable an object is.

@@ -32,27 +32,26 @@ public class EnchantedFurnace extends JavaPlugin {
 	private HashSet<Enchantment> enchantments;
 	private Map<Block, Furnace> furnaces;
 	private ArrayList<String> fortuneList;
-	private boolean isBlacklist, isDefaultFortune;
+	private boolean isBlacklist;
 
 	@Override
 	public void onEnable() {
 		instance = this;
-
-		enchantments = new HashSet<Enchantment>();
-		enchantments.add(Enchantment.DIG_SPEED);
-		enchantments.add(Enchantment.DURABILITY);
-		enchantments.add(Enchantment.LOOT_BONUS_BLOCKS);
-		enchantments.add(Enchantment.SILK_TOUCH);
 
 		this.furnaces = new HashMap<Block, Furnace>();
 		this.loadFurnaces();
 
 		updateConfig();
 
-		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+		enchantments = new HashSet<Enchantment>();
+		List<String> defaultEnchantments = getConfig().getDefaults().getStringList("furnace_enchantments");
+		for (String enchantment : getConfig().getStringList("furnace_enchantments")) {
+			if (defaultEnchantments.contains(enchantment)) {
+				enchantments.add(Enchantment.getByName(enchantment));
+			}
+		}
 
-		// Only use vanilla fortune if explicitly defined as it results in higher average production
-		isDefaultFortune = !getConfig().getString("fortune_mode").matches("[Vv][Aa][Nn][Ii][Ll][Ll][Aa]");
+		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
 
 		// TODO compare string to MaterialData
 		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
@@ -60,7 +59,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(), this);
-		new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
+		if (enchantments.contains(Enchantment.DIG_SPEED)) {
+			new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
+		}
 	}
 
 	@Override
@@ -83,10 +84,6 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	public boolean isBlacklist() {
 		return isBlacklist;
-	}
-
-	public boolean isDefaultFortune() {
-		return isDefaultFortune;
 	}
 
 	public List<String> getFortuneList() {
@@ -219,10 +216,18 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	private void saveFurnace(Furnace f) {
 		String loc = blockToLocString(f.getBlock());
-		getFurnaceStorage().set("furnaces." + loc + ".efficiency", f.getCookModifier());
-		getFurnaceStorage().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
-		getFurnaceStorage().set("furnaces." + loc + ".fortune", f.getFortune());
-		getFurnaceStorage().set("furnaces." + loc + ".silk", f.getFrozenTicks());
+		if (f.getCookModifier() > 0) {
+			getFurnaceStorage().set("furnaces." + loc + ".efficiency", f.getCookModifier());
+		}
+		if (f.getBurnModifier() > 0) {
+			getFurnaceStorage().set("furnaces." + loc + ".unbreaking", f.getBurnModifier());
+		}
+		if (f.getFortune() > 0) {
+			getFurnaceStorage().set("furnaces." + loc + ".fortune", f.getFortune());
+		}
+		if (f.getFrozenTicks() > -1) {
+			getFurnaceStorage().set("furnaces." + loc + ".silk", f.getFrozenTicks());
+		}
 		saveFurnaceStorage();
 	}
 

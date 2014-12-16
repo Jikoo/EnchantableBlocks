@@ -73,13 +73,8 @@ public class FurnaceListener implements Listener {
 		// Fortune 1 is 30% chance of product, 2 is 25%, and 3+ is 20% for vanilla picks.
 		double fortuneChance = f.getFortune() < 2 ? .33 : f.getFortune() == 2 ? .25 : .2;
 		for (int j = 0; j < f.getFortune(); j++) {
-			if (Math.random() >= fortuneChance) {
-				continue;
-			}
-			if (EnchantedFurnace.getInstance().isDefaultFortune()) {
+			if (Math.random() < fortuneChance) {
 				extraResults++;
-			} else {
-				extraResults *= 2;
 			}
 		}
 		// There's always going to be 1 item created, extra output is 1 less than total.
