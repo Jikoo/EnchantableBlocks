@@ -63,7 +63,7 @@ public class AnvilEnchanter implements Listener {
 					continue;
 				}
 				for (Enchantment e : result.getEnchantments().keySet()) {
-					if (e.conflictsWith(entry.getKey())) {
+					if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(e, entry.getKey())) {
 						continue nextEnchant;
 					}
 				}

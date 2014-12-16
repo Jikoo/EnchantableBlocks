@@ -66,17 +66,10 @@ public class Enchanter  implements Listener {
 				iterator.remove();
 			}
 		}
-		Enchantment ench = getWeightedEnchant(possibleEnchants);
-		event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
-		possibleEnchants.remove(ench);
-		iterator = possibleEnchants.iterator();
-		while (iterator.hasNext()) {
-			if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(ench, iterator.next())) {
-				iterator.remove();
-			}
-		}
-		while (rand.nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
-			ench = getWeightedEnchant(possibleEnchants);
+		boolean firstRun = true;
+		while (firstRun || rand.nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
+			firstRun = false;
+			Enchantment ench = getWeightedEnchant(possibleEnchants);
 			event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
@@ -98,22 +91,22 @@ public class Enchanter  implements Listener {
 	}
 
 	private int getEnchantmentLevel(Enchantment enchant, int lvl) {
-		// Not worried about high end cap reducing silk/fortune rates - maximum possible random level is 37 since using stone.
+		// Not worried about high end cap reducing silk/fortune rates
 
 		// Enchantments use upper value if within multiple ranges. Why there's a larger range at all, I don't know.
-		if (enchant == Enchantment.DIG_SPEED) {
+		if (enchant.equals(Enchantment.DIG_SPEED)) {
 			// Efficiency 1:1–51 2:11–61 3:21–71 4:31–81 5:41–91
 			return lvl < 1 ? 0 : lvl < 11 ? 1 : lvl < 21 ? 2 : lvl < 31 ? 3 : lvl < 41 ? 4 : 5;
 		}
-		if (enchant == Enchantment.DURABILITY) {
+		if (enchant.equals(Enchantment.DURABILITY)) {
 			// Unbreaking 1:5-55 2:13-63 3:21-71
 			return lvl < 5 ? 0 : lvl < 13 ? 1 : lvl < 21 ? 2 : 3;
 		}
-		if (enchant == Enchantment.LOOT_BONUS_BLOCKS) {
+		if (enchant.equals(Enchantment.LOOT_BONUS_BLOCKS)) {
 			// Fortune 1:15-65 2:24-74 3:33-83
 			return lvl < 15 ? 0 : lvl < 24 ? 1 : lvl < 33 ? 2 : 3;
 		}
-		if (enchant == Enchantment.SILK_TOUCH) {
+		if (enchant.equals(Enchantment.SILK_TOUCH)) {
 			// Silk Touch 1:15-65
 			return lvl < 15 ? 0 : 1;
 		}
@@ -121,16 +114,16 @@ public class Enchanter  implements Listener {
 	}
 
 	private int getWeight(Enchantment enchant) {
-		if (enchant == Enchantment.DIG_SPEED) {
+		if (enchant.equals(Enchantment.DIG_SPEED)) {
 			return 10;
 		}
-		if (enchant == Enchantment.DURABILITY) {
+		if (enchant.equals(Enchantment.DURABILITY)) {
 			return 5;
 		}
-		if (enchant == Enchantment.LOOT_BONUS_BLOCKS) {
+		if (enchant.equals(Enchantment.LOOT_BONUS_BLOCKS)) {
 			return 2;
 		}
-		if (enchant == Enchantment.SILK_TOUCH) {
+		if (enchant.equals(Enchantment.SILK_TOUCH)) {
 			return 1;
 		}
 		return 0;

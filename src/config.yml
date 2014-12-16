@@ -9,7 +9,7 @@
 # You should also remove LOOT_BONUS_BLOCKS from furnace_enchantments.
 # 
 # 
-# furnace_enchantments controls which enchantments can be gotten from an enchanting table.
+# disabled_furnace_enchantments controls which enchantments can be gotten from an enchanting table.
 # Enchantments obtained prior to changes will still be present and functional.
 # 
 # 

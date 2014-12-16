@@ -129,7 +129,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public boolean areEnchantmentsCompatible(Enchantment ench1, Enchantment ench2) {
-		return ench1 != ench2 && !incompatibleEnchants.containsEntry(ench1, ench2);
+		return !ench1.equals(ench2) && !incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
