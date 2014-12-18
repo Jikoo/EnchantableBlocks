@@ -229,6 +229,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		if (furnaceSaves != null) {
 			return furnaceSaves;
 		}
+		if (!getDataFolder().exists()) {
+			getDataFolder().mkdirs();
+		}
 		File file = new File(getDataFolder(), "furnaces.yml");
 		if (!file.exists()) {
 			try {
@@ -289,6 +292,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	private void updateConfig() {
+		saveDefaultConfig();
 		Set<String> options = getConfig().getDefaults().getKeys(false);
 		Set<String> current = getConfig().getKeys(false);
 		boolean changed = false;
