@@ -25,6 +25,10 @@
 # in function, but it's enabled by default to match vanilla.
 # You do not need to add the reversed mapping of an incompatibility.
 # 
+# 
+# disabled_worlds restores vanilla functionality to the worlds listed.
+# Furnaces placed in these worlds will not be remembered and existing saved furnaces will not be loaded.
+# 
 
 fortune_list_mode: blacklist
 fortune_list:
@@ -34,6 +38,8 @@ disabled_furnace_enchantments: []
 furnace_enchantability: 5
 enchantment_incompatibilities:
  SILK_TOUCH: LOOT_BONUS_BLOCKS
+disabled_worlds:
+- CreativeWorld
 
 #UNIMPLEMENTED
 #furnace_durability

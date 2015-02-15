@@ -3,15 +3,18 @@ package com.github.jikoo.enchantedfurnace;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -35,7 +38,6 @@ public class EnchantedFurnace extends JavaPlugin {
 	private Map<Block, Furnace> furnaces;
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
-	private int enchantability;
 	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
 
 	@Override
@@ -47,10 +49,32 @@ public class EnchantedFurnace extends JavaPlugin {
 
 		updateConfig();
 
+		ArrayList<String> disabledWorlds = new ArrayList<String>();
+		for (String worldName : getConfig().getStringList("disabled_worlds")) {
+			if (!disabledWorlds.contains(worldName.toLowerCase())) {
+				disabledWorlds.add(worldName.toLowerCase());
+			}
+		}
+		getConfig().set("disabled_worlds", disabledWorlds);
+
 		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
 
-		// TODO compare string to MaterialData
-		fortuneList = new ArrayList<String>(getConfig().getStringList("fortune_list"));
+		// TODO allow MaterialData
+		fortuneList = new ArrayList<String>();
+		for (Iterator<String> iterator = getConfig().getStringList("fortune_list").iterator(); iterator.hasNext();) {
+			String next = iterator.next().toUpperCase();
+			if (fortuneList.contains(next)) {
+				continue;
+			}
+			Material m = Material.getMaterial(next);
+			if (m == null) {
+				getLogger().warning("No material by the name of \"" + next + "\" could be found!");
+				getLogger().info("Please use material names listed in https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html");
+			} else {
+				fortuneList.add(m.name());
+			}
+		}
+		getConfig().set("fortune_list", fortuneList);
 
 		HashSet<String> allowedEnchantments = new HashSet<String>();
 		allowedEnchantments.add("DIG_SPEED");
@@ -67,11 +91,10 @@ public class EnchantedFurnace extends JavaPlugin {
 			enchantments.add(Enchantment.getByName(enchantment));
 		}
 
-		enchantability = getConfig().getInt("furnace_enchantability");
 		// Enchantability < 4 would pass a Random 0 or lower.
 		// Enchantablity < 8 has no effect on end enchantments.
-		if (enchantability < 4) {
-			enchantability = 4;
+		if (getConfig().getInt("furnace_enchantability") < 4) {
+			getConfig().set("furnace_enchantability", 4);
 		}
 
 		incompatibleEnchants = HashMultimap.create();
@@ -82,7 +105,6 @@ public class EnchantedFurnace extends JavaPlugin {
 			if (key == null || value == null) {
 				getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
 				getConfig().set("enchantment_incompatibilities." + enchantment, null);
-				saveConfig();
 			}
 			if (incompatibleEnchants.containsEntry(key, value)) {
 				// User probably included reverse mapping
@@ -91,6 +113,9 @@ public class EnchantedFurnace extends JavaPlugin {
 			incompatibleEnchants.put(key, value);
 			incompatibleEnchants.put(value, key);
 		}
+
+		// Potential for multiple changes along the way, just save to be safe.
+		saveConfig();
 
 		getServer().getPluginManager().registerEvents(new FurnaceListener(), this);
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
@@ -102,8 +127,9 @@ public class EnchantedFurnace extends JavaPlugin {
 	public void onDisable() {
 		getServer().getScheduler().cancelTasks(this);
 		for (Furnace furnace : this.furnaces.values()) {
-			this.saveFurnace(furnace);
+			this.saveFurnace(furnace, true);
 		}
+		saveFurnaceStorage();
 		this.furnaces.clear();
 		this.furnaces = null;
 		this.enchantments.clear();
@@ -125,7 +151,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public int getFurnaceEnchantability() {
-		return enchantability;
+		return getConfig().getInt("furnace_enchantability");
 	}
 
 	public boolean areEnchantmentsCompatible(Enchantment ench1, Enchantment ench2) {
@@ -133,7 +159,9 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public void createFurnace(Block b, ItemStack is) {
-		if (is.getType() != Material.FURNACE) {
+		if (is.getType() != Material.FURNACE
+				|| getConfig().getStringList("disabled_worlds").contains(
+						b.getWorld().getName().toLowerCase())) {
 			return;
 		}
 
@@ -143,7 +171,7 @@ public class EnchantedFurnace extends JavaPlugin {
 				is.getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0);
 		if (f.getCookModifier() > 0 || f.getBurnModifier() > 0 || f.getFortune() > 0 || f.canPause()) {
 			this.furnaces.put(b, f);
-			saveFurnace(f);
+			saveFurnace(f, false);
 		}
 	}
 
@@ -212,15 +240,21 @@ public class EnchantedFurnace extends JavaPlugin {
 		Set<String> furnaceLocs = section.getKeys(false);
 		for (String s : furnaceLocs) {
 			Block b = locStringToBlock(s);
+			if (getConfig().getStringList("disabled_worlds").contains(b.getWorld().getName().toLowerCase())) {
+				continue;
+			}
 			if (b != null && (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE)) {
 				Furnace furnace = new Furnace(b, section.getInt(s + ".efficiency", 0),
 						section.getInt(s + ".unbreaking", 0), section.getInt(s + ".fortune", 0),
 						(short) section.getInt(s + ".silk", -1));
 				furnaces.put(b, furnace);
 				if (save) {
-					saveFurnace(furnace);
+					saveFurnace(furnace, true);
 				}
 			}
+		}
+		if (save) {
+			saveFurnaceStorage();
 		}
 	}
 
@@ -258,7 +292,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 	}
 
-	private void saveFurnace(Furnace f) {
+	private void saveFurnace(Furnace f, boolean batch) {
 		String loc = blockToLocString(f.getBlock());
 		if (f.getCookModifier() > 0) {
 			getFurnaceStorage().set("furnaces." + loc + ".efficiency", f.getCookModifier());
@@ -272,7 +306,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		if (f.getFrozenTicks() > -1) {
 			getFurnaceStorage().set("furnaces." + loc + ".silk", f.getFrozenTicks());
 		}
-		saveFurnaceStorage();
+		if (!batch) {
+			saveFurnaceStorage();
+		}
 	}
 
 	private String blockToLocString(Block b) {
@@ -282,10 +318,25 @@ public class EnchantedFurnace extends JavaPlugin {
 	private Block locStringToBlock(String s) {
 		String[] loc = s.split(",");
 		try {
-			return new Location(getServer().getWorld(loc[0]), Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3])).getBlock();
+			if (loc.length != 4) {
+				getLogger().warning("Unable to split location properly! " + s + " split to " + Arrays.toString(loc));
+				return null;
+			}
+			World world = getServer().getWorld(loc[0]);
+			if (world == null) {
+				getLogger().warning("No world by the name of \"" + loc[0] + "\" exists!");
+				return null;
+			}
+			return new Location(world, Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3])).getBlock();
 		} catch (Exception e) {
-			getLogger().warning("Invalid saved furnace: " + s);
-			getConfig().set("furnaces." + s, null);
+			getLogger().warning("Error loading block: " + s);
+			if (e instanceof NumberFormatException) {
+				getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(loc));
+			} else {
+				getLogger().severe("An unknown exception occurred!");
+				e.printStackTrace();
+				getLogger().severe("Please report this error!");
+			}
 			return null;
 		}
 	}
@@ -294,7 +345,6 @@ public class EnchantedFurnace extends JavaPlugin {
 		saveDefaultConfig();
 		Set<String> options = getConfig().getDefaults().getKeys(false);
 		Set<String> current = getConfig().getKeys(false);
-		boolean changed = false;
 
 		for (String s : options) {
 			if (s.equals("enchantment_incompatibilities")) {
@@ -302,21 +352,15 @@ public class EnchantedFurnace extends JavaPlugin {
 			}
 			if (!current.contains(s)) {
 				getConfig().set(s, getConfig().getDefaults().get(s));
-				changed = true;
 			}
 		}
 
 		for (String s : current) {
 			if (!options.contains(s)) {
 				getConfig().set(s, null);
-				changed = true;
 			}
 		}
 
 		getConfig().options().copyHeader(true);
-
-		if (changed) {
-			saveConfig();
-		}
 	}
 }

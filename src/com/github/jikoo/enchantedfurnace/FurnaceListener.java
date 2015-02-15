@@ -69,21 +69,14 @@ public class FurnaceListener implements Listener {
 	@SuppressWarnings("deprecation")
 	private void applyFortune(FurnaceSmeltEvent e, Furnace f) {
 		FurnaceInventory i = f.getFurnaceTile().getInventory();
-		int extraResults = 1;
-		// Fortune 1 is 30% chance of product, 2 is 25%, and 3+ is 20% for vanilla picks.
-		double fortuneChance = f.getFortune() < 2 ? .33 : f.getFortune() == 2 ? .25 : .2;
-		for (int j = 0; j < f.getFortune(); j++) {
-			if (Math.random() < fortuneChance) {
-				extraResults++;
-			}
-		}
-		// There's always going to be 1 item created, extra output is 1 less than total.
-		extraResults--;
+		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
+		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
+		int bonus = (int) (Math.random() * (f.getFortune() + 2)) - 1;
 		// Check extras against max - 1 because of guaranteed single output
-		if (i.getResult() != null && i.getResult().getAmount() + extraResults > i.getResult().getType().getMaxStackSize() - 1) {
-			extraResults = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
+		if (i.getResult() != null && i.getResult().getAmount() + bonus > i.getResult().getType().getMaxStackSize() - 1) {
+			bonus = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
 		}
-		if (extraResults <= 0) {
+		if (bonus <= 0) {
 			return;
 		}
 		ItemStack newResult = null;
@@ -118,7 +111,7 @@ public class FurnaceListener implements Listener {
 		} else {
 			newResult = i.getResult().clone();
 		}
-		newResult.setAmount(1 + extraResults);
+		newResult.setAmount(1 + bonus);
 		e.setResult(newResult);
 	}
 
