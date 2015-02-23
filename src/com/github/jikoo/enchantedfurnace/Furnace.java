@@ -3,8 +3,11 @@ package com.github.jikoo.enchantedfurnace;
 import java.util.Iterator;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
@@ -17,51 +20,52 @@ import org.bukkit.inventory.Recipe;
  */
 public class Furnace {
 
-	private Block b;
-	private int cookModifier;
-	private int burnModifier;
-	private int fortune;
-	private boolean canPause;
-	private short frozenTicks = 0;
+	private final Location location;
+	private final boolean canPause;
+	private final ItemStack furnaceItem;
 
-	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, boolean canPause) {
-		this(b, cookModifier, burnModifier, fortune, (short) (canPause ? 0 : -1));
+	public Furnace(Location location, ItemStack furnaceItem) {
+		this.location = location;
+		this.canPause = furnaceItem.containsEnchantment(Enchantment.SILK_TOUCH);
+		this.furnaceItem = furnaceItem;
+		this.furnaceItem.setAmount(1);
 	}
 
-	public Furnace(Block b, int cookModifier, int burnModifier, int fortune, short frozenTicks) {
-		this.b = b;
-		this.cookModifier = cookModifier;
-		this.burnModifier = burnModifier;
-		this.fortune = fortune;
-		this.canPause = frozenTicks >= 0;
-		this.frozenTicks = frozenTicks;
+	public Location getLocation() {
+		return location;
 	}
 
-	public Block getBlock() {
-		return b;
+	public ItemStack getItemStack() {
+		return furnaceItem;
 	}
 
 	public org.bukkit.block.Furnace getFurnaceTile() {
-		if (!b.getWorld().isChunkLoaded(b.getChunk())) {
-			// Chunk must be loaded to get BlockState
+		World world = location.getWorld();
+		if (world == null) {
 			return null;
 		}
-		if (b.getType() == Material.FURNACE || b.getType() == Material.BURNING_FURNACE) {
-			return (org.bukkit.block.Furnace) b.getState();
+		if (!world.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
+			// Chunk must be loaded to get BlockState.
+			// To avoid loading the chunk during the check, this process is used.
+			return null;
+		}
+		Block block = location.getBlock();
+		if (block.getType() == Material.FURNACE || block.getType() == Material.BURNING_FURNACE) {
+			return (org.bukkit.block.Furnace) block.getState();
 		}
 		return null;
 	}
 
 	public int getCookModifier() {
-		return this.cookModifier;
+		return this.furnaceItem.getEnchantmentLevel(Enchantment.DIG_SPEED);
 	}
 
 	public int getBurnModifier() {
-		return this.burnModifier;
+		return this.furnaceItem.getEnchantmentLevel(Enchantment.DURABILITY);
 	}
 
 	public int getFortune() {
-		return this.fortune;
+		return this.furnaceItem.getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS);
 	}
 
 	public boolean canPause() {
@@ -85,11 +89,12 @@ public class Furnace {
 		}
 
 		// Verify that the smelting item cannot produce a result
-		return !canProduceResult(i.getResult() != null ? Bukkit.getRecipesFor(i.getResult()).iterator() : Bukkit.recipeIterator(), i.getSmelting(), i.getResult());
+		return !canProduceResult(i.getResult(), i.getSmelting());
 	}
 
 	@SuppressWarnings("deprecation")
-	private boolean canProduceResult(Iterator<Recipe> ri, ItemStack smelting, ItemStack result) {
+	private boolean canProduceResult(ItemStack result, ItemStack smelting) {
+		Iterator<Recipe> ri =  result != null ? Bukkit.getRecipesFor(result).iterator() : Bukkit.recipeIterator();
 		while (ri.hasNext()) {
 			Recipe r = ri.next();
 			if (!(r instanceof FurnaceRecipe)) {
@@ -117,7 +122,7 @@ public class Furnace {
 		}
 
 		org.bukkit.block.Furnace f = this.getFurnaceTile();
-		frozenTicks = f.getBurnTime();
+		furnaceItem.addUnsafeEnchantment(Enchantment.SILK_TOUCH, f.getBurnTime());
 		f.setBurnTime((short) 0);
 		f.update(true);
 	}
@@ -125,7 +130,7 @@ public class Furnace {
 	public boolean resume() {
 		org.bukkit.block.Furnace f = this.getFurnaceTile();
 		// Is furnace unfrozen already?
-		if (f.getBurnTime() > 0 || this.frozenTicks < 1) {
+		if (f.getBurnTime() > 0 || this.getFrozenTicks() < 1) {
 			return false;
 		}
 
@@ -135,21 +140,21 @@ public class Furnace {
 			return false;
 		}
 
-		if (!canProduceResult(i.getResult() != null ? Bukkit.getRecipesFor(i.getResult()).iterator() : Bukkit.recipeIterator(), i.getSmelting(), i.getResult())) {
+		if (!canProduceResult(i.getResult(), i.getSmelting())) {
 			return false;
 		}
 
-		f.setBurnTime(frozenTicks);
+		f.setBurnTime(getFrozenTicks());
 		f.update(true);
-		frozenTicks = 0;
+		furnaceItem.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
 		return true;
 	}
 
 	public boolean isPaused() {
-		return this.frozenTicks > 0;
+		return this.canPause && this.furnaceItem.getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0;
 	}
 
 	public short getFrozenTicks() {
-		return this.frozenTicks;
+		return (short) this.furnaceItem.getEnchantmentLevel(Enchantment.SILK_TOUCH);
 	}
 }

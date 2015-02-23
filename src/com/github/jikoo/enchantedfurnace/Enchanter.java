@@ -16,7 +16,7 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
  * 
  * @author Jikoo
  */
-public class Enchanter  implements Listener {
+public class Enchanter implements Listener {
 
 	private final Random rand;
 

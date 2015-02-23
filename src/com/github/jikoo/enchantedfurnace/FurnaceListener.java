@@ -14,6 +14,8 @@ import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.Inventory;
@@ -39,7 +41,12 @@ public class FurnaceListener implements Listener {
 		}
 		if (f.getBurnModifier() > 0) {
 			// + 1/5 fuel burn length per level unbreaking
-			e.setBurnTime((int) ((1 + .2 * f.getBurnModifier()) * e.getBurnTime()));
+			int burnTime = (int) (1 + .2 * f.getBurnModifier()) * e.getBurnTime();
+			// Burn time is actually a short internally. Capping it here prevents some wonky behavior
+			if (burnTime > Short.MAX_VALUE) {
+				burnTime = Short.MAX_VALUE;
+			}
+			e.setBurnTime(burnTime);
 		}
 	}
 
@@ -59,6 +66,7 @@ public class FurnaceListener implements Listener {
 
 		if (f.canPause()) {
 			new BukkitRunnable() {
+				@Override
 				public void run() {
 					f.pause();
 				}
@@ -154,16 +162,28 @@ public class FurnaceListener implements Listener {
 		}
 		if (f.isPaused()) {
 			new BukkitRunnable() {
+				@Override
 				public void run() {
 					f.resume();
 				}
 			}.runTask(EnchantedFurnace.getInstance());
 		} else {
 			new BukkitRunnable() {
+				@Override
 				public void run() {
 					f.pause();
 				}
 			}.runTask(EnchantedFurnace.getInstance());
 		}
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onChunkLoad(ChunkLoadEvent event) {
+		EnchantedFurnace.getInstance().loadChunkFurnaces(event.getChunk());
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onChunkUnload(ChunkUnloadEvent event) {
+		EnchantedFurnace.getInstance().unloadChunkFurnaces(event.getChunk());
 	}
 }
