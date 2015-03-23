@@ -12,6 +12,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -30,23 +31,23 @@ import org.bukkit.scheduler.BukkitRunnable;
  */
 public class FurnaceListener implements Listener {
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onFurnaceConsumeFuel(FurnaceBurnEvent e) {
-		Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
+	public void onFurnaceConsumeFuel(FurnaceBurnEvent event) {
+		Furnace f = EnchantedFurnace.getInstance().getFurnace(event.getBlock());
 		if (f == null) {
 			return;
 		}
 		if (f.isPaused() && f.resume()) {
-			e.setCancelled(true);
+			event.setCancelled(true);
 			return;
 		}
 		if (f.getBurnModifier() > 0) {
 			// + 1/5 fuel burn length per level unbreaking
-			int burnTime = (int) (1 + .2 * f.getBurnModifier()) * e.getBurnTime();
+			int burnTime = (int) ((1 + .2 * f.getBurnModifier()) * event.getBurnTime());
 			// Burn time is actually a short internally. Capping it here prevents some wonky behavior
 			if (burnTime > Short.MAX_VALUE) {
 				burnTime = Short.MAX_VALUE;
 			}
-			e.setBurnTime(burnTime);
+			event.setBurnTime(burnTime);
 		}
 	}
 
@@ -64,7 +65,7 @@ public class FurnaceListener implements Listener {
 			}
 		}
 
-		if (f.canPause()) {
+		if (f.shouldPause(e)) {
 			new BukkitRunnable() {
 				@Override
 				public void run() {
@@ -147,6 +148,14 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onInventoryClick(InventoryClickEvent event) {
+		if (event.getView().getTopInventory().getType() != InventoryType.FURNACE) {
+			return;
+		}
+		furnaceContentsChanged(event.getView().getTopInventory());
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryMoveItem(InventoryMoveItemEvent e) {
 		Inventory furnace;
 		if (e.getDestination().getType() == InventoryType.FURNACE) {
@@ -156,25 +165,29 @@ public class FurnaceListener implements Listener {
 		} else {
 			return;
 		}
-		final Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) furnace.getHolder()).getBlock());
+		furnaceContentsChanged(furnace);
+	}
+
+	private void furnaceContentsChanged(Inventory inventory) {
+		if (!(inventory.getHolder() instanceof org.bukkit.block.Furnace)) {
+			return;
+		}
+		final Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
 		if (f == null || !f.canPause()) {
 			return;
 		}
-		if (f.isPaused()) {
-			new BukkitRunnable() {
-				@Override
-				public void run() {
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				if (f.isPaused()) {
 					f.resume();
+				} else {
+					if (f.shouldPause(null)) {
+						f.pause();
+					}
 				}
-			}.runTask(EnchantedFurnace.getInstance());
-		} else {
-			new BukkitRunnable() {
-				@Override
-				public void run() {
-					f.pause();
-				}
-			}.runTask(EnchantedFurnace.getInstance());
-		}
+			}
+		}.runTask(EnchantedFurnace.getInstance());
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)

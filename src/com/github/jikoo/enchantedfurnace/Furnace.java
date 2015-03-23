@@ -3,11 +3,11 @@ package com.github.jikoo.enchantedfurnace;
 import java.util.Iterator;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.event.Event;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
@@ -20,19 +20,22 @@ import org.bukkit.inventory.Recipe;
  */
 public class Furnace {
 
-	private final Location location;
+	private final Block block;
 	private final boolean canPause;
 	private final ItemStack furnaceItem;
 
-	public Furnace(Location location, ItemStack furnaceItem) {
-		this.location = location;
+	public Furnace(Block block, ItemStack furnaceItem) {
+		this.block = block;
 		this.canPause = furnaceItem.containsEnchantment(Enchantment.SILK_TOUCH);
 		this.furnaceItem = furnaceItem;
+		if (canPause) {
+			this.furnaceItem.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
+		}
 		this.furnaceItem.setAmount(1);
 	}
 
-	public Location getLocation() {
-		return location;
+	public Block getBlock() {
+		return block;
 	}
 
 	public ItemStack getItemStack() {
@@ -40,20 +43,16 @@ public class Furnace {
 	}
 
 	public org.bukkit.block.Furnace getFurnaceTile() {
-		World world = location.getWorld();
-		if (world == null) {
+		try {
+			if (block.getType() == Material.FURNACE || block.getType() == Material.BURNING_FURNACE) {
+				return (org.bukkit.block.Furnace) block.getState();
+			}
+			return null;
+		} catch (Exception e) {
+			// This should not be capable of happening, but just in case I'd rather not break efficiency.
+			e.printStackTrace();
 			return null;
 		}
-		if (!world.isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) {
-			// Chunk must be loaded to get BlockState.
-			// To avoid loading the chunk during the check, this process is used.
-			return null;
-		}
-		Block block = location.getBlock();
-		if (block.getType() == Material.FURNACE || block.getType() == Material.BURNING_FURNACE) {
-			return (org.bukkit.block.Furnace) block.getState();
-		}
-		return null;
 	}
 
 	public int getCookModifier() {
@@ -69,6 +68,10 @@ public class Furnace {
 	}
 
 	public boolean canPause() {
+		return this.canPause;
+	}
+
+	public boolean shouldPause(Event event) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -84,7 +87,19 @@ public class Furnace {
 			return true;
 		}
 
-		if (i.getResult() != null && i.getResult().getAmount() >= i.getResult().getType().getMaxStackSize()) {
+		// Is the result slot too full for more product?
+		if (i.getResult() != null) {
+			int stack = i.getResult().getType().getMaxStackSize();
+			if (event instanceof FurnaceSmeltEvent) {
+				stack -= 1;
+			}
+			if (i.getResult().getAmount() >= stack) {
+				return true;
+			}
+		}
+
+		// Will the input slot be empty once the FurnaceSmeltEvent has completed?
+		if (event instanceof FurnaceSmeltEvent && i.getSmelting() != null && i.getSmelting().getAmount() == 1) {
 			return true;
 		}
 
@@ -137,6 +152,11 @@ public class Furnace {
 		// Is there an input?
 		FurnaceInventory i = f.getInventory();
 		if (i.getSmelting() == null) {
+			return false;
+		}
+
+		// Is the output full?
+		if (i.getResult() != null && i.getResult().getAmount() == i.getResult().getType().getMaxStackSize()) {
 			return false;
 		}
 

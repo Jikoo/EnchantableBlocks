@@ -1,19 +1,20 @@
 package com.github.jikoo.enchantedfurnace;
 
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
@@ -23,7 +24,7 @@ import org.bukkit.scheduler.BukkitRunnable;
  */
 public class AnvilEnchanter implements Listener {
 
-	@EventHandler
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryClick(InventoryClickEvent event) {
 		if (event.getView().getTopInventory().getType() != InventoryType.ANVIL
 				|| !(event.getWhoClicked() instanceof Player)) {
@@ -35,12 +36,13 @@ public class AnvilEnchanter implements Listener {
 			return;
 		}
 
-		new AnvilEnchantUpdate((AnvilInventory) event.getView().getTopInventory()).runTask(EnchantedFurnace.getInstance());
+		new AnvilEnchantUpdate((AnvilInventory) event.getView().getTopInventory())
+				.runTask(EnchantedFurnace.getInstance());
 	}
 
 	private class AnvilEnchantUpdate extends BukkitRunnable {
 
-		private AnvilInventory inv;
+		private final AnvilInventory inv;
 		public AnvilEnchantUpdate(AnvilInventory inv) {
 			this.inv = inv;
 		}
@@ -56,18 +58,19 @@ public class AnvilEnchanter implements Listener {
 			EnchantmentStorageMeta enchbook = (EnchantmentStorageMeta) inv.getItem(1).getItemMeta();
 			ItemStack result = inv.getItem(0).clone();
 
-			Set<Enchantment> legalEnchants = EnchantedFurnace.getInstance().getEnchantments();
-
 			nextEnchant: for (Entry<Enchantment, Integer> entry : enchbook.getStoredEnchants().entrySet()) {
-				if (!legalEnchants.contains(entry.getKey())) {
+				if (!EnchantedFurnace.getInstance().getEnchantments().contains(entry.getKey())) {
 					continue;
 				}
 				for (Enchantment e : result.getEnchantments().keySet()) {
+					if (e.equals(entry.getKey())) {
+						continue;
+					}
 					if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(e, entry.getKey())) {
 						continue nextEnchant;
 					}
 				}
-				if (result.getEnchantmentLevel(entry.getKey()) > entry.getValue()){
+				if (result.getEnchantmentLevel(entry.getKey()) > entry.getValue()) {
 					continue;
 				}
 				if (entry.getKey().getMaxLevel() > entry.getValue() && entry.getValue() == result.getEnchantmentLevel(entry.getKey())) {
@@ -76,7 +79,15 @@ public class AnvilEnchanter implements Listener {
 					result.addUnsafeEnchantment(entry.getKey(), entry.getValue());
 				}
 			}
-			inv.setItem(2, result);
+			// Allow renames during combination (sort of - the name should be typed in prior to adding the book)
+			ItemStack oldResult = inv.getItem(2);
+			if (oldResult != null && oldResult.hasItemMeta() && oldResult.getItemMeta().hasDisplayName()) {
+				ItemMeta meta = result.getItemMeta();
+				meta.setDisplayName(oldResult.getItemMeta().getDisplayName());
+			}
+			if (!result.equals(inv.getItem(0))) {
+				inv.setItem(2, result);
+			}
 		}
 	}
 }

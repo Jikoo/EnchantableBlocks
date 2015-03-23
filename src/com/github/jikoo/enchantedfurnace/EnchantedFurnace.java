@@ -28,7 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.google.common.collect.HashMultimap;
 
 /**
- * Plugin for adding effects to furnaces based on enchantments.
+ * Bukkit plugin for adding effects to furnaces based on enchantments.
  * 
  * @author Jikoo
  */
@@ -37,7 +37,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	private static EnchantedFurnace instance;
 	private YamlConfiguration furnaceSaves;
 	private HashSet<Enchantment> enchantments;
-	private Map<Location, Furnace> furnaces;
+	private Map<Block, Furnace> furnaces;
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
 	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
@@ -46,7 +46,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	public void onEnable() {
 		instance = this;
 
-		this.furnaces = new HashMap<Location, Furnace>();
+		this.furnaces = new HashMap<Block, Furnace>();
 		this.loadFurnaces();
 
 		updateConfig();
@@ -166,38 +166,38 @@ public class EnchantedFurnace extends JavaPlugin {
 						block.getWorld().getName().toLowerCase())) {
 			return;
 		}
-		Location location = block.getLocation();
-		Furnace f = new Furnace(location, is.clone());
+		Furnace f = new Furnace(block, is.clone());
 		if (f.getCookModifier() > 0 || f.getBurnModifier() > 0 || f.getFortune() > 0 || f.canPause()) {
-			this.furnaces.put(location, f);
+			this.furnaces.put(block, f);
 			saveFurnace(f, false);
 		}
 	}
 
-	public ItemStack destroyFurnace(Block b) {
-		Furnace f = furnaces.remove(b.getLocation());
-		if (f == null || b.getType() != Material.FURNACE && b.getType() != Material.BURNING_FURNACE) {
+	public ItemStack destroyFurnace(Block block) {
+		Furnace f = furnaces.remove(block);
+		if (f == null || block.getType() != Material.FURNACE && block.getType() != Material.BURNING_FURNACE) {
 			return null;
 		}
-		getFurnaceStorage().set(getSaveString(b.getLocation()), null);
+		getFurnaceStorage().set(getSaveString(block), null);
 		saveFurnaceStorage();
-		if (f.getItemStack().containsEnchantment(Enchantment.SILK_TOUCH)) {
+		ItemStack is = f.getItemStack();
+		if (is.containsEnchantment(Enchantment.SILK_TOUCH)) {
 			// Silk time isn't supposed to be preserved when broken.
-			f.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+			is.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
 		}
-		return f.getItemStack();
+		return is;
 	}
 
 	public Collection<Furnace> getFurnaces() {
 		return furnaces.values();
 	}
 
-	public Furnace getFurnace(Block b) {
-		return furnaces.get(b.getLocation());
+	public Furnace getFurnace(Block block) {
+		return furnaces.get(block);
 	}
 
-	public boolean isFurnace(Block b) {
-		return furnaces.containsKey(b.getLocation());
+	public boolean isFurnace(Block block) {
+		return furnaces.containsKey(block);
 	}
 
 	public static EnchantedFurnace getInstance() {
@@ -217,15 +217,14 @@ public class EnchantedFurnace extends JavaPlugin {
 		for (String xyz : chunkSection.getKeys(false)) {
 			String[] split = xyz.split("_");
 			try {
-				Location location = new Location(chunk.getWorld(), Integer.valueOf(split[0]),
-						Integer.valueOf(split[1]), Integer.valueOf(split[2]));
-				Material type = location.getBlock().getType();
+				Block block = chunk.getWorld().getBlockAt(Integer.valueOf(split[0]), Integer.valueOf(split[1]), Integer.valueOf(split[2]));
+				Material type = block.getType();
 				ItemStack itemStack = (ItemStack) getFurnaceStorage().get(path + '.' + xyz + ".itemstack");
 				if (type == Material.FURNACE || type == Material.BURNING_FURNACE) {
-					furnaces.put(location, new Furnace(location, itemStack));
+					furnaces.put(block, new Furnace(block, itemStack));
 				} else {
 					getFurnaceStorage().set(path + '.' + xyz, null);
-					getLogger().warning("Removed invalid save: " + itemStack.toString() + " at " + location.toString());
+					getLogger().warning("Removed invalid save: " + itemStack.toString() + " at " + block.getLocation().toString());
 				}
 			} catch (NumberFormatException e) {
 				getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(split));
@@ -236,11 +235,11 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public void unloadChunkFurnaces(Chunk chunk) {
-		for (Iterator<Entry<Location, Furnace>> iterator = furnaces.entrySet().iterator(); iterator.hasNext();) {
-			Entry<Location, Furnace> entry = iterator.next();
+		for (Iterator<Entry<Block, Furnace>> iterator = furnaces.entrySet().iterator(); iterator.hasNext();) {
+			Entry<Block, Furnace> entry = iterator.next();
 			if (!entry.getKey().getWorld().equals(chunk.getWorld())
-					|| entry.getKey().getBlockX() >> 4 != chunk.getX()
-					|| entry.getKey().getBlockZ() >> 4 != chunk.getZ()) {
+					|| entry.getKey().getX() >> 4 != chunk.getX()
+					|| entry.getKey().getZ() >> 4 != chunk.getZ()) {
 				continue;
 			}
 			iterator.remove();
@@ -306,7 +305,7 @@ public class EnchantedFurnace extends JavaPlugin {
 				if (level > -1) {
 					furnaceStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, level);
 				}
-				Furnace furnace = new Furnace(block.getLocation(), furnaceStack);
+				Furnace furnace = new Furnace(block, furnaceStack);
 				section.set(legacy, null);
 				saveFurnace(furnace, true);
 				continue;
@@ -349,8 +348,8 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 	}
 
-	private void saveFurnace(Furnace f, boolean batch) {
-		getFurnaceStorage().set(getSaveString(f.getLocation()) + ".itemstack", f.getItemStack());
+	private void saveFurnace(Furnace furnace, boolean batch) {
+		getFurnaceStorage().set(getSaveString(furnace.getBlock()) + ".itemstack", furnace.getItemStack());
 		if (!batch) {
 			saveFurnaceStorage();
 		}
@@ -382,13 +381,13 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 	}
 
-	private String getSaveString(Location location) {
-		return new StringBuilder(location.getWorld().getName()).append('.')
-				.append((location.getBlockX() >> 4)).append('_')
-				.append(location.getBlockZ() >> 4).append('.')
-				.append(location.getBlockX()).append('_')
-				.append(location.getBlockY()).append('_')
-				.append(location.getBlockZ()).toString();
+	private String getSaveString(Block block) {
+		return new StringBuilder(block.getWorld().getName()).append('.')
+				.append((block.getX() >> 4)).append('_')
+				.append(block.getZ() >> 4).append('.')
+				.append(block.getX()).append('_')
+				.append(block.getY()).append('_')
+				.append(block.getZ()).toString();
 	}
 
 	private void updateConfig() {
