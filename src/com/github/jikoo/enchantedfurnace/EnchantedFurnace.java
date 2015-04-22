@@ -24,6 +24,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import com.google.common.collect.HashMultimap;
 
@@ -41,6 +42,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
 	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
+	private boolean dirty = false;
 
 	@Override
 	public void onEnable() {
@@ -123,13 +125,22 @@ public class EnchantedFurnace extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new Enchanter(), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(), this);
 		new FurnaceEfficiencyIncrement().runTaskTimer(this, 1, 2);
+
+		if (getConfig().getInt("autosave") > 0) {
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					saveFurnaceStorage();
+				}
+			}.runTaskTimer(this, 0, getConfig().getInt("autosave") * 1200);
+		}
 	}
 
 	@Override
 	public void onDisable() {
 		getServer().getScheduler().cancelTasks(this);
 		for (Furnace furnace : this.furnaces.values()) {
-			this.saveFurnace(furnace, true);
+			this.saveFurnace(furnace);
 		}
 		saveFurnaceStorage();
 		this.furnaces.clear();
@@ -169,7 +180,10 @@ public class EnchantedFurnace extends JavaPlugin {
 		Furnace f = new Furnace(block, is.clone());
 		if (f.getCookModifier() > 0 || f.getBurnModifier() > 0 || f.getFortune() > 0 || f.canPause()) {
 			this.furnaces.put(block, f);
-			saveFurnace(f, false);
+			saveFurnace(f);
+		}
+		if (getConfig().getInt("autosave") < 1) {
+			saveFurnaceStorage();
 		}
 	}
 
@@ -179,7 +193,10 @@ public class EnchantedFurnace extends JavaPlugin {
 			return null;
 		}
 		getFurnaceStorage().set(getSaveString(block), null);
-		saveFurnaceStorage();
+		dirty = true;
+		if (getConfig().getInt("autosave") < 1) {
+			saveFurnaceStorage();
+		}
 		ItemStack is = f.getItemStack();
 		if (is.containsEnchantment(Enchantment.SILK_TOUCH)) {
 			// Silk time isn't supposed to be preserved when broken.
@@ -242,7 +259,13 @@ public class EnchantedFurnace extends JavaPlugin {
 					|| entry.getKey().getZ() >> 4 != chunk.getZ()) {
 				continue;
 			}
+			if (entry.getValue().canPause()) {
+				saveFurnace(entry.getValue());
+			}
 			iterator.remove();
+		}
+		if (getConfig().getInt("autosave") < 1) {
+			saveFurnaceStorage();
 		}
 	}
 
@@ -256,6 +279,11 @@ public class EnchantedFurnace extends JavaPlugin {
 		furnaceSection = getConfig().getConfigurationSection("furnaces");
 		convertLegacyFurnaces(furnaceSection);
 		getConfig().set("furnaces", null);
+
+		// Save converted furnaces, if any
+		if (getConfig().getInt("autosave") < 1) {
+			saveFurnaceStorage();
+		}
 
 		Set<String> worlds = getFurnaceStorage().getKeys(false);
 		for (World world : getServer().getWorlds()) {
@@ -307,11 +335,10 @@ public class EnchantedFurnace extends JavaPlugin {
 				}
 				Furnace furnace = new Furnace(block, furnaceStack);
 				section.set(legacy, null);
-				saveFurnace(furnace, true);
+				saveFurnace(furnace);
 				continue;
 			}
 		}
-		saveFurnaceStorage();
 	}
 
 	private YamlConfiguration getFurnaceStorage() {
@@ -334,7 +361,7 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	private void saveFurnaceStorage() {
-		if (furnaceSaves == null) {
+		if (furnaceSaves == null || !dirty) {
 			return;
 		}
 		File file = new File(getDataFolder(), "furnaces.yml");
@@ -343,16 +370,15 @@ public class EnchantedFurnace extends JavaPlugin {
 				file.createNewFile();
 			}
 			furnaceSaves.save(file);
+			dirty = false;
 		} catch (IOException e) {
 			throw new RuntimeException("Cannot write furnace save file! Make sure your file permissions are set up properly.", e);
 		}
 	}
 
-	private void saveFurnace(Furnace furnace, boolean batch) {
+	private void saveFurnace(Furnace furnace) {
 		getFurnaceStorage().set(getSaveString(furnace.getBlock()) + ".itemstack", furnace.getItemStack());
-		if (!batch) {
-			saveFurnaceStorage();
-		}
+		dirty = true;
 	}
 
 	private Block locStringToBlock(String s) {

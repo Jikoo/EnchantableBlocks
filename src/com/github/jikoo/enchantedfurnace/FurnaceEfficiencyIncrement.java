@@ -20,11 +20,26 @@ public class FurnaceEfficiencyIncrement extends BukkitRunnable {
 				// Unloaded furnace or not a furnace
 				continue;
 			}
-			// Update cook progress only if there is fuel and something is cooking
-			// tile.getInventory().getSmelting() != null incorrectly returns true sometimes
-			if (tile.getBurnTime() > 0 && tile.getCookTime() > 0) {
-				tile.setCookTime((short) (tile.getCookTime() + f.getCookModifier()));
-				tile.update();
+			try {
+				// Update cook progress only if there is fuel and something is cooking
+				// tile.getInventory().getSmelting() != null incorrectly returns true sometimes
+				if (tile.getBurnTime() > 0 && tile.getCookTime() > 0) {
+					int cookTime = tile.getCookTime() + f.getCookModifier();
+					if (cookTime > 200) {
+						cookTime = 200;
+					}
+					tile.setCookTime((short) cookTime);
+					tile.update();
+				}
+			} catch (Exception e) {
+				/* 
+				 * User reported a NPE with a stack trace pointing to CraftFurnace.getBurnTime()
+				 * That can only be thrown if the CraftFurnace's internal TileEntityFurnace is null
+				 * or if TileEntityFurnace.burnTime is null. Neither of those issues are my fault,
+				 * but I can neither replicate nor fix them.
+				 * 
+				 * Just eat all exceptions - if anything happens here, it's a CB/Spigot issue.
+				 */
 			}
 		}
 	}

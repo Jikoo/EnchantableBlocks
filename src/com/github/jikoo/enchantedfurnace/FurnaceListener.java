@@ -124,7 +124,7 @@ public class FurnaceListener implements Listener {
 		e.setResult(newResult);
 	}
 
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
 			EnchantedFurnace.getInstance().createFurnace(e.getBlock(), e.getItemInHand());

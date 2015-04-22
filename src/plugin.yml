@@ -1,12 +1,16 @@
 name: EnchantedFurnace
 
 main: com.github.jikoo.enchantedfurnace.EnchantedFurnace
-version: 1.4.1
+version: 1.4.2
 author: Jikoo
 
 permissions:
  enchantedfurnace.enchant:
-  default: true
+  default: false
   children:
    enchantedfurnace.enchant.table: true
-   enchantedfurnace.enchant.anvil: false
+   enchantedfurnace.enchant.anvil: true
+ enchantedfurnace.enchant.anvil:
+  default: false
+ enchantedfurnace.enchant.table:
+  default: true
