@@ -28,6 +28,7 @@ public class Enchanter implements Listener {
 	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
 		if (event.getItem().getEnchantments().size() == 0
 				&& event.getItem().getType().equals(Material.FURNACE)
+				&& event.getItem().getAmount() == 1
 				&& EnchantedFurnace.getInstance().getEnchantments().size() > 0
 				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
 			event.setCancelled(false);
@@ -55,6 +56,7 @@ public class Enchanter implements Listener {
 	@EventHandler
 	public void onEnchantItem(EnchantItemEvent event) {
 		if (event.getItem().getType() != Material.FURNACE
+				|| event.getItem().getAmount() != 1
 				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
 			return;
 		}
