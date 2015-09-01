@@ -30,9 +30,17 @@ import org.bukkit.scheduler.BukkitRunnable;
  * @author Jikoo
  */
 public class FurnaceListener implements Listener {
+
+	private final EnchantedFurnace plugin;
+
+
+	public FurnaceListener(EnchantedFurnace plugin) {
+		this.plugin = plugin;
+	}
+
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onFurnaceConsumeFuel(FurnaceBurnEvent event) {
-		Furnace f = EnchantedFurnace.getInstance().getFurnace(event.getBlock());
+		Furnace f = plugin.getFurnace(event.getBlock());
 		if (f == null) {
 			return;
 		}
@@ -53,17 +61,19 @@ public class FurnaceListener implements Listener {
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onItemSmelt(FurnaceSmeltEvent e) {
-		final Furnace f = EnchantedFurnace.getInstance().getFurnace(e.getBlock());
+		final Furnace f = plugin.getFurnace(e.getBlock());
 		if (f == null) {
 			return;
 		}
 
 		if (f.getFortune() > 0) {
-			boolean listContains = EnchantedFurnace.getInstance().getFortuneList().contains(e.getSource().getType().name());
-			if (EnchantedFurnace.getInstance().isBlacklist() ? !listContains : listContains) {
+			boolean listContains = plugin.getFortuneList().contains(e.getSource().getType().name());
+			if (plugin.isBlacklist() ? !listContains : listContains) {
 				applyFortune(e, f);
 			}
 		}
+
+		plugin.setCookSpeed(f.getBlock(), f.getCookModifier());
 
 		if (f.shouldPause(e)) {
 			new BukkitRunnable() {
@@ -71,7 +81,7 @@ public class FurnaceListener implements Listener {
 				public void run() {
 					f.pause();
 				}
-			}.runTask(EnchantedFurnace.getInstance());
+			}.runTask(plugin);
 		}
 	}
 
@@ -113,7 +123,7 @@ public class FurnaceListener implements Listener {
 				}
 			}
 			if (newResult == null) {
-				EnchantedFurnace.getInstance().getLogger().warning("Unable to obtain fortune result for MaterialData "
+				plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
 						+ i.getSmelting().getData() + ". Please report this error.");
 				return;
 			}
@@ -127,7 +137,7 @@ public class FurnaceListener implements Listener {
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onBlockPlace(BlockPlaceEvent e) {
 		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
-			EnchantedFurnace.getInstance().createFurnace(e.getBlock(), e.getItemInHand());
+			plugin.createFurnace(e.getBlock(), e.getItemInHand());
 		}
 	}
 
@@ -136,7 +146,7 @@ public class FurnaceListener implements Listener {
 		if (e.getBlock().getType() != Material.FURNACE && e.getBlock().getType() != Material.BURNING_FURNACE) {
 			return;
 		}
-		ItemStack is = EnchantedFurnace.getInstance().destroyFurnace(e.getBlock());
+		ItemStack is = plugin.destroyFurnace(e.getBlock());
 		if (is != null) {
 			if (e.getPlayer().getGameMode() != GameMode.CREATIVE
 					&& !e.getBlock().getDrops(e.getPlayer().getItemInHand()).isEmpty()) {
@@ -172,13 +182,24 @@ public class FurnaceListener implements Listener {
 		if (!(inventory.getHolder() instanceof org.bukkit.block.Furnace)) {
 			return;
 		}
-		final Furnace f = EnchantedFurnace.getInstance().getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
-		if (f == null || !f.canPause()) {
+		final Furnace f = plugin.getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
+		if (f == null) {
+			return;
+		}
+		final int cookModifier = f.getCookModifier();
+		final boolean canPause = f.canPause();
+		if (cookModifier == 0 && !canPause) {
 			return;
 		}
 		new BukkitRunnable() {
 			@Override
 			public void run() {
+				if (cookModifier != 0) {
+					plugin.setCookSpeed(f.getBlock(), cookModifier);
+				}
+				if (!canPause) {
+					return;
+				}
 				if (f.isPaused()) {
 					f.resume();
 				} else {
@@ -187,16 +208,16 @@ public class FurnaceListener implements Listener {
 					}
 				}
 			}
-		}.runTask(EnchantedFurnace.getInstance());
+		}.runTask(plugin);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onChunkLoad(ChunkLoadEvent event) {
-		EnchantedFurnace.getInstance().loadChunkFurnaces(event.getChunk());
+		plugin.loadChunkFurnaces(event.getChunk());
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onChunkUnload(ChunkUnloadEvent event) {
-		EnchantedFurnace.getInstance().unloadChunkFurnaces(event.getChunk());
+		plugin.unloadChunkFurnaces(event.getChunk());
 	}
 }

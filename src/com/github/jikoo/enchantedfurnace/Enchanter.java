@@ -19,9 +19,11 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 public class Enchanter implements Listener {
 
 	private final Random rand;
+	private final EnchantedFurnace plugin;
 
-	public Enchanter() {
+	public Enchanter(EnchantedFurnace plugin) {
 		rand = new Random();
+		this.plugin = plugin;
 	}
 
 	@EventHandler(ignoreCancelled = false)
@@ -29,7 +31,7 @@ public class Enchanter implements Listener {
 		if (event.getItem().getEnchantments().size() == 0
 				&& event.getItem().getType().equals(Material.FURNACE)
 				&& event.getItem().getAmount() == 1
-				&& EnchantedFurnace.getInstance().getEnchantments().size() > 0
+				&& plugin.getEnchantments().size() > 0
 				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
 			event.setCancelled(false);
 			for (int i = 0; i < 3; i++) {
@@ -61,7 +63,7 @@ public class Enchanter implements Listener {
 			return;
 		}
 		int effectiveLevel = getEnchantingLevel(event.getExpLevelCost());
-		HashSet<Enchantment> possibleEnchants = EnchantedFurnace.getInstance().getEnchantments();
+		HashSet<Enchantment> possibleEnchants = plugin.getEnchantments();
 		Iterator<Enchantment> iterator = possibleEnchants.iterator();
 		while (iterator.hasNext()) {
 			if (getEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {
@@ -76,7 +78,7 @@ public class Enchanter implements Listener {
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
-				if (!EnchantedFurnace.getInstance().areEnchantmentsCompatible(ench, iterator.next())) {
+				if (!plugin.areEnchantmentsCompatible(ench, iterator.next())) {
 					iterator.remove();
 				}
 			}
@@ -85,7 +87,7 @@ public class Enchanter implements Listener {
 
 	private int getEnchantingLevel(int displayedLevel) {
 		// Vanilla: enchant level = button level + rand(enchantabity / 4) + rand(enchantabity / 4) + 1
-		int enchantability = EnchantedFurnace.getInstance().getFurnaceEnchantability() / 4;
+		int enchantability = plugin.getFurnaceEnchantability() / 4;
 		int enchantingLevel = displayedLevel + 1 + rand.nextInt(enchantability) + rand.nextInt(enchantability);
 		// Vanilla: random enchantability bonus 85-115%
 		double bonus = (rand.nextDouble() + rand.nextDouble() - 1) * 0.15 + 1;
