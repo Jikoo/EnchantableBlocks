@@ -26,7 +26,8 @@ public class Furnace {
 
 	public Furnace(Block block, ItemStack furnaceItem) {
 		this.block = block;
-		this.canPause = furnaceItem.containsEnchantment(Enchantment.SILK_TOUCH);
+		furnaceItem.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
+		this.canPause = furnaceItem.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
 		this.furnaceItem = furnaceItem;
 		if (canPause && furnaceItem.getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
 			// New furnaces shouldn't get 1 tick flame for free, but old furnaces need to re-light

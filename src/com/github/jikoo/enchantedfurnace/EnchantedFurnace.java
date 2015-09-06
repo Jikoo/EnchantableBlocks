@@ -225,7 +225,7 @@ public class EnchantedFurnace extends JavaPlugin {
 			saveFurnaceStorage();
 		}
 		ItemStack is = f.getItemStack();
-		if (is.containsEnchantment(Enchantment.SILK_TOUCH)) {
+		if (is.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
 			// Silk time isn't supposed to be preserved when broken.
 			is.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
 		}
