@@ -97,12 +97,6 @@ public class EnchantedFurnace extends JavaPlugin {
 			enchantments.add(Enchantment.getByName(enchantment));
 		}
 
-		// Enchantability < 4 would pass a Random 0 or lower.
-		// Enchantablity < 8 has no effect on end enchantments.
-		if (getConfig().getInt("furnace_enchantability") < 4) {
-			getConfig().set("furnace_enchantability", 4);
-		}
-
 		incompatibleEnchants = HashMultimap.create();
 		for (String enchantment : getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
 			Enchantment key = Enchantment.getByName(enchantment);
@@ -124,7 +118,7 @@ public class EnchantedFurnace extends JavaPlugin {
 		saveConfig();
 
 		getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
-		getServer().getPluginManager().registerEvents(new Enchanter(this), this);
+		getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 
 		for (World world : Bukkit.getWorlds()) {

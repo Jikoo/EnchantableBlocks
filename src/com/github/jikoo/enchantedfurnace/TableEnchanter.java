@@ -16,12 +16,12 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
  * 
  * @author Jikoo
  */
-public class Enchanter implements Listener {
+public class TableEnchanter implements Listener {
 
 	private final Random rand;
 	private final EnchantedFurnace plugin;
 
-	public Enchanter(EnchantedFurnace plugin) {
+	public TableEnchanter(EnchantedFurnace plugin) {
 		rand = new Random();
 		this.plugin = plugin;
 	}
@@ -86,12 +86,17 @@ public class Enchanter implements Listener {
 	}
 
 	private int getEnchantingLevel(int displayedLevel) {
-		// Vanilla: enchant level = button level + rand(enchantabity / 4) + rand(enchantabity / 4) + 1
-		int enchantability = plugin.getFurnaceEnchantability() / 4;
-		int enchantingLevel = displayedLevel + 1 + rand.nextInt(enchantability) + rand.nextInt(enchantability);
+		// Vanilla: enchant level = button level + rand(enchantabity / 4 + 1) + rand(enchantabity / 4 + 1) + 1
+		double enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
+		int enchantingLevel = displayedLevel + 1 + randomInt(enchantability) + randomInt(enchantability);
 		// Vanilla: random enchantability bonus 85-115%
 		double bonus = (rand.nextDouble() + rand.nextDouble() - 1) * 0.15 + 1;
-		return (int) (enchantingLevel * bonus + 0.5);
+		enchantingLevel = (int) (enchantingLevel * bonus + 0.5);
+		return enchantingLevel < 1 ? 1 : enchantingLevel;
+	}
+
+	private int randomInt(double cap) {
+		return (int) (rand.nextDouble() * cap);
 	}
 
 	private int getEnchantmentLevel(Enchantment enchant, int lvl) {
