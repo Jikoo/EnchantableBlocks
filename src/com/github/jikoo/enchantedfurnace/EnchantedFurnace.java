@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -117,8 +118,9 @@ public class EnchantedFurnace extends JavaPlugin {
 		// Potential for multiple changes along the way, just save to be safe.
 		saveConfig();
 
-		getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
-		getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
+		Random random = new Random();
+		getServer().getPluginManager().registerEvents(new FurnaceListener(this, random), this);
+		getServer().getPluginManager().registerEvents(new TableEnchanter(this, random), this);
 		getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 
 		for (World world : Bukkit.getWorlds()) {

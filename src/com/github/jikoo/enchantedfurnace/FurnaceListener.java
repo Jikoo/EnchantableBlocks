@@ -1,6 +1,7 @@
 package com.github.jikoo.enchantedfurnace;
 
 import java.util.Iterator;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -32,10 +33,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class FurnaceListener implements Listener {
 
 	private final EnchantedFurnace plugin;
+	private final Random random;
 
-
-	public FurnaceListener(EnchantedFurnace plugin) {
+	public FurnaceListener(EnchantedFurnace plugin, Random random) {
 		this.plugin = plugin;
+		this.random = random;
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -90,13 +92,16 @@ public class FurnaceListener implements Listener {
 		FurnaceInventory i = f.getFurnaceTile().getInventory();
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
-		int bonus = (int) (Math.random() * (f.getFortune() + 2)) - 1;
+		int bonus = random.nextInt(f.getFortune() + 2) - 1;
+		if (bonus <= 0) {
+			return;
+		}
 		// Check extras against max - 1 because of guaranteed single output
 		if (i.getResult() != null && i.getResult().getAmount() + bonus > i.getResult().getType().getMaxStackSize() - 1) {
 			bonus = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
-		}
-		if (bonus <= 0) {
-			return;
+			if (bonus <= 0) {
+				return;
+			}
 		}
 		ItemStack newResult = null;
 		if (i.getResult() == null) {
@@ -110,17 +115,17 @@ public class FurnaceListener implements Listener {
 				if (input.getType() != i.getSmelting().getType()) {
 					continue;
 				}
-				if (input.getData().getData() > -1) {
-					if (input.getData().equals(i.getSmelting().getData())) {
-						// Exact match
-						newResult = new ItemStack(r.getResult());
-						break;
-					}
-					// Incorrect data, not a match
-				} else {
+				if (input.getData().getData() == -1) {
 					// Inexact match, continue iterating
 					newResult = new ItemStack(r.getResult());
 				}
+				if (input.getData().equals(i.getSmelting().getData())) {
+					// Exact match
+					newResult = new ItemStack(r.getResult());
+					break;
+				}
+				// Incorrect data, not a match
+				continue;
 			}
 			if (newResult == null) {
 				plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
