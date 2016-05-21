@@ -2,8 +2,6 @@ package com.github.jikoo.enchantedfurnace;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
@@ -22,7 +19,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -62,7 +58,6 @@ public class EnchantedFurnace extends JavaPlugin {
 				disabledWorlds.add(worldName.toLowerCase());
 			}
 		}
-		getConfig().set("disabled_worlds", disabledWorlds);
 
 		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
 
@@ -81,7 +76,6 @@ public class EnchantedFurnace extends JavaPlugin {
 				fortuneList.add(m.name());
 			}
 		}
-		getConfig().set("fortune_list", fortuneList);
 
 		HashSet<String> allowedEnchantments = new HashSet<String>();
 		allowedEnchantments.add("DIG_SPEED");
@@ -115,13 +109,11 @@ public class EnchantedFurnace extends JavaPlugin {
 			incompatibleEnchants.put(value, key);
 		}
 
-		// Potential for multiple changes along the way, just save to be safe.
-		saveConfig();
-
-		Random random = new Random();
-		getServer().getPluginManager().registerEvents(new FurnaceListener(this, random), this);
-		getServer().getPluginManager().registerEvents(new TableEnchanter(this, random), this);
-		getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
+		getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
+		getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
+		if (ReflectionUtils.areAnvilsSupported()) {
+			getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
+		}
 
 		for (World world : Bukkit.getWorlds()) {
 			if (getConfig().getStringList("disabled_worlds").contains(world.getName().toLowerCase())) {
@@ -130,6 +122,10 @@ public class EnchantedFurnace extends JavaPlugin {
 			for (Chunk chunk : world.getLoadedChunks()) {
 				loadChunkFurnaces(chunk);
 			}
+		}
+
+		if (!ReflectionUtils.areFurnacesSupported()) {
+			new FurnaceEfficiencyIncrement(this).runTaskTimer(this, 1, 2);
 		}
 
 		if (getConfig().getInt("autosave") > 0) {
@@ -153,24 +149,6 @@ public class EnchantedFurnace extends JavaPlugin {
 		this.furnaces = null;
 		this.enchantments.clear();
 		this.enchantments = null;
-	}
-
-	public void setCookSpeed(Block block, int efficiencyLevel) {
-		BlockState state = block.getState();
-		Method method;
-		try {
-			method = state.getClass().getMethod("getTileEntity");
-			Object nmsTileEntity = method.invoke(state);
-			if (nmsTileEntity == null) {
-				return;
-			}
-			Field field = nmsTileEntity.getClass().getDeclaredField("cookTimeTotal");
-			field.setAccessible(true);
-			// 20 / (level + 2) seconds per smelt
-			field.set(nmsTileEntity, Math.max(1, 400 / (efficiencyLevel + 2)));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -250,16 +228,20 @@ public class EnchantedFurnace extends JavaPlugin {
 		if (chunkSection == null) {
 			return;
 		}
-		for (String xyz : chunkSection.getKeys(false)) {
+		Set<String> chunkKeys = chunkSection.getKeys(false);
+		Iterator<String> iterator = chunkKeys.iterator();
+		while (iterator.hasNext()) {
+			String xyz = iterator.next();
 			String[] split = xyz.split("_");
 			try {
 				Block block = chunk.getWorld().getBlockAt(Integer.valueOf(split[0]), Integer.valueOf(split[1]), Integer.valueOf(split[2]));
 				Material type = block.getType();
-				ItemStack itemStack = (ItemStack) getFurnaceStorage().get(path + '.' + xyz + ".itemstack");
+				ItemStack itemStack = getFurnaceStorage().getItemStack(path + '.' + xyz + ".itemstack");
 				if (type == Material.FURNACE || type == Material.BURNING_FURNACE) {
 					Furnace furnace = new Furnace(block, itemStack);
 					furnaces.put(block, furnace);
 				} else {
+					iterator.remove();
 					getFurnaceStorage().set(path + '.' + xyz, null);
 					dirty = true;
 					getLogger().warning("Removed invalid save: " + itemStack.toString() + " at " + block.getLocation().toString());
@@ -269,6 +251,9 @@ public class EnchantedFurnace extends JavaPlugin {
 			} catch (ClassCastException e) {
 				getLogger().warning("Invalid itemstack saved for " + path + '.' + xyz);
 			}
+		}
+		if (chunkKeys.isEmpty()) {
+			getFurnaceStorage().set(path, null);
 		}
 	}
 

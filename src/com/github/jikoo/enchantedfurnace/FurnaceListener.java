@@ -1,11 +1,12 @@
 package com.github.jikoo.enchantedfurnace;
 
 import java.util.Iterator;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -33,26 +34,24 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class FurnaceListener implements Listener {
 
 	private final EnchantedFurnace plugin;
-	private final Random random;
 
-	public FurnaceListener(EnchantedFurnace plugin, Random random) {
+	public FurnaceListener(EnchantedFurnace plugin) {
 		this.plugin = plugin;
-		this.random = random;
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onFurnaceConsumeFuel(FurnaceBurnEvent event) {
-		Furnace f = plugin.getFurnace(event.getBlock());
-		if (f == null) {
+		Furnace furnace = plugin.getFurnace(event.getBlock());
+		if (furnace == null) {
 			return;
 		}
-		if (f.isPaused() && f.resume()) {
+		if (furnace.isPaused() && furnace.resume()) {
 			event.setCancelled(true);
 			return;
 		}
-		if (f.getBurnModifier() > 0) {
+		if (furnace.getBurnModifier() > 0) {
 			// + 1/5 fuel burn length per level unbreaking
-			int burnTime = (int) ((1 + .2 * f.getBurnModifier()) * event.getBurnTime());
+			int burnTime = (int) ((1 + .2 * furnace.getBurnModifier()) * event.getBurnTime());
 			// Burn time is actually a short internally. Capping it here prevents some wonky behavior
 			if (burnTime > Short.MAX_VALUE) {
 				burnTime = Short.MAX_VALUE;
@@ -62,66 +61,74 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onItemSmelt(FurnaceSmeltEvent e) {
-		final Furnace f = plugin.getFurnace(e.getBlock());
-		if (f == null) {
+	public void onItemSmelt(FurnaceSmeltEvent event) {
+		final Furnace furnace = plugin.getFurnace(event.getBlock());
+		if (furnace == null) {
 			return;
 		}
 
-		if (f.getFortune() > 0) {
-			boolean listContains = plugin.getFortuneList().contains(e.getSource().getType().name());
+		if (furnace.getFortune() > 0) {
+			boolean listContains = plugin.getFortuneList().contains(event.getSource().getType().name());
 			if (plugin.isBlacklist() ? !listContains : listContains) {
-				applyFortune(e, f);
+				applyFortune(event, furnace);
 			}
 		}
 
-		plugin.setCookSpeed(f.getBlock(), f.getCookModifier());
-
-		if (f.shouldPause(e)) {
+		if (furnace.shouldPause(event)) {
 			new BukkitRunnable() {
 				@Override
 				public void run() {
-					f.pause();
+					furnace.pause();
 				}
 			}.runTask(plugin);
+		} else if (ReflectionUtils.areFurnacesSupported()) {
+			final int cookModifier = furnace.getCookModifier();
+			if (cookModifier > 0) {
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
+					}
+				}.runTask(plugin);
+			}
 		}
 	}
 
 	@SuppressWarnings("deprecation")
-	private void applyFortune(FurnaceSmeltEvent e, Furnace f) {
-		FurnaceInventory i = f.getFurnaceTile().getInventory();
+	private void applyFortune(FurnaceSmeltEvent event, Furnace furnace) {
+		FurnaceInventory inventory = furnace.getFurnaceTile().getInventory();
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
-		int bonus = random.nextInt(f.getFortune() + 2) - 1;
+		int bonus = ThreadLocalRandom.current().nextInt(furnace.getFortune() + 2) - 1;
 		if (bonus <= 0) {
 			return;
 		}
 		// Check extras against max - 1 because of guaranteed single output
-		if (i.getResult() != null && i.getResult().getAmount() + bonus > i.getResult().getType().getMaxStackSize() - 1) {
-			bonus = i.getResult().getType().getMaxStackSize() - 1 - i.getResult().getAmount();
+		if (inventory.getResult() != null && inventory.getResult().getAmount() + bonus > inventory.getResult().getType().getMaxStackSize() - 1) {
+			bonus = inventory.getResult().getType().getMaxStackSize() - 1 - inventory.getResult().getAmount();
 			if (bonus <= 0) {
 				return;
 			}
 		}
 		ItemStack newResult = null;
-		if (i.getResult() == null) {
-			Iterator<Recipe> ri = Bukkit.recipeIterator();
-			while (ri.hasNext()) {
-				Recipe r = ri.next();
-				if (!(r instanceof FurnaceRecipe)) {
+		if (inventory.getResult() == null) {
+			Iterator<Recipe> iterator = Bukkit.recipeIterator();
+			while (iterator.hasNext()) {
+				Recipe recipe = iterator.next();
+				if (!(recipe instanceof FurnaceRecipe)) {
 					continue;
 				}
-				ItemStack input = ((FurnaceRecipe) r).getInput();
-				if (input.getType() != i.getSmelting().getType()) {
+				ItemStack input = ((FurnaceRecipe) recipe).getInput();
+				if (input.getType() != inventory.getSmelting().getType()) {
 					continue;
 				}
 				if (input.getData().getData() == -1) {
 					// Inexact match, continue iterating
-					newResult = new ItemStack(r.getResult());
+					newResult = new ItemStack(recipe.getResult());
 				}
-				if (input.getData().equals(i.getSmelting().getData())) {
+				if (input.getData().equals(inventory.getSmelting().getData())) {
 					// Exact match
-					newResult = new ItemStack(r.getResult());
+					newResult = new ItemStack(recipe.getResult());
 					break;
 				}
 				// Incorrect data, not a match
@@ -129,36 +136,37 @@ public class FurnaceListener implements Listener {
 			}
 			if (newResult == null) {
 				plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
-						+ i.getSmelting().getData() + ". Please report this error.");
+						+ inventory.getSmelting().getData() + ". Please report this error.");
 				return;
 			}
 		} else {
-			newResult = i.getResult().clone();
+			newResult = inventory.getResult().clone();
 		}
 		newResult.setAmount(1 + bonus);
-		e.setResult(newResult);
+		event.setResult(newResult);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onBlockPlace(BlockPlaceEvent e) {
-		if (e.getItemInHand() != null && e.getItemInHand().getType() == Material.FURNACE) {
-			plugin.createFurnace(e.getBlock(), e.getItemInHand());
+	public void onBlockPlace(BlockPlaceEvent event) {
+		if (event.getItemInHand() != null && event.getItemInHand().getType() == Material.FURNACE) {
+			plugin.createFurnace(event.getBlock(), event.getItemInHand());
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onBlockBreak(BlockBreakEvent e) {
-		if (e.getBlock().getType() != Material.FURNACE && e.getBlock().getType() != Material.BURNING_FURNACE) {
+	public void onBlockBreak(BlockBreakEvent event) {
+		if (event.getBlock().getType() != Material.FURNACE && event.getBlock().getType() != Material.BURNING_FURNACE) {
 			return;
 		}
-		ItemStack is = plugin.destroyFurnace(e.getBlock());
+		ItemStack is = plugin.destroyFurnace(event.getBlock());
 		if (is != null) {
-			if (e.getPlayer().getGameMode() != GameMode.CREATIVE
-					&& !e.getBlock().getDrops(e.getPlayer().getItemInHand()).isEmpty()) {
-				e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), is);
+			Player player = event.getPlayer();
+			if (player.getGameMode() != GameMode.CREATIVE
+					&& !event.getBlock().getDrops(player.getItemInHand()).isEmpty()) {
+				event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), is);
 			}
-			e.setCancelled(true);
-			e.getBlock().setType(Material.AIR);
+			event.setCancelled(true);
+			event.getBlock().setType(Material.AIR);
 		}
 	}
 
@@ -187,30 +195,24 @@ public class FurnaceListener implements Listener {
 		if (!(inventory.getHolder() instanceof org.bukkit.block.Furnace)) {
 			return;
 		}
-		final Furnace f = plugin.getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
-		if (f == null) {
+		final Furnace furnace = plugin.getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
+		if (furnace == null) {
 			return;
 		}
-		final int cookModifier = f.getCookModifier();
-		final boolean canPause = f.canPause();
-		if (cookModifier == 0 && !canPause) {
+		final int cookModifier = furnace.getCookModifier();
+		if ((!ReflectionUtils.areFurnacesSupported() || cookModifier < 1) && !furnace.canPause()) {
 			return;
 		}
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				if (cookModifier != 0) {
-					plugin.setCookSpeed(f.getBlock(), cookModifier);
+				if (ReflectionUtils.areFurnacesSupported() && cookModifier > 0) {
+					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
 				}
-				if (!canPause) {
-					return;
-				}
-				if (f.isPaused()) {
-					f.resume();
-				} else {
-					if (f.shouldPause(null)) {
-						f.pause();
-					}
+				if (furnace.isPaused()) {
+					furnace.resume();
+				} else if (furnace.shouldPause(null)) {
+					furnace.pause();
 				}
 			}
 		}.runTask(plugin);

@@ -1,7 +1,5 @@
 package com.github.jikoo.enchantedfurnace;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,8 +12,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryInteractEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -39,7 +38,17 @@ public class AnvilEnchanter implements Listener {
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryClick(InventoryClickEvent event) {
-		if (event.getView().getTopInventory().getType() != InventoryType.ANVIL
+		onInventoryInteract(event);
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onInventoryClick(InventoryDragEvent event) {
+		onInventoryInteract(event);
+	}
+
+	private void onInventoryInteract(InventoryInteractEvent event) {
+		if (!ReflectionUtils.areAnvilsSupported()
+				|| event.getView().getTopInventory().getType() != InventoryType.ANVIL
 				|| !(event.getWhoClicked() instanceof Player)) {
 			return;
 		}
@@ -77,7 +86,7 @@ public class AnvilEnchanter implements Listener {
 
 			if (view.getPlayer() instanceof Player) {
 				((Player) view.getPlayer()).updateInventory();
-				updateAnvilExpCost(view);
+				ReflectionUtils.updateAnvilExpCost(view);
 			}
 		}
 	}
@@ -149,7 +158,7 @@ public class AnvilEnchanter implements Listener {
 		base = base.clone();
 		base.addUnsafeEnchantments(baseEnchants);
 		baseMeta = base.getItemMeta();
-		String displayName = getNameFromAnvil(view);
+		String displayName = ReflectionUtils.getNameFromAnvil(view);
 		if (baseMeta.hasDisplayName() && !baseMeta.getDisplayName().equals(displayName)
 				|| !baseMeta.hasDisplayName() && displayName != null) {
 			baseMeta.setDisplayName(displayName);
@@ -160,7 +169,7 @@ public class AnvilEnchanter implements Listener {
 		baseRepairable.setRepairCost(baseRepairable.hasRepairCost() ? baseRepairable.getRepairCost() * 2 + 1 : 1);
 		base.setItemMeta(baseMeta);
 
-		setAnvilExpCost(view, cost);
+		ReflectionUtils.setAnvilExpCost(view, cost);
 
 		return base;
 	}
@@ -195,57 +204,6 @@ public class AnvilEnchanter implements Listener {
 		}
 
 		return multiplier;
-	}
-
-	private String getNameFromAnvil(InventoryView view) {
-		if (!(view.getTopInventory() instanceof AnvilInventory)) {
-			return null;
-		}
-		try {
-			Method method = view.getClass().getMethod("getHandle");
-			Object nmsInventory = method.invoke(view);
-			// TODO: list of acceptable NMS versions?
-			// Field ContainerAnvil.l may have changed name, I only have 1.8-1.8.8 on hand to check
-			// Alternative: Loop through all fields for object, select String
-			// Currently, and in all prior versions, neither Container nor ContainerAnvil contain any other String fields.
-			Field field = nmsInventory.getClass().getDeclaredField("l");
-			field.setAccessible(true);
-			return (String) field.get(nmsInventory);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	private void setAnvilExpCost(InventoryView view, int cost) {
-		if (!(view.getTopInventory() instanceof AnvilInventory)) {
-			return;
-		}
-		try {
-			Method method = view.getClass().getMethod("getHandle");
-			Object nmsInventory = method.invoke(view);
-			Field field = nmsInventory.getClass().getDeclaredField("a");
-			field.set(nmsInventory, cost);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void updateAnvilExpCost(InventoryView view) {
-		if (!(view.getTopInventory() instanceof AnvilInventory)) {
-			return;
-		}
-		try {
-			Method method = view.getClass().getMethod("getHandle");
-			Object nmsInventory = method.invoke(view);
-			Field field = nmsInventory.getClass().getDeclaredField("a");
-			method = view.getPlayer().getClass().getMethod("getHandle");
-			Object nmsPlayer = method.invoke(view.getPlayer());
-			method = nmsPlayer.getClass().getMethod("setContainerData", nmsInventory.getClass().getSuperclass(), int.class, int.class);
-			method.invoke(nmsPlayer, nmsInventory, 0, field.get(nmsInventory));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 }

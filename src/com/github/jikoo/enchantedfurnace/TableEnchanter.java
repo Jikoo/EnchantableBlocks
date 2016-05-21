@@ -3,6 +3,7 @@ package com.github.jikoo.enchantedfurnace;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -19,11 +20,9 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 public class TableEnchanter implements Listener {
 
 	private final EnchantedFurnace plugin;
-	private final Random random;
 
-	public TableEnchanter(EnchantedFurnace plugin, Random random) {
+	public TableEnchanter(EnchantedFurnace plugin) {
 		this.plugin = plugin;
-		this.random = random;
 	}
 
 	@EventHandler(ignoreCancelled = false)
@@ -45,6 +44,7 @@ public class TableEnchanter implements Listener {
 		if (shelves > 15) {
 			shelves = 15;
 		}
+		Random random = ThreadLocalRandom.current();
 		int i = random.nextInt(8) + 1 + (shelves >> 1) + random.nextInt(shelves + 1);
 		if (slot == 0) {
 			return Math.max(i / 3, 1);
@@ -71,7 +71,7 @@ public class TableEnchanter implements Listener {
 			}
 		}
 		boolean firstRun = true;
-		while (firstRun || random.nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
+		while (firstRun || ThreadLocalRandom.current().nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
 			firstRun = false;
 			Enchantment ench = getWeightedEnchant(possibleEnchants);
 			event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
@@ -87,16 +87,13 @@ public class TableEnchanter implements Listener {
 
 	private int getEnchantingLevel(int displayedLevel) {
 		// Vanilla: enchant level = button level + rand(enchantabity / 4 + 1) + rand(enchantabity / 4 + 1) + 1
-		double enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
-		int enchantingLevel = displayedLevel + 1 + randomInt(enchantability) + randomInt(enchantability);
+		int enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
+		Random random = ThreadLocalRandom.current();
+		int enchantingLevel = displayedLevel + 1 + random.nextInt(enchantability) + random.nextInt(enchantability);
 		// Vanilla: random enchantability bonus 85-115%
 		double bonus = (random.nextDouble() + random.nextDouble() - 1) * 0.15 + 1;
 		enchantingLevel = (int) (enchantingLevel * bonus + 0.5);
 		return enchantingLevel < 1 ? 1 : enchantingLevel;
-	}
-
-	private int randomInt(double cap) {
-		return (int) (random.nextDouble() * cap);
 	}
 
 	private int getEnchantmentLevel(Enchantment enchant, int lvl) {
@@ -147,7 +144,7 @@ public class TableEnchanter implements Listener {
 			// Gets hit sometimes cause I'm bad at code apparently.
 			return Enchantment.DIG_SPEED;
 		}
-		randInt = random.nextInt(randInt) + 1;
+		randInt = ThreadLocalRandom.current().nextInt(randInt) + 1;
 		for (Enchantment ench : enchants) {
 			int weight = getWeight(ench);
 			if (randInt >= weight) {
