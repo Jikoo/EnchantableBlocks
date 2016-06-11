@@ -159,6 +159,7 @@ public class ReflectionUtils {
 		case "v1_8_R3":
 		case "v1_9_R1":
 		case "v1_9_R2":
+		case "v1_10_R1":
 		default:
 			return "l";
 		}
