@@ -13,6 +13,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.github.jikoo.enchantedfurnace.enchanting.AnvilEnchanter;
+import com.github.jikoo.enchantedfurnace.enchanting.TableEnchanter;
+import com.github.jikoo.enchantedfurnace.enchanting.TablePreviewEnchanter;
+
+import com.google.common.collect.HashMultimap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -26,8 +32,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import com.google.common.collect.HashMultimap;
 
 /**
  * Bukkit plugin for adding effects to furnaces based on enchantments.
@@ -110,7 +114,13 @@ public class EnchantedFurnace extends JavaPlugin {
 		}
 
 		getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
-		getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
+
+		try {
+			Class.forName("org.bukkit.enchantments.EnchantmentOffer");
+			getServer().getPluginManager().registerEvents(new TablePreviewEnchanter(this), this);
+		} catch (ClassNotFoundException e) {
+			getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
+		}
 		if (ReflectionUtils.areAnvilsSupported()) {
 			getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 		}

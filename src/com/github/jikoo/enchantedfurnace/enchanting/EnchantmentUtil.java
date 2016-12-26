@@ -1,45 +1,26 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantedfurnace.enchanting;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.bukkit.Material;
+import com.github.jikoo.enchantedfurnace.EnchantedFurnace;
+
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 
 /**
- * Handles enchantments in enchantment tables.
+ * Utility for calculating enchantments.
  * 
  * @author Jikoo
  */
-public class TableEnchanter implements Listener {
+public class EnchantmentUtil {
 
-	private final EnchantedFurnace plugin;
+	private EnchantmentUtil() {}
 
-	public TableEnchanter(EnchantedFurnace plugin) {
-		this.plugin = plugin;
-	}
-
-	@EventHandler(ignoreCancelled = false)
-	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
-		if (event.getItem().getEnchantments().size() == 0
-				&& event.getItem().getType().equals(Material.FURNACE)
-				&& event.getItem().getAmount() == 1
-				&& plugin.getEnchantments().size() > 0
-				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
-			event.setCancelled(false);
-			for (int i = 0; i < 3; i++) {
-				event.getExpLevelCostsOffered()[i] = getButtonLevel(i, event.getEnchantmentBonus());
-			}
-		}
-	}
-
-	private int getButtonLevel(int slot, int shelves) {
+	public static int getButtonLevel(int slot, int shelves) {
 		// Vanilla - get levels to display in table buttons
 		if (shelves > 15) {
 			shelves = 15;
@@ -55,26 +36,24 @@ public class TableEnchanter implements Listener {
 		return Math.max(i, shelves * 2);
 	}
 
-	@EventHandler
-	public void onEnchantItem(EnchantItemEvent event) {
-		if (event.getItem().getType() != Material.FURNACE
-				|| event.getItem().getAmount() != 1
-				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
-			return;
-		}
-		int effectiveLevel = getEnchantingLevel(event.getExpLevelCost());
+	public static Map<Enchantment, Integer> calculateFurnaceEnchants(EnchantedFurnace plugin, int enchantingLevel) {
+		int effectiveLevel = getFurnaceEnchantingLevel(plugin, enchantingLevel);
 		HashSet<Enchantment> possibleEnchants = plugin.getEnchantments();
 		Iterator<Enchantment> iterator = possibleEnchants.iterator();
+
 		while (iterator.hasNext()) {
-			if (getEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {
+			if (getFurnaceEnchantmentLevel(iterator.next(), effectiveLevel) == 0) {
 				iterator.remove();
 			}
 		}
+
+		Map<Enchantment, Integer> enchantments = new HashMap<>();
 		boolean firstRun = true;
-		while (firstRun || ThreadLocalRandom.current().nextDouble() < ((effectiveLevel / Math.pow(2, event.getEnchantsToAdd().size())) / 50) && possibleEnchants.size() > 0) {
+
+		while (firstRun || ThreadLocalRandom.current().nextDouble() < ((effectiveLevel / Math.pow(2, enchantments.size())) / 50) && possibleEnchants.size() > 0) {
 			firstRun = false;
 			Enchantment ench = getWeightedEnchant(possibleEnchants);
-			event.getEnchantsToAdd().put(ench, getEnchantmentLevel(ench, effectiveLevel));
+			enchantments.put(ench, getFurnaceEnchantmentLevel(ench, effectiveLevel));
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
@@ -83,9 +62,11 @@ public class TableEnchanter implements Listener {
 				}
 			}
 		}
+
+		return enchantments;
 	}
 
-	private int getEnchantingLevel(int displayedLevel) {
+	private static int getFurnaceEnchantingLevel(EnchantedFurnace plugin, int displayedLevel) {
 		// Vanilla: enchant level = button level + rand(enchantabity / 4 + 1) + rand(enchantabity / 4 + 1) + 1
 		int enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
 		Random random = ThreadLocalRandom.current();
@@ -96,7 +77,7 @@ public class TableEnchanter implements Listener {
 		return enchantingLevel < 1 ? 1 : enchantingLevel;
 	}
 
-	private int getEnchantmentLevel(Enchantment enchant, int lvl) {
+	private static int getFurnaceEnchantmentLevel(Enchantment enchant, int lvl) {
 		// Not worried about high end cap reducing silk/fortune rates
 
 		// Enchantments use upper value if within multiple ranges. Why there's a larger range at all, I don't know.
@@ -119,7 +100,7 @@ public class TableEnchanter implements Listener {
 		return 0;
 	}
 
-	private int getWeight(Enchantment enchant) {
+	private static int getWeight(Enchantment enchant) {
 		if (enchant.equals(Enchantment.DIG_SPEED)) {
 			return 10;
 		}
@@ -135,7 +116,7 @@ public class TableEnchanter implements Listener {
 		return 0;
 	}
 
-	private Enchantment getWeightedEnchant(HashSet<Enchantment> enchants) {
+	private static Enchantment getWeightedEnchant(HashSet<Enchantment> enchants) {
 		int randInt = 0;
 		for (Enchantment ench : enchants) {
 			randInt += getWeight(ench);
@@ -156,4 +137,5 @@ public class TableEnchanter implements Listener {
 		// Shouldn't ever hit this, but it's here just in case. Efficiency is a safe default.
 		return Enchantment.DIG_SPEED;
 	}
+
 }

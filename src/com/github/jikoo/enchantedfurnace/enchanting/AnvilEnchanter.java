@@ -1,8 +1,11 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantedfurnace.enchanting;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.github.jikoo.enchantedfurnace.EnchantedFurnace;
+import com.github.jikoo.enchantedfurnace.ReflectionUtils;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
