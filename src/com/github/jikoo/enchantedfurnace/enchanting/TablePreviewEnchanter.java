@@ -33,7 +33,7 @@ public class TablePreviewEnchanter implements Listener {
 
 	@EventHandler(ignoreCancelled = false)
 	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
-		if (event.getItem().getEnchantments().size() != 0
+		if (event.getItem().getEnchantments().size() > 0
 				|| !event.getItem().getType().equals(Material.FURNACE)
 				|| event.getItem().getAmount() != 1
 				|| plugin.getEnchantments().size() <= 0
@@ -56,6 +56,7 @@ public class TablePreviewEnchanter implements Listener {
 				enchantments = enchantmentLevels.get(buttonLevel);
 			} else {
 				enchantments = EnchantmentUtil.calculateFurnaceEnchants(plugin, buttonLevel);
+				enchantmentLevels.put(buttonLevel, enchantments);
 			}
 			if (enchantments.isEmpty()) {
 				event.getOffers()[i] = null;
@@ -68,14 +69,16 @@ public class TablePreviewEnchanter implements Listener {
 
 	@EventHandler
 	public void onEnchantItem(EnchantItemEvent event) {
+
+		// Player has attempted enchanting anything, all enchants must be re-rolled.
+		Map<Integer, Map<Enchantment, Integer>> enchantmentLevels = this.enchantments.remove(event.getEnchanter().getUniqueId());
+
 		if (event.getItem().getType() != Material.FURNACE
 				|| event.getItem().getAmount() != 1
 				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")
-				|| !this.enchantments.containsKey(event.getEnchanter().getUniqueId())) {
+				|| enchantmentLevels == null) {
 			return;
 		}
-
-		Map<Integer, Map<Enchantment, Integer>> enchantmentLevels = this.enchantments.get(event.getEnchanter().getUniqueId());
 
 		if (!enchantmentLevels.containsKey(event.getExpLevelCost())) {
 			return;
