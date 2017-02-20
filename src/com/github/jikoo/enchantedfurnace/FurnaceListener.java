@@ -6,6 +6,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -87,6 +88,16 @@ public class FurnaceListener implements Listener {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
+						BlockState state = event.getBlock().getState();
+						if (!(state instanceof org.bukkit.block.Furnace)) {
+							return;
+						}
+						org.bukkit.block.Furnace tile = (org.bukkit.block.Furnace) state;
+						// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
+						if (tile.getCookTime() < 0) {
+							tile.setCookTime((short) 0);
+							tile.update();
+						}
 						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
 					}
 				}.runTask(plugin);
@@ -195,7 +206,8 @@ public class FurnaceListener implements Listener {
 		if (!(inventory.getHolder() instanceof org.bukkit.block.Furnace)) {
 			return;
 		}
-		final Furnace furnace = plugin.getFurnace(((org.bukkit.block.Furnace) inventory.getHolder()).getBlock());
+		final org.bukkit.block.Furnace tile = ((org.bukkit.block.Furnace) inventory.getHolder());
+		final Furnace furnace = plugin.getFurnace(tile.getBlock());
 		if (furnace == null) {
 			return;
 		}
@@ -207,6 +219,11 @@ public class FurnaceListener implements Listener {
 			@Override
 			public void run() {
 				if (ReflectionUtils.areFurnacesSupported() && cookModifier > 0) {
+					// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
+					if (tile.getCookTime() < 0) {
+						tile.setCookTime((short) 0);
+						tile.update();
+					}
 					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
 				}
 				if (furnace.isPaused()) {

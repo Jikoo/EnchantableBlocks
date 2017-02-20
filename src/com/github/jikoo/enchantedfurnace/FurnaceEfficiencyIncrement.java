@@ -31,7 +31,8 @@ public class FurnaceEfficiencyIncrement extends BukkitRunnable {
 				// Update cook progress only if there is fuel and something is cooking
 				// tile.getInventory().getSmelting() != null incorrectly returns true sometimes
 				if (tile.getBurnTime() > 0 && tile.getCookTime() > 0) {
-					int cookTime = tile.getCookTime() + f.getCookModifier();
+					// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
+					int cookTime = Math.max(0, tile.getCookTime()) + f.getCookModifier();
 					if (cookTime > 200) {
 						cookTime = 200;
 					}
