@@ -50,15 +50,11 @@ public class FurnaceListener implements Listener {
 			event.setCancelled(true);
 			return;
 		}
-		if (furnace.getBurnModifier() > 0) {
-			// + 1/5 fuel burn length per level unbreaking
-			int burnTime = (int) ((1 + .2 * furnace.getBurnModifier()) * event.getBurnTime());
-			// Burn time is actually a short internally. Capping it here prevents some wonky behavior
-			if (burnTime > Short.MAX_VALUE) {
-				burnTime = Short.MAX_VALUE;
-			}
-			event.setBurnTime(burnTime);
-		}
+		// Unbreaking causes furnace to burn for longer, increase burn time
+		int burnTime = getCappedTicks(event.getBurnTime(), -furnace.getBurnModifier(), 0.2);
+		// Efficiency causes furnace to burn faster, reduce burn time to match smelt rate increase
+		burnTime = getCappedTicks(burnTime, furnace.getCookModifier(), 0.5);
+		event.setBurnTime(burnTime);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -98,11 +94,25 @@ public class FurnaceListener implements Listener {
 							tile.setCookTime((short) 0);
 							tile.update();
 						}
-						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
+						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), getCappedTicks(200, cookModifier, 0.5));
 					}
 				}.runTask(plugin);
 			}
 		}
+	}
+
+	private int getCappedTicks(int baseTicks, int baseModifier, double fractionModifier) {
+		return Math.max(1, Math.min(Short.MAX_VALUE, getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
+	}
+
+	private int getModifiedTicks(int baseTicks, int baseModifier, double fractionModifier) {
+		if (baseModifier == 0) {
+			return baseTicks;
+		}
+		if (baseModifier > 0) {
+			return (int) (baseTicks / (1 + baseModifier * fractionModifier));
+		}
+		return (int) (baseTicks * (1 + (-baseModifier) * fractionModifier));
 	}
 
 	@SuppressWarnings("deprecation")
@@ -224,7 +234,7 @@ public class FurnaceListener implements Listener {
 						tile.setCookTime((short) 0);
 						tile.update();
 					}
-					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), 400 / (cookModifier + 2));
+					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), getCappedTicks(200, cookModifier, 0.5));
 				}
 				if (furnace.isPaused()) {
 					furnace.resume();
