@@ -80,7 +80,7 @@ public class FurnaceListener implements Listener {
 			}.runTask(plugin);
 		} else if (ReflectionUtils.areFurnacesSupported()) {
 			final int cookModifier = furnace.getCookModifier();
-			if (cookModifier > 0) {
+			if (cookModifier != 0) {
 				new BukkitRunnable() {
 					@Override
 					public void run() {
@@ -222,13 +222,13 @@ public class FurnaceListener implements Listener {
 			return;
 		}
 		final int cookModifier = furnace.getCookModifier();
-		if ((!ReflectionUtils.areFurnacesSupported() || cookModifier < 1) && !furnace.canPause()) {
+		if ((!ReflectionUtils.areFurnacesSupported() || cookModifier != 0) && !furnace.canPause()) {
 			return;
 		}
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				if (ReflectionUtils.areFurnacesSupported() && cookModifier > 0) {
+				if (ReflectionUtils.areFurnacesSupported() && cookModifier != 0) {
 					// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
 					if (tile.getCookTime() < 0) {
 						tile.setCookTime((short) 0);
