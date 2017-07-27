@@ -28,73 +28,48 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Handles enchantments/combinations in an anvil.
- * 
+ *
  * @author Jikoo
  */
 public class AnvilEnchanter implements Listener {
 
-	private final EnchantedFurnace plugin;
-
-	public AnvilEnchanter(EnchantedFurnace plugin) {
-		this.plugin = plugin;
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(InventoryClickEvent event) {
-		onInventoryInteract(event);
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(InventoryDragEvent event) {
-		onInventoryInteract(event);
-	}
-
-	private void onInventoryInteract(InventoryInteractEvent event) {
-		if (!ReflectionUtils.areAnvilsSupported()
-				|| event.getView().getTopInventory().getType() != InventoryType.ANVIL
-				|| !(event.getWhoClicked() instanceof Player)) {
-			return;
-		}
-		Player clicker = (Player) event.getWhoClicked();
-		if (!clicker.hasPermission("enchantedfurnace.enchant.anvil")
-				|| clicker.getGameMode() == GameMode.CREATIVE) {
-			return;
-		}
-
-		new AnvilEnchantUpdate(event.getView()).runTask(plugin);
-	}
-
 	private class AnvilEnchantUpdate extends BukkitRunnable {
 
 		private final InventoryView view;
-		public AnvilEnchantUpdate(InventoryView view) {
+		public AnvilEnchantUpdate(final InventoryView view) {
 			this.view = view;
 		}
 
 		@Override
 		public void run() {
-			Inventory inv = view.getTopInventory();
+			Inventory inv = this.view.getTopInventory();
 			if (inv.getItem(0) == null || inv.getItem(1) == null || inv.getItem(0).getType() != Material.FURNACE
 					|| inv.getItem(0).getAmount() > 1 || inv.getItem(1).getAmount() > 1
-					|| (inv.getItem(1).getType() != Material.ENCHANTED_BOOK && inv.getItem(1).getType() != Material.FURNACE)) {
+					|| inv.getItem(1).getType() != Material.ENCHANTED_BOOK && inv.getItem(1).getType() != Material.FURNACE) {
 				return;
 			}
 
-			ItemStack result = combine(view, inv.getItem(0), inv.getItem(1));
+			ItemStack result = AnvilEnchanter.this.combine(this.view, inv.getItem(0), inv.getItem(1));
+
 			if (result == null) {
 				return;
 			}
 
 			inv.setItem(2, result);
 
-			if (view.getPlayer() instanceof Player) {
-				((Player) view.getPlayer()).updateInventory();
-				ReflectionUtils.updateAnvilExpCost(view);
+			if (this.view.getPlayer() instanceof Player) {
+				((Player) this.view.getPlayer()).updateInventory();
 			}
 		}
 	}
 
-	private ItemStack combine(InventoryView view, ItemStack base, ItemStack addition) {
+	private final EnchantedFurnace plugin;
+
+	public AnvilEnchanter(final EnchantedFurnace plugin) {
+		this.plugin = plugin;
+	}
+
+	private ItemStack combine(final InventoryView view, ItemStack base, final ItemStack addition) {
 		ItemMeta baseMeta = base.getItemMeta();
 		Repairable baseRepairable = (Repairable) baseMeta;
 		ItemMeta additionMeta = addition.getItemMeta();
@@ -109,7 +84,7 @@ public class AnvilEnchanter implements Listener {
 			cost += additionRepairable.getRepairCost();
 		}
 
-		Map<Enchantment, Integer> baseEnchants = new HashMap<Enchantment, Integer>(base.getEnchantments());
+		Map<Enchantment, Integer> baseEnchants = new HashMap<>(base.getEnchantments());
 		Map<Enchantment, Integer> additionEnchants;
 		boolean book = additionMeta instanceof EnchantmentStorageMeta;
 		if (book) {
@@ -119,11 +94,11 @@ public class AnvilEnchanter implements Listener {
 		}
 
 		nextEnchant: for (Entry<Enchantment, Integer> entry : additionEnchants.entrySet()) {
-			if (!plugin.getEnchantments().contains(entry.getKey())) {
+			if (!this.plugin.getEnchantments().contains(entry.getKey())) {
 				continue;
 			}
 			for (Enchantment e : baseEnchants.keySet()) {
-				if (!e.equals(entry.getKey()) && !plugin.areEnchantmentsCompatible(e, entry.getKey())) {
+				if (!e.equals(entry.getKey()) && !this.plugin.areEnchantmentsCompatible(e, entry.getKey())) {
 					// Incompatible but valid enchant: +1 cost
 					cost += 1;
 					continue nextEnchant;
@@ -135,7 +110,7 @@ public class AnvilEnchanter implements Listener {
 				if (level > entry.getKey().getMaxLevel()) {
 					level = entry.getKey().getMaxLevel();
 				}
-				cost += getEnchantmentMultiplier(entry.getKey(), book) * level;
+				cost += this.getEnchantmentMultiplier(entry.getKey(), book) * level;
 				baseEnchants.put(entry.getKey(), level);
 				continue;
 			}
@@ -150,7 +125,7 @@ public class AnvilEnchanter implements Listener {
 				baseLvl = entry.getKey().getMaxLevel();
 			}
 			// Compatible enchant: + multiplier * final level
-			cost += getEnchantmentMultiplier(entry.getKey(), book) * baseLvl;
+			cost += this.getEnchantmentMultiplier(entry.getKey(), book) * baseLvl;
 			baseEnchants.put(entry.getKey(), baseLvl);
 		}
 
@@ -177,7 +152,7 @@ public class AnvilEnchanter implements Listener {
 		return base;
 	}
 
-	private int getEnchantmentMultiplier(Enchantment enchantment, boolean book) {
+	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {
 		int multiplier;
 		if (enchantment.equals(Enchantment.ARROW_DAMAGE)
 				|| enchantment.equals(Enchantment.DAMAGE_ALL)
@@ -207,6 +182,31 @@ public class AnvilEnchanter implements Listener {
 		}
 
 		return multiplier;
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onInventoryClick(final InventoryClickEvent event) {
+		this.onInventoryInteract(event);
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+	public void onInventoryClick(final InventoryDragEvent event) {
+		this.onInventoryInteract(event);
+	}
+
+	private void onInventoryInteract(final InventoryInteractEvent event) {
+		if (!ReflectionUtils.areAnvilsSupported()
+				|| event.getView().getTopInventory().getType() != InventoryType.ANVIL
+				|| !(event.getWhoClicked() instanceof Player)) {
+			return;
+		}
+		Player clicker = (Player) event.getWhoClicked();
+		if (!clicker.hasPermission("enchantedfurnace.enchant.anvil")
+				|| clicker.getGameMode() == GameMode.CREATIVE) {
+			return;
+		}
+
+		new AnvilEnchantUpdate(event.getView()).runTask(this.plugin);
 	}
 
 }

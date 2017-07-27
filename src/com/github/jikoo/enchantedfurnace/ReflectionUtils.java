@@ -24,6 +24,7 @@ public class ReflectionUtils {
 	private static final String VERSION_STRING;
 
 	private static int VERSION_MAJOR;
+	private static int VERSION_MINOR;
 
 	private static boolean ANVIL_SUPPORT = false;
 	private static boolean FURNACE_SUPPORT = false;
@@ -68,65 +69,6 @@ public class ReflectionUtils {
 		return ReflectionUtils.FURNACE_SUPPORT;
 	}
 
-	public static int getAnvilExpCost(final InventoryView view) {
-		if (!ReflectionUtils.ANVIL_SUPPORT) {
-			throw new IllegalStateException("Cannot set anvil cost when anvil support is not enabled!");
-		}
-
-		if (!(view.getTopInventory() instanceof AnvilInventory)) {
-			return 41;
-		}
-
-		if (ReflectionUtils.VERSION_MAJOR >= 12) {
-			return ((AnvilInventory) view.getTopInventory()).getRepairCost();
-		}
-
-		if (!ReflectionUtils.CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
-			return 41;
-		}
-
-		try {
-			Object containerAnvil = ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
-			if (!ReflectionUtils.CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
-				return 41;
-			}
-			return (int) ReflectionUtils.CONTAINERANVIL_EXP_COST.get(containerAnvil);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		return 41;
-	}
-
-	private static String getContainerAnvilExpField() {
-		switch (ReflectionUtils.VERSION_STRING) {
-		case "craftbukkit":
-		case "v1_4_5":
-		case "v1_4_6":
-		case "v1_4_R1":
-		case "v1_5_R1":
-		case "v1_5_R2":
-		case "v1_5_R3":
-		case "v1_6_R1":
-		case "v1_6_R2":
-		case "v1_6_R3":
-		case "v1_7_R1":
-		case "v1_7_R2":
-		case "v1_7_R3":
-		case "v1_7_R4":
-		case "v1_8_R1":
-		case "v1_8_R2":
-		case "v1_8_R3":
-		case "v1_9_R1":
-		case "v1_9_R2":
-		case "v1_10_R1":
-		case "v1_11_R1":
-			return "a";
-		case "v1_12_R1":
-		default:
-			return "levelCost";
-		}
-	}
-
 	private static String getContainerAnvilNameField() {
 		switch (ReflectionUtils.VERSION_STRING) {
 		case "craftbukkit":
@@ -152,10 +94,8 @@ public class ReflectionUtils {
 		case "v1_9_R2":
 		case "v1_10_R1":
 		case "v1_11_R1":
-			return "l";
-		case "v1_12_R1":
 		default:
-			return "renameText";
+			return "l";
 		}
 	}
 
@@ -169,7 +109,7 @@ public class ReflectionUtils {
 			return null;
 		}
 
-		if (ReflectionUtils.VERSION_MAJOR >= 12) {
+		if (ReflectionUtils.VERSION_MINOR >= 12 || ReflectionUtils.VERSION_MAJOR > 1) {
 			return ((AnvilInventory) view.getTopInventory()).getRenameText();
 		}
 
@@ -196,23 +136,22 @@ public class ReflectionUtils {
 		}
 
 		Matcher matcher = Pattern.compile("v([0-9]+)_([0-9]+)_R[0-9]+").matcher(ReflectionUtils.VERSION_STRING);
-		int minor;
 
 		String packageOBC = "org.bukkit.craftbukkit";
 		String packageNMS = "net.minecraft.server";
 		if (!matcher.find()) {
 			ReflectionUtils.VERSION_MAJOR = 0;
-			minor = 0;
+			ReflectionUtils.VERSION_MINOR = 0;
 		} else {
-			ReflectionUtils.VERSION_MAJOR = Integer.parseInt(matcher.group(1));
-			minor = Integer.parseInt(matcher.group(2));
+			ReflectionUtils.VERSION_MAJOR = Integer.parseInt(matcher.group(2));
+			ReflectionUtils.VERSION_MINOR = Integer.parseInt(matcher.group(2));
 			packageOBC += '.' + ReflectionUtils.VERSION_STRING;
 			packageNMS += '.' + ReflectionUtils.VERSION_STRING;
 		}
 
 		ReflectionUtils.initAnvilSupport(packageOBC, packageNMS);
 
-		if (minor < 8 && ReflectionUtils.VERSION_MAJOR < 2) {
+		if (ReflectionUtils.VERSION_MINOR < 8 && ReflectionUtils.VERSION_MAJOR < 2) {
 			// Minimum supported version of 1.8 for furnaces - worked much differently prior.
 			System.out.println("[EnchantedFurnace] " + ReflectionUtils.VERSION_STRING + " detected, furnaces will fall back to runnables.");
 			return;
@@ -248,10 +187,12 @@ public class ReflectionUtils {
 
 			ReflectionUtils.CONTAINERANVIL = Class.forName(packageNMS + ".ContainerAnvil");
 
-			if (ReflectionUtils.VERSION_MAJOR < 12) {
+			boolean under1_12 = ReflectionUtils.VERSION_MAJOR < 2 && ReflectionUtils.VERSION_MINOR < 12;
+
+			if (under1_12) {
 				ReflectionUtils.CONTAINERANVIL_NAME = ReflectionUtils.CONTAINERANVIL.getDeclaredField(ReflectionUtils.getContainerAnvilNameField());
 				ReflectionUtils.CONTAINERANVIL_NAME.setAccessible(true);
-				ReflectionUtils.CONTAINERANVIL_EXP_COST = ReflectionUtils.CONTAINERANVIL.getDeclaredField(ReflectionUtils.getContainerAnvilExpField());
+				ReflectionUtils.CONTAINERANVIL_EXP_COST = ReflectionUtils.CONTAINERANVIL.getDeclaredField("a");
 			}
 
 			ReflectionUtils.CRAFTPLAYER = Class.forName(packageOBC + ".entity.CraftPlayer");
@@ -262,8 +203,8 @@ public class ReflectionUtils {
 					ReflectionUtils.CONTAINERANVIL.getSuperclass(), int.class, int.class);
 
 			if (ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.getReturnType().isAssignableFrom(ReflectionUtils.CONTAINERANVIL)
-					&& String.class.isAssignableFrom(ReflectionUtils.CONTAINERANVIL_NAME.getType())
-					&& int.class.isAssignableFrom(ReflectionUtils.CONTAINERANVIL_EXP_COST.getType())
+					&& (!under1_12 || String.class.isAssignableFrom(ReflectionUtils.CONTAINERANVIL_NAME.getType())
+					&& int.class.isAssignableFrom(ReflectionUtils.CONTAINERANVIL_EXP_COST.getType()))
 					&& ReflectionUtils.CRAFTPLAYER_GETHANDLE.getReturnType().isAssignableFrom(ReflectionUtils.ENTITYPLAYER)) {
 				ReflectionUtils.ANVIL_SUPPORT = true;
 			} else {
@@ -287,22 +228,42 @@ public class ReflectionUtils {
 			return;
 		}
 
-		if (ReflectionUtils.VERSION_MAJOR >= 12) {
+		// Set repair cost
+		if (ReflectionUtils.VERSION_MAJOR > 1 || ReflectionUtils.VERSION_MINOR >= 12) {
 			((AnvilInventory) view.getTopInventory()).setRepairCost(cost);
-			return;
-		}
-
-		if (!ReflectionUtils.CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
-			return;
-		}
-
-		try {
-			Object containerAnvil = ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
-			if (!ReflectionUtils.CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
+		} else {
+			if (!ReflectionUtils.CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
 				return;
 			}
-			ReflectionUtils.CONTAINERANVIL_EXP_COST.set(containerAnvil, cost);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+
+			try {
+				Object containerAnvil = ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
+				if (!ReflectionUtils.CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
+					return;
+				}
+				ReflectionUtils.CONTAINERANVIL_EXP_COST.set(containerAnvil, cost);
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Update repair cost for client
+		try {
+			HumanEntity player = view.getPlayer();
+			if (player == null || !ReflectionUtils.CRAFTPLAYER.isAssignableFrom(player.getClass())) {
+				return;
+			}
+			Object entityPlayer = ReflectionUtils.CRAFTPLAYER_GETHANDLE.invoke(player);
+			if (entityPlayer == null || !ReflectionUtils.ENTITYPLAYER.isAssignableFrom(entityPlayer.getClass())) {
+				return;
+			}
+			Object containerAnvil = ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
+			if (containerAnvil == null
+					|| !ReflectionUtils.CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
+				return;
+			}
+			ReflectionUtils.ENTITYPLAYER_SETCONTAINERDATA.invoke(entityPlayer, containerAnvil, 0, cost);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -324,35 +285,6 @@ public class ReflectionUtils {
 			}
 			ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL.set(tileEntityFurnace, Math.max(0, duration));
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public static void updateAnvilExpCost(final InventoryView view) {
-		if (!ReflectionUtils.ANVIL_SUPPORT) {
-			throw new IllegalStateException("Cannot set anvil cost when anvil support is not enabled!");
-		}
-		if (!(view.getTopInventory() instanceof AnvilInventory)
-				|| !ReflectionUtils.CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
-			return;
-		}
-		try {
-			HumanEntity player = view.getPlayer();
-			if (player == null || !ReflectionUtils.CRAFTPLAYER.isAssignableFrom(player.getClass())) {
-				return;
-			}
-			Object entityPlayer = ReflectionUtils.CRAFTPLAYER_GETHANDLE.invoke(player);
-			if (entityPlayer == null || !ReflectionUtils.ENTITYPLAYER.isAssignableFrom(entityPlayer.getClass())) {
-				return;
-			}
-			Object containerAnvil = ReflectionUtils.CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
-			if (containerAnvil == null
-					|| !ReflectionUtils.CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
-				return;
-			}
-			ReflectionUtils.ENTITYPLAYER_SETCONTAINERDATA.invoke(entityPlayer, containerAnvil, 0,
-					ReflectionUtils.getAnvilExpCost(view));
-		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
