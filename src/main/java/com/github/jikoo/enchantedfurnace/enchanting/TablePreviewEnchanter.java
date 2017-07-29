@@ -18,7 +18,7 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 
 /**
  * Handles enchantments in enchantment tables which support previews (1.11+).
- * 
+ *
  * @author Jikoo
  */
 public class TablePreviewEnchanter implements Listener {
@@ -26,17 +26,17 @@ public class TablePreviewEnchanter implements Listener {
 	private final EnchantedFurnace plugin;
 	private final Map<UUID, Map<Integer, Map<Enchantment, Integer>>> enchantments;
 
-	public TablePreviewEnchanter(EnchantedFurnace plugin) {
+	public TablePreviewEnchanter(final EnchantedFurnace plugin) {
 		this.plugin = plugin;
 		this.enchantments = new HashMap<>();
 	}
 
 	@EventHandler(ignoreCancelled = false)
-	public void onPrepareItemEnchant(PrepareItemEnchantEvent event) {
+	public void onPrepareItemEnchant(final PrepareItemEnchantEvent event) {
 		if (event.getItem().getEnchantments().size() > 0
 				|| !event.getItem().getType().equals(Material.FURNACE)
 				|| event.getItem().getAmount() != 1
-				|| plugin.getEnchantments().size() <= 0
+				|| this.plugin.getEnchantments().size() <= 0
 				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
 			return;
 		}
@@ -44,7 +44,7 @@ public class TablePreviewEnchanter implements Listener {
 		event.setCancelled(false);
 
 		if (!this.enchantments.containsKey(event.getEnchanter().getUniqueId())) {
-			this.enchantments.put(event.getEnchanter().getUniqueId(), new HashMap<>());
+			this.enchantments.put(event.getEnchanter().getUniqueId(), new HashMap<Integer, Map<Enchantment, Integer>>());
 		}
 
 		Map<Integer, Map<Enchantment, Integer>> enchantmentLevels = this.enchantments.get(event.getEnchanter().getUniqueId());
@@ -55,7 +55,7 @@ public class TablePreviewEnchanter implements Listener {
 			if (enchantmentLevels.containsKey(buttonLevel)) {
 				enchantments = enchantmentLevels.get(buttonLevel);
 			} else {
-				enchantments = EnchantmentUtil.calculateFurnaceEnchants(plugin, buttonLevel);
+				enchantments = EnchantmentUtil.calculateFurnaceEnchants(this.plugin, buttonLevel);
 				enchantmentLevels.put(buttonLevel, enchantments);
 			}
 			if (enchantments.isEmpty()) {
@@ -68,7 +68,7 @@ public class TablePreviewEnchanter implements Listener {
 	}
 
 	@EventHandler
-	public void onEnchantItem(EnchantItemEvent event) {
+	public void onEnchantItem(final EnchantItemEvent event) {
 
 		// Player has attempted enchanting anything, all enchants must be re-rolled.
 		Map<Integer, Map<Enchantment, Integer>> enchantmentLevels = this.enchantments.remove(event.getEnchanter().getUniqueId());
@@ -89,7 +89,7 @@ public class TablePreviewEnchanter implements Listener {
 		for (Enchantment enchantment : event.getItem().getEnchantments().keySet()) {
 			Iterator<Enchantment> iterator = enchantments.keySet().iterator();
 			while (iterator.hasNext()) {
-				if (!plugin.areEnchantmentsCompatible(enchantment, iterator.next())) {
+				if (!this.plugin.areEnchantmentsCompatible(enchantment, iterator.next())) {
 					iterator.remove();
 				}
 			}

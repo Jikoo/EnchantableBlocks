@@ -30,7 +30,7 @@
 # Furnaces placed in these worlds will not be remembered and existing saved furnaces will not be loaded.
 # 
 
-autosave: 0
+autosave: 5
 fortune_list_mode: blacklist
 fortune_list:
 - SPONGE

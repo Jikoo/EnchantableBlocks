@@ -29,20 +29,20 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Listener for all furnace-related events.
- * 
+ *
  * @author Jikoo
  */
 public class FurnaceListener implements Listener {
 
 	private final EnchantedFurnace plugin;
 
-	public FurnaceListener(EnchantedFurnace plugin) {
+	public FurnaceListener(final EnchantedFurnace plugin) {
 		this.plugin = plugin;
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onFurnaceConsumeFuel(FurnaceBurnEvent event) {
-		Furnace furnace = plugin.getFurnace(event.getBlock());
+	public void onFurnaceConsumeFuel(final FurnaceBurnEvent event) {
+		Furnace furnace = this.plugin.getFurnace(event.getBlock());
 		if (furnace == null) {
 			return;
 		}
@@ -51,23 +51,23 @@ public class FurnaceListener implements Listener {
 			return;
 		}
 		// Unbreaking causes furnace to burn for longer, increase burn time
-		int burnTime = getCappedTicks(event.getBurnTime(), -furnace.getBurnModifier(), 0.2);
+		int burnTime = this.getCappedTicks(event.getBurnTime(), -furnace.getBurnModifier(), 0.2);
 		// Efficiency causes furnace to burn faster, reduce burn time to match smelt rate increase
-		burnTime = getCappedTicks(burnTime, furnace.getCookModifier(), 0.5);
+		burnTime = this.getCappedTicks(burnTime, furnace.getCookModifier(), 0.5);
 		event.setBurnTime(burnTime);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onItemSmelt(FurnaceSmeltEvent event) {
-		final Furnace furnace = plugin.getFurnace(event.getBlock());
+	public void onItemSmelt(final FurnaceSmeltEvent event) {
+		final Furnace furnace = this.plugin.getFurnace(event.getBlock());
 		if (furnace == null) {
 			return;
 		}
 
 		if (furnace.getFortune() > 0) {
-			boolean listContains = plugin.getFortuneList().contains(event.getSource().getType().name());
-			if (plugin.isBlacklist() ? !listContains : listContains) {
-				applyFortune(event, furnace);
+			boolean listContains = this.plugin.getFortuneList().contains(event.getSource().getType().name());
+			if (this.plugin.isBlacklist() ? !listContains : listContains) {
+				this.applyFortune(event, furnace);
 			}
 		}
 
@@ -77,7 +77,7 @@ public class FurnaceListener implements Listener {
 				public void run() {
 					furnace.pause();
 				}
-			}.runTask(plugin);
+			}.runTask(this.plugin);
 		} else if (ReflectionUtils.areFurnacesSupported()) {
 			final int cookModifier = furnace.getCookModifier();
 			if (cookModifier != 0) {
@@ -94,29 +94,29 @@ public class FurnaceListener implements Listener {
 							tile.setCookTime((short) 0);
 							tile.update();
 						}
-						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), getCappedTicks(200, cookModifier, 0.5));
+						ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
 					}
-				}.runTask(plugin);
+				}.runTask(this.plugin);
 			}
 		}
 	}
 
-	private int getCappedTicks(int baseTicks, int baseModifier, double fractionModifier) {
-		return Math.max(1, Math.min(Short.MAX_VALUE, getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
+	private int getCappedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
+		return Math.max(1, Math.min(Short.MAX_VALUE, this.getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
 	}
 
-	private int getModifiedTicks(int baseTicks, int baseModifier, double fractionModifier) {
+	private int getModifiedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
 		if (baseModifier == 0) {
 			return baseTicks;
 		}
 		if (baseModifier > 0) {
 			return (int) (baseTicks / (1 + baseModifier * fractionModifier));
 		}
-		return (int) (baseTicks * (1 + (-baseModifier) * fractionModifier));
+		return (int) (baseTicks * (1 + -baseModifier * fractionModifier));
 	}
 
 	@SuppressWarnings("deprecation")
-	private void applyFortune(FurnaceSmeltEvent event, Furnace furnace) {
+	private void applyFortune(final FurnaceSmeltEvent event, final Furnace furnace) {
 		FurnaceInventory inventory = furnace.getFurnaceTile().getInventory();
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
@@ -156,7 +156,7 @@ public class FurnaceListener implements Listener {
 				continue;
 			}
 			if (newResult == null) {
-				plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
+				this.plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
 						+ inventory.getSmelting().getData() + ". Please report this error.");
 				return;
 			}
@@ -168,18 +168,18 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onBlockPlace(BlockPlaceEvent event) {
+	public void onBlockPlace(final BlockPlaceEvent event) {
 		if (event.getItemInHand() != null && event.getItemInHand().getType() == Material.FURNACE) {
-			plugin.createFurnace(event.getBlock(), event.getItemInHand());
+			this.plugin.createFurnace(event.getBlock(), event.getItemInHand());
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onBlockBreak(BlockBreakEvent event) {
+	public void onBlockBreak(final BlockBreakEvent event) {
 		if (event.getBlock().getType() != Material.FURNACE && event.getBlock().getType() != Material.BURNING_FURNACE) {
 			return;
 		}
-		ItemStack is = plugin.destroyFurnace(event.getBlock());
+		ItemStack is = this.plugin.destroyFurnace(event.getBlock());
 		if (is != null) {
 			Player player = event.getPlayer();
 			if (player.getGameMode() != GameMode.CREATIVE
@@ -192,15 +192,15 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(InventoryClickEvent event) {
+	public void onInventoryClick(final InventoryClickEvent event) {
 		if (event.getView().getTopInventory().getType() != InventoryType.FURNACE) {
 			return;
 		}
-		furnaceContentsChanged(event.getView().getTopInventory());
+		this.furnaceContentsChanged(event.getView().getTopInventory());
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryMoveItem(InventoryMoveItemEvent e) {
+	public void onInventoryMoveItem(final InventoryMoveItemEvent e) {
 		Inventory furnace;
 		if (e.getDestination().getType() == InventoryType.FURNACE) {
 			furnace = e.getDestination();
@@ -209,15 +209,15 @@ public class FurnaceListener implements Listener {
 		} else {
 			return;
 		}
-		furnaceContentsChanged(furnace);
+		this.furnaceContentsChanged(furnace);
 	}
 
-	private void furnaceContentsChanged(Inventory inventory) {
+	private void furnaceContentsChanged(final Inventory inventory) {
 		if (!(inventory.getHolder() instanceof org.bukkit.block.Furnace)) {
 			return;
 		}
-		final org.bukkit.block.Furnace tile = ((org.bukkit.block.Furnace) inventory.getHolder());
-		final Furnace furnace = plugin.getFurnace(tile.getBlock());
+		final org.bukkit.block.Furnace tile = (org.bukkit.block.Furnace) inventory.getHolder();
+		final Furnace furnace = this.plugin.getFurnace(tile.getBlock());
 		if (furnace == null) {
 			return;
 		}
@@ -234,7 +234,7 @@ public class FurnaceListener implements Listener {
 						tile.setCookTime((short) 0);
 						tile.update();
 					}
-					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), getCappedTicks(200, cookModifier, 0.5));
+					ReflectionUtils.setFurnaceCookTime(furnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
 				}
 				if (furnace.isPaused()) {
 					furnace.resume();
@@ -242,16 +242,16 @@ public class FurnaceListener implements Listener {
 					furnace.pause();
 				}
 			}
-		}.runTask(plugin);
+		}.runTask(this.plugin);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onChunkLoad(ChunkLoadEvent event) {
-		plugin.loadChunkFurnaces(event.getChunk());
+	public void onChunkLoad(final ChunkLoadEvent event) {
+		this.plugin.loadChunkFurnaces(event.getChunk());
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onChunkUnload(ChunkUnloadEvent event) {
-		plugin.unloadChunkFurnaces(event.getChunk());
+	public void onChunkUnload(final ChunkUnloadEvent event) {
+		this.plugin.unloadChunkFurnaces(event.getChunk());
 	}
 }

@@ -1,7 +1,7 @@
 name: EnchantedFurnace
 
 main: com.github.jikoo.enchantedfurnace.EnchantedFurnace
-version: 1.6.8
+version: ${project.version}
 author: Jikoo
 
 permissions:

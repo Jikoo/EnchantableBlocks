@@ -35,7 +35,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * Bukkit plugin for adding effects to furnaces based on enchantments.
- * 
+ *
  * @author Jikoo
  */
 public class EnchantedFurnace extends JavaPlugin {
@@ -51,86 +51,86 @@ public class EnchantedFurnace extends JavaPlugin {
 	@Override
 	public void onEnable() {
 
-		this.furnaces = new HashMap<Block, Furnace>();
+		this.furnaces = new HashMap<>();
 		this.loadFurnaces();
 
-		updateConfig();
+		this.updateConfig();
 
-		ArrayList<String> disabledWorlds = new ArrayList<String>();
-		for (String worldName : getConfig().getStringList("disabled_worlds")) {
+		ArrayList<String> disabledWorlds = new ArrayList<>();
+		for (String worldName : this.getConfig().getStringList("disabled_worlds")) {
 			if (!disabledWorlds.contains(worldName.toLowerCase())) {
 				disabledWorlds.add(worldName.toLowerCase());
 			}
 		}
 
-		isBlacklist = getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
+		this.isBlacklist = this.getConfig().getString("fortune_list_mode").matches(".*[Bb][Ll][Aa][Cc][Kk].*");
 
 		// TODO allow MaterialData
-		fortuneList = new ArrayList<String>();
-		for (Iterator<String> iterator = getConfig().getStringList("fortune_list").iterator(); iterator.hasNext();) {
+		this.fortuneList = new ArrayList<>();
+		for (Iterator<String> iterator = this.getConfig().getStringList("fortune_list").iterator(); iterator.hasNext();) {
 			String next = iterator.next().toUpperCase();
-			if (fortuneList.contains(next)) {
+			if (this.fortuneList.contains(next)) {
 				continue;
 			}
 			Material m = Material.getMaterial(next);
 			if (m == null) {
-				getLogger().warning("No material by the name of \"" + next + "\" could be found!");
-				getLogger().info("Please use material names listed in https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html");
+				this.getLogger().warning("No material by the name of \"" + next + "\" could be found!");
+				this.getLogger().info("Please use material names listed in https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html");
 			} else {
-				fortuneList.add(m.name());
+				this.fortuneList.add(m.name());
 			}
 		}
 
-		HashSet<String> allowedEnchantments = new HashSet<String>();
+		HashSet<String> allowedEnchantments = new HashSet<>();
 		allowedEnchantments.add("DIG_SPEED");
 		allowedEnchantments.add("DURABILITY");
 		allowedEnchantments.add("LOOT_BONUS_BLOCKS");
 		allowedEnchantments.add("SILK_TOUCH");
-		for (String enchantment : getConfig().getStringList("disabled_furnace_enchantments")) {
+		for (String enchantment : this.getConfig().getStringList("disabled_furnace_enchantments")) {
 			if (allowedEnchantments.contains(enchantment)) {
 				allowedEnchantments.remove(enchantment);
 			}
 		}
-		enchantments = new HashSet<Enchantment>();
+		this.enchantments = new HashSet<>();
 		for (String enchantment : allowedEnchantments) {
-			enchantments.add(Enchantment.getByName(enchantment));
+			this.enchantments.add(Enchantment.getByName(enchantment));
 		}
 
-		incompatibleEnchants = HashMultimap.create();
-		for (String enchantment : getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
+		this.incompatibleEnchants = HashMultimap.create();
+		for (String enchantment : this.getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
 			Enchantment key = Enchantment.getByName(enchantment);
-			String enchantmentValue = getConfig().getString("enchantment_incompatibilities." + enchantment);
+			String enchantmentValue = this.getConfig().getString("enchantment_incompatibilities." + enchantment);
 			Enchantment value = Enchantment.getByName(enchantmentValue);
 			if (key == null || value == null) {
-				getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
-				getConfig().set("enchantment_incompatibilities." + enchantment, null);
+				this.getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
+				this.getConfig().set("enchantment_incompatibilities." + enchantment, null);
 			}
-			if (incompatibleEnchants.containsEntry(key, value)) {
+			if (this.incompatibleEnchants.containsEntry(key, value)) {
 				// User probably included reverse mapping
 				continue;
 			}
-			incompatibleEnchants.put(key, value);
-			incompatibleEnchants.put(value, key);
+			this.incompatibleEnchants.put(key, value);
+			this.incompatibleEnchants.put(value, key);
 		}
 
-		getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
+		this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
 
 		try {
 			Class.forName("org.bukkit.enchantments.EnchantmentOffer");
-			getServer().getPluginManager().registerEvents(new TablePreviewEnchanter(this), this);
+			this.getServer().getPluginManager().registerEvents(new TablePreviewEnchanter(this), this);
 		} catch (ClassNotFoundException e) {
-			getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
+			this.getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
 		}
 		if (ReflectionUtils.areAnvilsSupported()) {
-			getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
+			this.getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 		}
 
 		for (World world : Bukkit.getWorlds()) {
-			if (getConfig().getStringList("disabled_worlds").contains(world.getName().toLowerCase())) {
+			if (this.getConfig().getStringList("disabled_worlds").contains(world.getName().toLowerCase())) {
 				continue;
 			}
 			for (Chunk chunk : world.getLoadedChunks()) {
-				loadChunkFurnaces(chunk);
+				this.loadChunkFurnaces(chunk);
 			}
 		}
 
@@ -138,23 +138,25 @@ public class EnchantedFurnace extends JavaPlugin {
 			new FurnaceEfficiencyIncrement(this).runTaskTimer(this, 1, 2);
 		}
 
-		if (getConfig().getInt("autosave") > 0) {
+		if (this.getConfig().getInt("autosave") > 0) {
 			new BukkitRunnable() {
 				@Override
 				public void run() {
-					saveFurnaceStorage();
+					long start = System.currentTimeMillis();
+					EnchantedFurnace.this.saveFurnaceStorage();
+					EnchantedFurnace.this.getLogger().info(String.format("Autosave complete, took %f seconds", (System.currentTimeMillis() - start) / 1000D));
 				}
-			}.runTaskTimer(this, 0, getConfig().getInt("autosave") * 1200);
+			}.runTaskTimerAsynchronously(this, 0, this.getConfig().getInt("autosave") * 1200);
 		}
 	}
 
 	@Override
 	public void onDisable() {
-		getServer().getScheduler().cancelTasks(this);
+		this.getServer().getScheduler().cancelTasks(this);
 		for (Furnace furnace : this.furnaces.values()) {
 			this.saveFurnace(furnace);
 		}
-		saveFurnaceStorage();
+		this.saveFurnaceStorage();
 		this.furnaces.clear();
 		this.furnaces = null;
 		this.enchantments.clear();
@@ -163,50 +165,50 @@ public class EnchantedFurnace extends JavaPlugin {
 
 	@SuppressWarnings("unchecked")
 	public HashSet<Enchantment> getEnchantments() {
-		return (HashSet<Enchantment>) enchantments.clone();
+		return (HashSet<Enchantment>) this.enchantments.clone();
 	}
 
 	public boolean isBlacklist() {
-		return isBlacklist;
+		return this.isBlacklist;
 	}
 
 	public List<String> getFortuneList() {
-		return fortuneList;
+		return this.fortuneList;
 	}
 
 	public int getFurnaceEnchantability() {
-		return getConfig().getInt("furnace_enchantability");
+		return this.getConfig().getInt("furnace_enchantability");
 	}
 
-	public boolean areEnchantmentsCompatible(Enchantment ench1, Enchantment ench2) {
-		return !ench1.equals(ench2) && !incompatibleEnchants.containsEntry(ench1, ench2);
+	public boolean areEnchantmentsCompatible(final Enchantment ench1, final Enchantment ench2) {
+		return !ench1.equals(ench2) && !this.incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
-	public void createFurnace(final Block block, ItemStack is) {
+	public void createFurnace(final Block block, final ItemStack is) {
 		if (is.getType() != Material.FURNACE
-				|| getConfig().getStringList("disabled_worlds").contains(
+				|| this.getConfig().getStringList("disabled_worlds").contains(
 						block.getWorld().getName().toLowerCase())) {
 			return;
 		}
 		final Furnace furnace = new Furnace(block, is.clone());
 		if (furnace.getCookModifier() > 0 || furnace.getBurnModifier() > 0 || furnace.getFortune() > 0 || furnace.canPause()) {
 			this.furnaces.put(block, furnace);
-			saveFurnace(furnace);
+			this.saveFurnace(furnace);
 		}
-		if (getConfig().getInt("autosave") < 1) {
-			saveFurnaceStorage();
+		if (this.getConfig().getInt("autosave") < 1) {
+			this.saveFurnaceStorage();
 		}
 	}
 
-	public ItemStack destroyFurnace(Block block) {
-		Furnace f = furnaces.remove(block);
+	public ItemStack destroyFurnace(final Block block) {
+		Furnace f = this.furnaces.remove(block);
 		if (f == null || block.getType() != Material.FURNACE && block.getType() != Material.BURNING_FURNACE) {
 			return null;
 		}
-		getFurnaceStorage().set(getSaveString(block), null);
-		dirty = true;
-		if (getConfig().getInt("autosave") < 1) {
-			saveFurnaceStorage();
+		this.getFurnaceStorage().set(this.getSaveString(block), null);
+		this.dirty = true;
+		if (this.getConfig().getInt("autosave") < 1) {
+			this.saveFurnaceStorage();
 		}
 		ItemStack is = f.getItemStack();
 		if (is.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
@@ -217,24 +219,24 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	public Collection<Furnace> getFurnaces() {
-		return furnaces.values();
+		return this.furnaces.values();
 	}
 
-	public Furnace getFurnace(Block block) {
-		return furnaces.get(block);
+	public Furnace getFurnace(final Block block) {
+		return this.furnaces.get(block);
 	}
 
-	public boolean isFurnace(Block block) {
-		return furnaces.containsKey(block);
+	public boolean isFurnace(final Block block) {
+		return this.furnaces.containsKey(block);
 	}
 
-	public void loadChunkFurnaces(Chunk chunk) {
-		if (getConfig().getStringList("disabled_worlds").contains(chunk.getWorld().getName().toLowerCase())) {
+	public void loadChunkFurnaces(final Chunk chunk) {
+		if (this.getConfig().getStringList("disabled_worlds").contains(chunk.getWorld().getName().toLowerCase())) {
 			return;
 		}
 		String path = new StringBuilder(chunk.getWorld().getName()).append('.')
 				.append(chunk.getX()).append('_').append(chunk.getZ()).toString();
-		ConfigurationSection chunkSection = getFurnaceStorage().getConfigurationSection(path);
+		ConfigurationSection chunkSection = this.getFurnaceStorage().getConfigurationSection(path);
 		if (chunkSection == null) {
 			return;
 		}
@@ -246,29 +248,29 @@ public class EnchantedFurnace extends JavaPlugin {
 			try {
 				Block block = chunk.getWorld().getBlockAt(Integer.valueOf(split[0]), Integer.valueOf(split[1]), Integer.valueOf(split[2]));
 				Material type = block.getType();
-				ItemStack itemStack = getFurnaceStorage().getItemStack(path + '.' + xyz + ".itemstack");
+				ItemStack itemStack = this.getFurnaceStorage().getItemStack(path + '.' + xyz + ".itemstack");
 				if (type == Material.FURNACE || type == Material.BURNING_FURNACE) {
 					Furnace furnace = new Furnace(block, itemStack);
-					furnaces.put(block, furnace);
+					this.furnaces.put(block, furnace);
 				} else {
 					iterator.remove();
-					getFurnaceStorage().set(path + '.' + xyz, null);
-					dirty = true;
-					getLogger().warning("Removed invalid save: " + itemStack.toString() + " at " + block.getLocation().toString());
+					this.getFurnaceStorage().set(path + '.' + xyz, null);
+					this.dirty = true;
+					this.getLogger().warning("Removed invalid save: " + itemStack.toString() + " at " + block.getLocation().toString());
 				}
 			} catch (NumberFormatException e) {
-				getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(split));
+				this.getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(split));
 			} catch (ClassCastException e) {
-				getLogger().warning("Invalid itemstack saved for " + path + '.' + xyz);
+				this.getLogger().warning("Invalid itemstack saved for " + path + '.' + xyz);
 			}
 		}
 		if (chunkKeys.isEmpty()) {
-			getFurnaceStorage().set(path, null);
+			this.getFurnaceStorage().set(path, null);
 		}
 	}
 
-	public void unloadChunkFurnaces(Chunk chunk) {
-		for (Iterator<Entry<Block, Furnace>> iterator = furnaces.entrySet().iterator(); iterator.hasNext();) {
+	public void unloadChunkFurnaces(final Chunk chunk) {
+		for (Iterator<Entry<Block, Furnace>> iterator = this.furnaces.entrySet().iterator(); iterator.hasNext();) {
 			Entry<Block, Furnace> entry = iterator.next();
 			if (!entry.getKey().getWorld().equals(chunk.getWorld())
 					|| entry.getKey().getX() >> 4 != chunk.getX()
@@ -276,45 +278,45 @@ public class EnchantedFurnace extends JavaPlugin {
 				continue;
 			}
 			if (entry.getValue().canPause()) {
-				saveFurnace(entry.getValue());
+				this.saveFurnace(entry.getValue());
 			}
 			iterator.remove();
 		}
-		if (getConfig().getInt("autosave") < 1) {
-			saveFurnaceStorage();
+		if (this.getConfig().getInt("autosave") < 1) {
+			this.saveFurnaceStorage();
 		}
 	}
 
 	private void loadFurnaces() {
 		// Backwards compatibility for version < 1.4.0
-		ConfigurationSection furnaceSection = getFurnaceStorage().getConfigurationSection("furnaces");
-		convertLegacyFurnaces(furnaceSection);
-		getFurnaceStorage().set("furnaces", null);
+		ConfigurationSection furnaceSection = this.getFurnaceStorage().getConfigurationSection("furnaces");
+		this.convertLegacyFurnaces(furnaceSection);
+		this.getFurnaceStorage().set("furnaces", null);
 
 		// Backwards compatibility for version < 1.3.0
-		furnaceSection = getConfig().getConfigurationSection("furnaces");
-		convertLegacyFurnaces(furnaceSection);
-		getConfig().set("furnaces", null);
+		furnaceSection = this.getConfig().getConfigurationSection("furnaces");
+		this.convertLegacyFurnaces(furnaceSection);
+		this.getConfig().set("furnaces", null);
 
 		// Save converted furnaces, if any
-		if (getConfig().getInt("autosave") < 1) {
-			saveFurnaceStorage();
+		if (this.getConfig().getInt("autosave") < 1) {
+			this.saveFurnaceStorage();
 		}
 
-		Set<String> worlds = getFurnaceStorage().getKeys(false);
-		for (World world : getServer().getWorlds()) {
+		Set<String> worlds = this.getFurnaceStorage().getKeys(false);
+		for (World world : this.getServer().getWorlds()) {
 			if (!worlds.contains(world.getName())
-					|| getConfig().getStringList("disabled_worlds").contains(
+					|| this.getConfig().getStringList("disabled_worlds").contains(
 							world.getName().toLowerCase())) {
 				continue;
 			}
 			for (Chunk chunk : world.getLoadedChunks()) {
-				loadChunkFurnaces(chunk);
+				this.loadChunkFurnaces(chunk);
 			}
 		}
 	}
 
-	private void convertLegacyFurnaces(ConfigurationSection section) {
+	private void convertLegacyFurnaces(final ConfigurationSection section) {
 		if (section == null) {
 			// No saves here
 			return;
@@ -329,42 +331,44 @@ public class EnchantedFurnace extends JavaPlugin {
 
 			// Parse old location string into modern location string
 			if (loc.length != 4) {
-				getLogger().warning("Unable to split location properly! " + legacy + " split to " + Arrays.toString(loc));
+				this.getLogger().warning("Unable to split location properly! " + legacy + " split to " + Arrays.toString(loc));
 				continue;
 			}
-			if (getConfig().getStringList("disabled_worlds").contains(loc[0].toLowerCase())) {
+			if (this.getConfig().getStringList("disabled_worlds").contains(loc[0].toLowerCase())) {
 				continue;
 			}
 			try {
-				World world = getServer().getWorld(loc[0]);
+				World world = this.getServer().getWorld(loc[0]);
 				if (world != null) {
 					block = new Location(world, Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3])).getBlock();
-					modern = getSaveString(block);
+					modern = this.getSaveString(block);
 				} else {
-					modern = getSaveString(loc[0], Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3]));
+					modern = this.getSaveString(loc[0], Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3]));
 				}
 			} catch (Exception e) {
-				getLogger().warning("Error loading block: " + legacy);
+				this.getLogger().warning("Error loading block: " + legacy);
 				if (e instanceof NumberFormatException) {
-					getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(loc));
+					this.getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(loc));
 				} else {
-					getLogger().severe("An unknown exception occurred!");
+					this.getLogger().severe("An unknown exception occurred!");
 					e.printStackTrace();
-					getLogger().severe("Please report this error!");
+					this.getLogger().severe("Please report this error!");
 				}
 				continue;
 			}
 
 			// Verify block is a furnace if world is loaded
-			if (block != null && (block.getType() != Material.FURNACE && block.getType() != Material.BURNING_FURNACE)) {
+			if (block != null && block.getType() != Material.FURNACE && block.getType() != Material.BURNING_FURNACE) {
 				continue;
 			}
 
 			ItemStack furnaceStack = new ItemStack(Material.FURNACE);
 			ItemMeta im = furnaceStack.getItemMeta();
-			String furnaceName = ((org.bukkit.block.Furnace) block.getState()).getInventory().getTitle();
-			if (!furnaceName.equals("container.furnace")) {
-				im.setDisplayName(furnaceName);
+			if (block != null) {
+				String furnaceName = ((org.bukkit.block.Furnace) block.getState()).getInventory().getTitle();
+				if (!furnaceName.equals("container.furnace")) {
+					im.setDisplayName(furnaceName);
+				}
 			}
 			furnaceStack.setItemMeta(im);
 			int level = section.getInt(legacy + ".efficiency", 0);
@@ -392,13 +396,13 @@ public class EnchantedFurnace extends JavaPlugin {
 	}
 
 	private YamlConfiguration getFurnaceStorage() {
-		if (furnaceSaves != null) {
-			return furnaceSaves;
+		if (this.furnaceSaves != null) {
+			return this.furnaceSaves;
 		}
-		if (!getDataFolder().exists()) {
-			getDataFolder().mkdirs();
+		if (!this.getDataFolder().exists()) {
+			this.getDataFolder().mkdirs();
 		}
-		File file = new File(getDataFolder(), "furnaces.yml");
+		File file = new File(this.getDataFolder(), "furnaces.yml");
 		if (!file.exists()) {
 			try {
 				file.createNewFile();
@@ -406,59 +410,59 @@ public class EnchantedFurnace extends JavaPlugin {
 				throw new RuntimeException("Cannot write furnace save file! Make sure your file permissions are set up properly.", e);
 			}
 		}
-		furnaceSaves = YamlConfiguration.loadConfiguration(file);
-		return furnaceSaves;
+		this.furnaceSaves = YamlConfiguration.loadConfiguration(file);
+		return this.furnaceSaves;
 	}
 
 	private void saveFurnaceStorage() {
-		if (furnaceSaves == null || !dirty) {
+		if (this.furnaceSaves == null || !this.dirty) {
 			return;
 		}
-		File file = new File(getDataFolder(), "furnaces.yml");
+		File file = new File(this.getDataFolder(), "furnaces.yml");
 		try {
 			if (!file.exists()) {
 				file.createNewFile();
 			}
-			furnaceSaves.save(file);
-			dirty = false;
+			this.furnaceSaves.save(file);
+			this.dirty = false;
 		} catch (IOException e) {
 			throw new RuntimeException("Cannot write furnace save file! Make sure your file permissions are set up properly.", e);
 		}
 	}
 
-	private void saveFurnace(Furnace furnace) {
-		getFurnaceStorage().set(getSaveString(furnace.getBlock()) + ".itemstack", furnace.getItemStack());
-		dirty = true;
+	private void saveFurnace(final Furnace furnace) {
+		this.getFurnaceStorage().set(this.getSaveString(furnace.getBlock()) + ".itemstack", furnace.getItemStack());
+		this.dirty = true;
 	}
 
-	private String getSaveString(Block block) {
+	private String getSaveString(final Block block) {
 		return this.getSaveString(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
 	}
 
-	private String getSaveString(String world, int x, int y, int z) {
+	private String getSaveString(final String world, final int x, final int y, final int z) {
 		return String.format("%s.%s_%s.%s_%s_%s", world, x >> 4, z >> 4, x, y, z);
 	}
 
 	private void updateConfig() {
-		saveDefaultConfig();
-		Set<String> options = getConfig().getDefaults().getKeys(false);
-		Set<String> current = getConfig().getKeys(false);
+		this.saveDefaultConfig();
+		Set<String> options = this.getConfig().getDefaults().getKeys(false);
+		Set<String> current = this.getConfig().getKeys(false);
 
 		for (String s : options) {
 			if (s.equals("enchantment_incompatibilities")) {
 				continue;
 			}
 			if (!current.contains(s)) {
-				getConfig().set(s, getConfig().getDefaults().get(s));
+				this.getConfig().set(s, this.getConfig().getDefaults().get(s));
 			}
 		}
 
 		for (String s : current) {
 			if (!options.contains(s)) {
-				getConfig().set(s, null);
+				this.getConfig().set(s, null);
 			}
 		}
 
-		getConfig().options().copyHeader(true);
+		this.getConfig().options().copyHeader(true);
 	}
 }
