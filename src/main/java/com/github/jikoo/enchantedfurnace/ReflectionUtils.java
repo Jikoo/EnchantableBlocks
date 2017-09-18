@@ -47,8 +47,8 @@ public class ReflectionUtils {
 	private static Method ENTITYPLAYER_SETCONTAINERDATA;
 
 	// CraftBlockState
-	private static Class<?> CRAFTBLOCKSTATE;
-	private static Method CRAFTBLOCKSTATE_GETTILEENTITY;
+	private static Class<?> CRAFTFURNACE;
+	private static Method CRAFTFURNACE_GETTILEENTITY;
 
 	// NMS TileEntityFurnace
 	private static Class<?> TILEENTITYFURNACE;
@@ -158,15 +158,15 @@ public class ReflectionUtils {
 		}
 
 		try {
-			ReflectionUtils.CRAFTBLOCKSTATE = Class.forName(packageOBC + ".block.CraftBlockState");
-			ReflectionUtils.CRAFTBLOCKSTATE_GETTILEENTITY = ReflectionUtils.CRAFTBLOCKSTATE.getMethod("getTileEntity");
+			ReflectionUtils.CRAFTFURNACE = Class.forName(packageOBC + ".block.CraftFurnace");
+			ReflectionUtils.CRAFTFURNACE_GETTILEENTITY = ReflectionUtils.CRAFTFURNACE.getMethod("getTileEntity");
 
 			ReflectionUtils.TILEENTITYFURNACE = Class.forName(packageNMS + ".TileEntityFurnace");
 			ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL = ReflectionUtils.TILEENTITYFURNACE.getDeclaredField("cookTimeTotal");
 			ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL.setAccessible(true);
 
 			// Verify types before giving the all clear
-			if (ReflectionUtils.CRAFTBLOCKSTATE_GETTILEENTITY.getReturnType().isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE)
+			if (ReflectionUtils.CRAFTFURNACE_GETTILEENTITY.getReturnType().isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE)
 					&& int.class.isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL.getType())) {
 				ReflectionUtils.FURNACE_SUPPORT = true;
 			} else {
@@ -177,6 +177,7 @@ public class ReflectionUtils {
 			// Furnaces not supported
 			System.err.println("[EnchantedFurnace] Error enabling furnace support, will fall back to runnables:");
 			e.printStackTrace();
+			System.err.println("[EnchantedFurnace] You can safely ignore this error, but it won't get fixed if you don't report it.");
 		}
 	}
 
@@ -274,11 +275,11 @@ public class ReflectionUtils {
 					"Cannot set furnace cook time when furnace support is not enabled!");
 		}
 		BlockState state = block.getState();
-		if (!ReflectionUtils.CRAFTBLOCKSTATE.isAssignableFrom(state.getClass())) {
+		if (!ReflectionUtils.CRAFTFURNACE.isAssignableFrom(state.getClass())) {
 			return;
 		}
 		try {
-			Object tileEntityFurnace = ReflectionUtils.CRAFTBLOCKSTATE_GETTILEENTITY.invoke(state);
+			Object tileEntityFurnace = ReflectionUtils.CRAFTFURNACE_GETTILEENTITY.invoke(state);
 			if (tileEntityFurnace == null
 					|| !ReflectionUtils.TILEENTITYFURNACE.isAssignableFrom(tileEntityFurnace.getClass())) {
 				return;
