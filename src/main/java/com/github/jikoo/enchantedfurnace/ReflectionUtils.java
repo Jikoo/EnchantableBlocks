@@ -159,21 +159,32 @@ public class ReflectionUtils {
 
 		try {
 			ReflectionUtils.CRAFTFURNACE = Class.forName(packageOBC + ".block.CraftFurnace");
-			ReflectionUtils.CRAFTFURNACE_GETTILEENTITY = ReflectionUtils.CRAFTFURNACE.getMethod("getTileEntity");
+
+			Class<?> clazz = ReflectionUtils.CRAFTFURNACE;
+			nextSuper: while (clazz != null) {
+				for (Method method : clazz.getDeclaredMethods()) {
+					if (method.getName().equals("getTileEntity") && method.getParameterTypes().length == 0) {
+						ReflectionUtils.CRAFTFURNACE_GETTILEENTITY = method;
+						method.setAccessible(true);
+						break nextSuper;
+					}
+				}
+				clazz = clazz.getSuperclass();
+			}
 
 			ReflectionUtils.TILEENTITYFURNACE = Class.forName(packageNMS + ".TileEntityFurnace");
 			ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL = ReflectionUtils.TILEENTITYFURNACE.getDeclaredField("cookTimeTotal");
 			ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL.setAccessible(true);
 
 			// Verify types before giving the all clear
-			if (ReflectionUtils.CRAFTFURNACE_GETTILEENTITY.getReturnType().isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE)
+			if (ReflectionUtils.CRAFTFURNACE_GETTILEENTITY != null
+					&& ReflectionUtils.CRAFTFURNACE_GETTILEENTITY.getReturnType().isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE)
 					&& int.class.isAssignableFrom(ReflectionUtils.TILEENTITYFURNACE_COOK_TIME_TOTAL.getType())) {
 				ReflectionUtils.FURNACE_SUPPORT = true;
 			} else {
 				System.out.println("[EnchantedFurnace] NMS/OBC field types are not assignable, furnaces will fall back to runnables.");
 			}
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException
-				| NoSuchFieldException e) {
+		} catch (ClassNotFoundException | SecurityException | NoSuchFieldException e) {
 			// Furnaces not supported
 			System.err.println("[EnchantedFurnace] Error enabling furnace support, will fall back to runnables:");
 			e.printStackTrace();

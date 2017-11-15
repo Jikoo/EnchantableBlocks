@@ -3,7 +3,7 @@
 
   <groupId>EnchantedFurnace</groupId>
   <artifactId>EnchantedFurnace</artifactId>
-  <version>1.6.10-SNAPSHOT</version>
+  <version>1.6.10</version>
 
   <dependencies>
     <dependency>
