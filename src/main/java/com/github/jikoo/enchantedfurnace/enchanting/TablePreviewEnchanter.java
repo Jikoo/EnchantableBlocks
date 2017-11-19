@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnace;
+import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -23,10 +23,10 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
  */
 public class TablePreviewEnchanter implements Listener {
 
-	private final EnchantedFurnace plugin;
+	private final EnchantedFurnacePlugin plugin;
 	private final Map<UUID, Map<Integer, Map<Enchantment, Integer>>> enchantments;
 
-	public TablePreviewEnchanter(final EnchantedFurnace plugin) {
+	public TablePreviewEnchanter(final EnchantedFurnacePlugin plugin) {
 		this.plugin = plugin;
 		this.enchantments = new HashMap<>();
 	}

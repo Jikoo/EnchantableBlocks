@@ -3,7 +3,7 @@ package com.github.jikoo.enchantedfurnace.enchanting;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnace;
+import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -19,9 +19,9 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
  */
 public class TableEnchanter implements Listener {
 
-	private final EnchantedFurnace plugin;
+	private final EnchantedFurnacePlugin plugin;
 
-	public TableEnchanter(EnchantedFurnace plugin) {
+	public TableEnchanter(EnchantedFurnacePlugin plugin) {
 		this.plugin = plugin;
 	}
 

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnace;
+import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
 import com.github.jikoo.enchantedfurnace.ReflectionUtils;
 
 import org.bukkit.GameMode;
@@ -63,9 +63,9 @@ public class AnvilEnchanter implements Listener {
 		}
 	}
 
-	private final EnchantedFurnace plugin;
+	private final EnchantedFurnacePlugin plugin;
 
-	public AnvilEnchanter(final EnchantedFurnace plugin) {
+	public AnvilEnchanter(final EnchantedFurnacePlugin plugin) {
 		this.plugin = plugin;
 	}
 
