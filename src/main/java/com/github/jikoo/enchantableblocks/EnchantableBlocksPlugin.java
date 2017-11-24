@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantableblocks;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,15 +14,19 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import com.github.jikoo.enchantedfurnace.enchanting.AnvilEnchanter;
-import com.github.jikoo.enchantedfurnace.enchanting.TableEnchanter;
-import com.github.jikoo.enchantedfurnace.enchanting.TablePreviewEnchanter;
-import com.github.jikoo.enchantedfurnace.util.Cache;
-import com.github.jikoo.enchantedfurnace.util.Cache.CacheBuilder;
-import com.github.jikoo.enchantedfurnace.util.CoordinateConversions;
-import com.github.jikoo.enchantedfurnace.util.Function;
-import com.github.jikoo.enchantedfurnace.util.LoadFunction;
-import com.github.jikoo.enchantedfurnace.util.Wrapper;
+import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
+import com.github.jikoo.enchantableblocks.enchanting.TableEnchanter;
+import com.github.jikoo.enchantableblocks.enchanting.TablePreviewEnchanter;
+import com.github.jikoo.enchantableblocks.listener.FurnaceListener;
+import com.github.jikoo.enchantableblocks.listener.WorldListener;
+import com.github.jikoo.enchantableblocks.util.Cache;
+import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
+import com.github.jikoo.enchantableblocks.util.CoordinateConversions;
+import com.github.jikoo.enchantableblocks.util.Function;
+import com.github.jikoo.enchantableblocks.util.LoadFunction;
+import com.github.jikoo.enchantableblocks.util.ReflectionUtil;
+import com.github.jikoo.enchantableblocks.util.Wrapper;
 
 import com.google.common.collect.HashMultimap;
 
@@ -44,11 +48,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 /**
- * A Bukkit plugin for adding effects to blocks based on enchantments.
+ * A Bukkit plugin for adding effects to block based on enchantments.
  *
  * @author Jikoo
  */
-public class EnchantedFurnacePlugin extends JavaPlugin {
+public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	private final Map<String, TreeMap<Integer, TreeMap<Integer, Map<Integer, EnchantableBlock>>>> chunkEnchantedBlocks = new HashMap<>();
 
@@ -77,7 +81,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 							// Ensure backing YAML is up-to-date and check if chunks are loaded
 							for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
 								for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
-									EnchantedFurnacePlugin.this.storeChunkEnchantedBlocks(key.getLeft(), chunkX, chunkZ);
+									EnchantableBlocksPlugin.this.storeChunkEnchantedBlocks(key.getLeft(), chunkX, chunkZ);
 									if (!loaded && world != null) {
 										loaded = world.isChunkLoaded(chunkX, chunkZ);
 									}
@@ -92,7 +96,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 							return loaded;
 						}
 
-						File saveFile = EnchantedFurnacePlugin.this.getSaveFile(key);
+						File saveFile = EnchantableBlocksPlugin.this.getSaveFile(key);
 
 						Collection<String> keys = value.getLeft().getKeys(true);
 						boolean delete = true;
@@ -125,7 +129,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 				}).withLoadFunction(new LoadFunction<Pair<String, String>, Pair<YamlConfiguration, Boolean>>() {
 					@Override
 					public Pair<YamlConfiguration, Boolean> run(final Pair<String, String> key, final boolean create) {
-						File flagFile = EnchantedFurnacePlugin.this.getSaveFile(key);
+						File flagFile = EnchantableBlocksPlugin.this.getSaveFile(key);
 						if (flagFile.exists()) {
 							return new MutablePair<>(YamlConfiguration.loadConfiguration(flagFile), false);
 						}
@@ -193,6 +197,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 		}
 
 		this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
+		this.getServer().getPluginManager().registerEvents(new WorldListener(this), this);
 
 		try {
 			Class.forName("org.bukkit.enchantments.EnchantmentOffer");
@@ -200,18 +205,18 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 		} catch (ClassNotFoundException e) {
 			this.getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
 		}
-		if (ReflectionUtils.areAnvilsSupported()) {
+		if (ReflectionUtil.areAnvilsSupported()) {
 			this.getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 		}
 
 		this.loadEnchantableBlocks();
 
-		if (!ReflectionUtils.areFurnacesSupported()) {
+		if (!ReflectionUtil.areFurnacesSupported()) {
 			// TODO: Other block types
 			new BukkitRunnable() {
 				@Override
 				public void run() {
-					for (EnchantableBlock enchantableBlock : EnchantedFurnacePlugin.this.getLoadedEnchantableBlocks()) {
+					for (EnchantableBlock enchantableBlock : EnchantableBlocksPlugin.this.getLoadedEnchantableBlocks()) {
 						enchantableBlock.tick();
 					}
 				}
@@ -249,12 +254,25 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 		return !ench1.equals(ench2) && !this.incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
-	public void createEnchantableBlock(final Block block, final ItemStack itemStack) {
+	public EnchantableBlock createEnchantableBlock(final Block block, final ItemStack itemStack) {
+
+		if (block == null) {
+			throw new IllegalArgumentException("Block cannot be null.");
+		}
+		if (itemStack == null) {
+			throw new IllegalArgumentException("Item cannot be null.");
+		}
+
 		if (this.getConfig().getStringList("disabled_worlds").contains(block.getWorld().getName().toLowerCase())) {
-			return;
+			return null;
 		}
 
 		final EnchantableBlock enchantableBlock = this.getEnchantableBlock(block, itemStack);
+
+		if (enchantableBlock == null) {
+			return null;
+		}
+
 		this.chunkEnchantedBlocks.compute(block.getWorld().getName(), (worldName, worldMap) -> {
 			if (worldMap == null) {
 				worldMap = new TreeMap<>();
@@ -284,6 +302,8 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 
 			return worldMap;
 		});
+
+		return enchantableBlock;
 	}
 
 	/**
@@ -407,7 +427,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 		while (iterator.hasNext()) {
 			String xyz = iterator.next();
 			String[] split = xyz.split("_");
-			Block worldBlock = null;
+			Block worldBlock;
 
 			try {
 				worldBlock = chunk.getWorld().getBlockAt(Integer.valueOf(split[0]), Integer.valueOf(split[1]), Integer.valueOf(split[2]));
@@ -472,7 +492,7 @@ public class EnchantedFurnacePlugin extends JavaPlugin {
 
 		EnchantableBlock enchantableBlock = this.getEnchantableBlock(block, itemStack);
 
-		if (!enchantableBlock.isCorrectBlockType()) {
+		if (enchantableBlock != null && !enchantableBlock.isCorrectBlockType()) {
 			return null;
 		}
 

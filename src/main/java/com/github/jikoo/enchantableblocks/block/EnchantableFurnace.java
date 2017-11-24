@@ -1,7 +1,9 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantableblocks.block;
 
 import java.util.Iterator;
 
+import com.github.jikoo.enchantableblocks.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.util.ReflectionUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -111,7 +113,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 				continue;
 			}
 			ItemStack input = ((FurnaceRecipe) r).getInput();
-			ItemStack output = ((FurnaceRecipe) r).getResult();
+			ItemStack output = r.getResult();
 			if (input.getType() != smelting.getType()) {
 				continue;
 			}
@@ -182,7 +184,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	@Override
 	public void tick() {
-		if (ReflectionUtils.areFurnacesSupported()) {
+		if (ReflectionUtil.areFurnacesSupported()) {
 			return;
 		}
 

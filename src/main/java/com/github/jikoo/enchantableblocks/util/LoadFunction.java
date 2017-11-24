@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace.util;
+package com.github.jikoo.enchantableblocks.util;
 
 /**
  * Abstraction for a loading function.

@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace.enchanting;
+package com.github.jikoo.enchantableblocks.enchanting;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -23,10 +23,10 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
  */
 public class TablePreviewEnchanter implements Listener {
 
-	private final EnchantedFurnacePlugin plugin;
+	private final EnchantableBlocksPlugin plugin;
 	private final Map<UUID, Map<Integer, Map<Enchantment, Integer>>> enchantments;
 
-	public TablePreviewEnchanter(final EnchantedFurnacePlugin plugin) {
+	public TablePreviewEnchanter(final EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 		this.enchantments = new HashMap<>();
 	}
@@ -37,7 +37,7 @@ public class TablePreviewEnchanter implements Listener {
 				|| !event.getItem().getType().equals(Material.FURNACE)
 				|| event.getItem().getAmount() != 1
 				|| this.plugin.getEnchantments().size() <= 0
-				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
+				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
 		}
 
@@ -75,7 +75,7 @@ public class TablePreviewEnchanter implements Listener {
 
 		if (event.getItem().getType() != Material.FURNACE
 				|| event.getItem().getAmount() != 1
-				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")
+				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")
 				|| enchantmentLevels == null) {
 			return;
 		}

@@ -1,9 +1,9 @@
-package com.github.jikoo.enchantedfurnace.enchanting;
+package com.github.jikoo.enchantableblocks.enchanting;
 
 import java.util.Iterator;
 import java.util.Map;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -14,14 +14,14 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 
 /**
  * Handles enchantments in enchantment tables.
- * 
+ *
  * @author Jikoo
  */
 public class TableEnchanter implements Listener {
 
-	private final EnchantedFurnacePlugin plugin;
+	private final EnchantableBlocksPlugin plugin;
 
-	public TableEnchanter(EnchantedFurnacePlugin plugin) {
+	public TableEnchanter(EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
@@ -31,7 +31,7 @@ public class TableEnchanter implements Listener {
 				&& event.getItem().getType().equals(Material.FURNACE)
 				&& event.getItem().getAmount() == 1
 				&& plugin.getEnchantments().size() > 0
-				&& event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
+				&& event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			event.setCancelled(false);
 			for (int i = 0; i < 3; i++) {
 				event.getExpLevelCostsOffered()[i] = EnchantmentUtil.getButtonLevel(i, event.getEnchantmentBonus());
@@ -43,7 +43,7 @@ public class TableEnchanter implements Listener {
 	public void onEnchantItem(EnchantItemEvent event) {
 		if (event.getItem().getType() != Material.FURNACE
 				|| event.getItem().getAmount() != 1
-				|| !event.getEnchanter().hasPermission("enchantedfurnace.enchant.table")) {
+				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
 		}
 

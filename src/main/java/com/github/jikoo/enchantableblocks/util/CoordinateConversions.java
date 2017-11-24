@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace.util;
+package com.github.jikoo.enchantableblocks.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,7 +7,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * A small class for converting coordinates between blocks, chunks, and regions.
+ * A small class for converting coordinates between block, chunks, and regions.
  *
  * @author Jikoo
  */

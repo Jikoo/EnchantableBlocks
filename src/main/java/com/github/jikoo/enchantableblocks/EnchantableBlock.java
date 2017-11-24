@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantableblocks;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;

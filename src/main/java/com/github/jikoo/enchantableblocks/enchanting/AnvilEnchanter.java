@@ -1,11 +1,11 @@
-package com.github.jikoo.enchantedfurnace.enchanting;
+package com.github.jikoo.enchantableblocks.enchanting;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
-import com.github.jikoo.enchantedfurnace.ReflectionUtils;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.util.ReflectionUtil;
 
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -63,9 +63,9 @@ public class AnvilEnchanter implements Listener {
 		}
 	}
 
-	private final EnchantedFurnacePlugin plugin;
+	private final EnchantableBlocksPlugin plugin;
 
-	public AnvilEnchanter(final EnchantedFurnacePlugin plugin) {
+	public AnvilEnchanter(final EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
@@ -136,7 +136,7 @@ public class AnvilEnchanter implements Listener {
 		base = base.clone();
 		base.addUnsafeEnchantments(baseEnchants);
 		baseMeta = base.getItemMeta();
-		String displayName = ReflectionUtils.getNameFromAnvil(view);
+		String displayName = ReflectionUtil.getNameFromAnvil(view);
 		if (baseMeta.hasDisplayName() && !baseMeta.getDisplayName().equals(displayName)
 				|| !baseMeta.hasDisplayName() && displayName != null) {
 			baseMeta.setDisplayName(displayName);
@@ -147,7 +147,7 @@ public class AnvilEnchanter implements Listener {
 		baseRepairable.setRepairCost(baseRepairable.hasRepairCost() ? baseRepairable.getRepairCost() * 2 + 1 : 1);
 		base.setItemMeta(baseMeta);
 
-		ReflectionUtils.setAnvilExpCost(view, cost);
+		ReflectionUtil.setAnvilExpCost(view, cost);
 
 		return base;
 	}
@@ -195,13 +195,13 @@ public class AnvilEnchanter implements Listener {
 	}
 
 	private void onInventoryInteract(final InventoryInteractEvent event) {
-		if (!ReflectionUtils.areAnvilsSupported()
+		if (!ReflectionUtil.areAnvilsSupported()
 				|| event.getView().getTopInventory().getType() != InventoryType.ANVIL
 				|| !(event.getWhoClicked() instanceof Player)) {
 			return;
 		}
 		Player clicker = (Player) event.getWhoClicked();
-		if (!clicker.hasPermission("enchantedfurnace.enchant.anvil")
+		if (!clicker.hasPermission("enchantableblocks.enchant.anvil")
 				|| clicker.getGameMode() == GameMode.CREATIVE) {
 			return;
 		}

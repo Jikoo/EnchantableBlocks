@@ -1,25 +1,22 @@
-package com.github.jikoo.enchantedfurnace;
+package com.github.jikoo.enchantableblocks.listener;
 
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.github.jikoo.enchantableblocks.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.util.ReflectionUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.world.ChunkLoadEvent;
-import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.Inventory;
@@ -28,15 +25,15 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.scheduler.BukkitRunnable;
 
 /**
- * Listener for all furnace-related events.
+ * Listener for furnace-specific events.
  *
  * @author Jikoo
  */
 public class FurnaceListener implements Listener {
 
-	private final EnchantedFurnacePlugin plugin;
+	private final EnchantableBlocksPlugin plugin;
 
-	public FurnaceListener(final EnchantedFurnacePlugin plugin) {
+	public FurnaceListener(final EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
@@ -76,7 +73,7 @@ public class FurnaceListener implements Listener {
 
 		if (enchantableFurnace.getFortune() > 0) {
 			boolean listContains = this.plugin.getFortuneList().contains(event.getSource().getType().name());
-			if (this.plugin.isBlacklist() ? !listContains : listContains) {
+			if (this.plugin.isBlacklist() != listContains) {
 				this.applyFortune(event, enchantableFurnace);
 			}
 		}
@@ -88,7 +85,7 @@ public class FurnaceListener implements Listener {
 					enchantableFurnace.pause();
 				}
 			}.runTask(this.plugin);
-		} else if (ReflectionUtils.areFurnacesSupported()) {
+		} else if (ReflectionUtil.areFurnacesSupported()) {
 			final int cookModifier = enchantableFurnace.getCookModifier();
 			if (cookModifier != 0) {
 				new BukkitRunnable() {
@@ -104,7 +101,7 @@ public class FurnaceListener implements Listener {
 							tile.setCookTime((short) 0);
 							tile.update();
 						}
-						ReflectionUtils.setFurnaceCookTime(enchantableFurnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
+						ReflectionUtil.setFurnaceCookTime(enchantableFurnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
 					}
 				}.runTask(this.plugin);
 			}
@@ -162,8 +159,6 @@ public class FurnaceListener implements Listener {
 					newResult = new ItemStack(recipe.getResult());
 					break;
 				}
-				// Incorrect data, not a match
-				continue;
 			}
 			if (newResult == null) {
 				this.plugin.getLogger().warning("Unable to obtain fortune result for MaterialData "
@@ -213,20 +208,20 @@ public class FurnaceListener implements Listener {
 		final EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
 		final int cookModifier = enchantableFurnace.getCookModifier();
 
-		if ((!ReflectionUtils.areFurnacesSupported() || cookModifier != 0) && !enchantableFurnace.canPause()) {
+		if ((!ReflectionUtil.areFurnacesSupported() || cookModifier != 0) && !enchantableFurnace.canPause()) {
 			return;
 		}
 
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				if (ReflectionUtils.areFurnacesSupported() && cookModifier != 0) {
+				if (ReflectionUtil.areFurnacesSupported() && cookModifier != 0) {
 					// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
 					if (tile.getCookTime() < 0) {
 						tile.setCookTime((short) 0);
 						tile.update();
 					}
-					ReflectionUtils.setFurnaceCookTime(enchantableFurnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
+					ReflectionUtil.setFurnaceCookTime(enchantableFurnace.getBlock(), FurnaceListener.this.getCappedTicks(200, cookModifier, 0.5));
 				}
 				if (enchantableFurnace.isPaused()) {
 					enchantableFurnace.resume();
@@ -237,36 +232,4 @@ public class FurnaceListener implements Listener {
 		}.runTask(this.plugin);
 	}
 
-	// TODO: separate listener
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onChunkLoad(final ChunkLoadEvent event) {
-		this.plugin.loadChunkEnchantableBlocks(event.getChunk());
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onChunkUnload(final ChunkUnloadEvent event) {
-		this.plugin.unloadChunkEnchantableBlocks(event.getChunk());
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onBlockPlace(final BlockPlaceEvent event) {
-		if (event.getItemInHand() != null && event.getItemInHand().getType() == Material.FURNACE) {
-			this.plugin.createEnchantableBlock(event.getBlock(), event.getItemInHand());
-		}
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onBlockBreak(final BlockBreakEvent event) {
-		ItemStack is = this.plugin.destroyEnchantableBlock(event.getBlock());
-
-		if (is != null) {
-			event.setCancelled(true);
-			event.getBlock().setType(Material.AIR);
-			Player player = event.getPlayer();
-			if (player.getGameMode() != GameMode.CREATIVE
-					&& !event.getBlock().getDrops(player.getItemInHand()).isEmpty()) {
-				event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), is);
-			}
-		}
-	}
 }

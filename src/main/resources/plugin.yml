@@ -1,12 +1,12 @@
 name: EnchantedFurnace
 
-main: com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin
+main: com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin
 version: ${project.version}
 author: Jikoo
 
 permissions:
- enchantedfurnace.enchant:
+ enchantableblocks.enchant:
   default: true
   children:
-   enchantedfurnace.enchant.table: true
-   enchantedfurnace.enchant.anvil: true
+   enchantableblocks.enchant.table: true
+   enchantableblocks.enchant.anvil: true

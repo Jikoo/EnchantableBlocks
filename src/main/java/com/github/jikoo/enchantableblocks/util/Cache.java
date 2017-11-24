@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace.util;
+package com.github.jikoo.enchantableblocks.util;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantedfurnace.enchanting;
+package com.github.jikoo.enchantableblocks.enchanting;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,13 +7,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.github.jikoo.enchantedfurnace.EnchantedFurnacePlugin;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 
 import org.bukkit.enchantments.Enchantment;
 
 /**
  * Utility for calculating enchantments.
- * 
+ *
  * @author Jikoo
  */
 public class EnchantmentUtil {
@@ -36,7 +36,7 @@ public class EnchantmentUtil {
 		return Math.max(i, shelves * 2);
 	}
 
-	public static Map<Enchantment, Integer> calculateFurnaceEnchants(EnchantedFurnacePlugin plugin, int enchantingLevel) {
+	public static Map<Enchantment, Integer> calculateFurnaceEnchants(EnchantableBlocksPlugin plugin, int enchantingLevel) {
 		int effectiveLevel = getFurnaceEnchantingLevel(plugin, enchantingLevel);
 		HashSet<Enchantment> possibleEnchants = plugin.getEnchantments();
 		Iterator<Enchantment> iterator = possibleEnchants.iterator();
@@ -66,7 +66,7 @@ public class EnchantmentUtil {
 		return enchantments;
 	}
 
-	private static int getFurnaceEnchantingLevel(EnchantedFurnacePlugin plugin, int displayedLevel) {
+	private static int getFurnaceEnchantingLevel(EnchantableBlocksPlugin plugin, int displayedLevel) {
 		// Vanilla: enchant level = button level + rand(enchantabity / 4 + 1) + rand(enchantabity / 4 + 1) + 1
 		int enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
 		Random random = ThreadLocalRandom.current();
