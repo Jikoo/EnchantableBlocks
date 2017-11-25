@@ -2,7 +2,6 @@ package com.github.jikoo.enchantableblocks.block;
 
 import java.util.Iterator;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.util.ReflectionUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

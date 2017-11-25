@@ -3,7 +3,7 @@ package com.github.jikoo.enchantableblocks.listener;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import com.github.jikoo.enchantableblocks.util.ReflectionUtil;

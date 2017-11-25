@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
 import com.github.jikoo.enchantableblocks.enchanting.TableEnchanter;

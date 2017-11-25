@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantableblocks;
+package com.github.jikoo.enchantableblocks.block;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
