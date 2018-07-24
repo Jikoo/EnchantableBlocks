@@ -5,18 +5,33 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.github.jikoo</groupId>
-  <artifactId>EnchantableBlocks</artifactId>
+  <artifactId>enchantableblocks</artifactId>
+  <name>EnchantableBlocks</name>
   <version>2.0.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
-  <modules>
-    <module>enchantableblocks-plugin</module>
-    <module>assembly</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>org.spigotmc</groupId>
+      <artifactId>spigot-api</artifactId>
+      <version>1.12.2-R0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.5</version>
+      <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>21.0</version>
+      <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
   <build>
     <finalName>${project.name}</finalName>
@@ -53,10 +68,9 @@
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
-          <showDeprecation>false</showDeprecation>
-          <showWarnings>true</showWarnings>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
 </project>
