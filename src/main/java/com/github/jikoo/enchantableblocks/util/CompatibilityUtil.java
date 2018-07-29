@@ -30,13 +30,10 @@ public class CompatibilityUtil {
 	private static boolean FURNACE_SUPPORT = false;
 
 	// CraftInventoryView
-	private static Class<?> CRAFTINVENTORYVIEW;
 	private static Method CRAFTINVENTORYVIEW_GETHANDLE;
 
 	// NMS ContainerAnvil
 	private static Class<?> CONTAINERANVIL;
-	private static Field CONTAINERANVIL_NAME;
-	private static Field CONTAINERANVIL_EXP_COST;
 
 	// CraftPlayer
 	private static Class<?> CRAFTPLAYER;
@@ -79,25 +76,7 @@ public class CompatibilityUtil {
 			return null;
 		}
 
-		if (VERSION_MAJOR == 1 && VERSION_MINOR >= 12 || VERSION_MAJOR > 1) {
-			return ((AnvilInventory) view.getTopInventory()).getRenameText();
-		}
-
-		if (!CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
-			return null;
-		}
-
-		try {
-			Object containerAnvil = CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
-			if (containerAnvil == null
-					|| !CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
-				return null;
-			}
-			return (String) CONTAINERANVIL_NAME.get(containerAnvil);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return ((AnvilInventory) view.getTopInventory()).getRenameText();
 	}
 
 	private static void init() {
@@ -121,32 +100,20 @@ public class CompatibilityUtil {
 
 		initAnvilSupport(packageOBC, packageNMS);
 		initFurnaceSupport(packageOBC, packageNMS);
-		// TODO: Enable version-specific  block listener
 	}
 
 	private static void initAnvilSupport(final String packageOBC, final String packageNMS) {
+		if (VERSION_MAJOR < 1 || VERSION_MAJOR == 1 && VERSION_MINOR <= 11) {
+			ANVIL_SUPPORT = false;
+			return;
+		}
+
 		try {
-			CRAFTINVENTORYVIEW = Class.forName(packageOBC + ".inventory.CraftInventoryView");
-			CRAFTINVENTORYVIEW_GETHANDLE = CRAFTINVENTORYVIEW.getMethod("getHandle");
+			// CraftInventoryView
+			Class<?> clazzCraftInventoryView = Class.forName(packageOBC + ".inventory.CraftInventoryView");
+			CRAFTINVENTORYVIEW_GETHANDLE = clazzCraftInventoryView.getMethod("getHandle");
 
 			CONTAINERANVIL = Class.forName(packageNMS + ".ContainerAnvil");
-
-			boolean under1_12 = VERSION_MAJOR < 1 || VERSION_MAJOR == 1 && VERSION_MINOR <= 11;
-
-			if (under1_12) {
-				String containerAnvilNameField;
-				if (VERSION_MAJOR < 1 || VERSION_MINOR < 7) {
-					containerAnvilNameField = "m";
-				} else if (VERSION_MINOR > 7) {
-					containerAnvilNameField = "l";
-				} else {
-					containerAnvilNameField = "n";
-				}
-
-				CONTAINERANVIL_NAME = CONTAINERANVIL.getDeclaredField(containerAnvilNameField);
-				CONTAINERANVIL_NAME.setAccessible(true);
-				CONTAINERANVIL_EXP_COST = CONTAINERANVIL.getDeclaredField("a");
-			}
 
 			CRAFTPLAYER = Class.forName(packageOBC + ".entity.CraftPlayer");
 			CRAFTPLAYER_GETHANDLE = CRAFTPLAYER.getMethod("getHandle");
@@ -156,15 +123,12 @@ public class CompatibilityUtil {
 					CONTAINERANVIL.getSuperclass(), int.class, int.class);
 
 			if (CRAFTINVENTORYVIEW_GETHANDLE.getReturnType().isAssignableFrom(CONTAINERANVIL)
-					&& (!under1_12 || String.class.isAssignableFrom(CONTAINERANVIL_NAME.getType())
-					&& int.class.isAssignableFrom(CONTAINERANVIL_EXP_COST.getType()))
 					&& CRAFTPLAYER_GETHANDLE.getReturnType().isAssignableFrom(ENTITYPLAYER)) {
 				ANVIL_SUPPORT = true;
 			} else {
 				System.err.println("[EnchantedFurnace] NMS/OBC field types are not assignable, anvils are unsupported!");
 			}
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException
-				| NoSuchFieldException e) {
+		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException e) {
 			// Anvils not supported
 			System.err.println("[EnchantedFurnace] Error enabling anvil support:");
 			e.printStackTrace();
@@ -224,23 +188,7 @@ public class CompatibilityUtil {
 		}
 
 		// Set repair cost
-		if (VERSION_MAJOR > 1 || VERSION_MAJOR == 1 && VERSION_MINOR >= 12) {
-			((AnvilInventory) view.getTopInventory()).setRepairCost(cost);
-		} else {
-			if (!CRAFTINVENTORYVIEW.isAssignableFrom(view.getClass())) {
-				return;
-			}
-
-			try {
-				Object containerAnvil = CRAFTINVENTORYVIEW_GETHANDLE.invoke(view);
-				if (!CONTAINERANVIL.isAssignableFrom(containerAnvil.getClass())) {
-					return;
-				}
-				CONTAINERANVIL_EXP_COST.set(containerAnvil, cost);
-			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-				e.printStackTrace();
-			}
-		}
+		((AnvilInventory) view.getTopInventory()).setRepairCost(cost);
 
 		// Update repair cost for client
 		try {

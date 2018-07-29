@@ -170,9 +170,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		allowedEnchantments.add("LOOT_BONUS_BLOCKS");
 		allowedEnchantments.add("SILK_TOUCH");
 		for (String enchantment : this.getConfig().getStringList("disabled_furnace_enchantments")) {
-			if (allowedEnchantments.contains(enchantment)) {
-				allowedEnchantments.remove(enchantment);
-			}
+			allowedEnchantments.remove(enchantment);
 		}
 		this.enchantments = new HashSet<>();
 		for (String enchantment : allowedEnchantments) {

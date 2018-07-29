@@ -1,4 +1,4 @@
-# http://dev.bukkit.org/bukkit-plugins/enchantedfurnace/
+# http://dev.bukkit.org/projects/enchantedfurnace/
 #
 # autosave is the interval in minutes between saves of furnaces.yml
 # If set to 0, file will be saved whenever a potential change is detected.
@@ -33,8 +33,8 @@
 autosave: 5
 fortune_list_mode: blacklist
 fortune_list:
-- SPONGE
-- SMOOTH_BRICK
+- WET_SPONGE
+- STONE_BRICK
 disabled_furnace_enchantments: []
 furnace_enchantability: 5
 enchantment_incompatibilities:
