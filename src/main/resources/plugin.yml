@@ -1,6 +1,6 @@
-name: EnchantedFurnace
+name: EnchantableBlocks
 
-main: EnchantableBlocksPlugin
+main: com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin
 version: ${project.version}
 author: Jikoo
 api-version: 1.13

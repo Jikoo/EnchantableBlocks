@@ -500,9 +500,11 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 *
 	 * @return the EnchantableBlock or null if no EnchantableBlock is valid for the given ItemStack
 	 */
-	private EnchantableBlock getEnchantableBlock(final Block block, final ItemStack itemStack) {
+	private EnchantableBlock getEnchantableBlock(final Block block, ItemStack itemStack) {
 		Material type = itemStack.getType();
-		if (type == Material.FURNACE || type == Material.BURNING_FURNACE) {
+		itemStack = itemStack.clone();
+		itemStack.setAmount(1);
+		if (type == Material.FURNACE) {
 			return new EnchantableFurnace(block, itemStack);
 		}
 		return null;

@@ -36,7 +36,8 @@ public class AnvilEnchanter implements Listener {
 	private class AnvilEnchantUpdate extends BukkitRunnable {
 
 		private final InventoryView view;
-		public AnvilEnchantUpdate(final InventoryView view) {
+
+		AnvilEnchantUpdate(final InventoryView view) {
 			this.view = view;
 		}
 
@@ -153,6 +154,7 @@ public class AnvilEnchanter implements Listener {
 	}
 
 	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {
+		// TODO new enchants
 		int multiplier;
 		if (enchantment.equals(Enchantment.ARROW_DAMAGE)
 				|| enchantment.equals(Enchantment.DAMAGE_ALL)

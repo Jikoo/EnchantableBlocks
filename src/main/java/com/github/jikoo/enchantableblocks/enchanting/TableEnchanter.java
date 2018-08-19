@@ -25,22 +25,19 @@ public class TableEnchanter implements Listener {
 	private final EnchantableBlocksPlugin plugin;
 	private final Map<UUID, Map<Material, Map<Integer, Map<Enchantment, Integer>>>> enchantmentOffers;
 	private final Map<UUID, Map<Material, Map<Integer, Integer[]>>> enchantmentOfferLevels;
-	private final Map<UUID, Integer[]> lastOffer;
 
 	public TableEnchanter(EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 		this.enchantmentOffers = new HashMap<>();
 		this.enchantmentOfferLevels = new HashMap<>();
-		this.lastOffer = new HashMap<>();
 	}
 
 	@EventHandler
 	public void onPrepareItemEnchant(final PrepareItemEnchantEvent event) {
-		this.lastOffer.remove(event.getEnchanter().getUniqueId());
 
 		if (event.getItem().getEnchantments().size() > 0
 				// TODO: enchantable materials list
-				|| !event.getItem().getType().equals(Material.FURNACE)
+				|| event.getItem().getType() != Material.FURNACE
 				|| event.getItem().getAmount() != 1
 				|| this.plugin.getEnchantments().size() <= 0
 				// TODO: rework permissions
@@ -97,7 +94,7 @@ public class TableEnchanter implements Listener {
 							EnchantmentUtil.calculateFurnaceEnchants(this.plugin, level));
 
 					int buttonLevel = levels[i];
-					Map<Enchantment, Integer> enchantments = this.enchantmentOffers.get(uuid).get(material).get(buttonLevel);
+					Map<Enchantment, Integer> enchantments = levelOffers.get(buttonLevel);
 
 					if (enchantments.isEmpty() || levels[i] < 1) {
 						event.getOffers()[i] = null;
@@ -107,8 +104,6 @@ public class TableEnchanter implements Listener {
 					Map.Entry<Enchantment, Integer> firstEnchant = enchantments.entrySet().iterator().next();
 					event.getOffers()[i] = new EnchantmentOffer(firstEnchant.getKey(), firstEnchant.getValue(), buttonLevel);
 				}
-
-				this.lastOffer.put(uuid, levels);
 
 				return levelOffers;
 			});
@@ -125,14 +120,12 @@ public class TableEnchanter implements Listener {
 		// TODO: all of the above
 		if (event.getItem().getType() != Material.FURNACE
 				|| event.getItem().getAmount() != 1
-				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")
-				|| !this.lastOffer.containsKey(event.getEnchanter().getUniqueId())) {
+				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
 		}
 
 		UUID uuid = event.getEnchanter().getUniqueId();
-		int level = this.lastOffer.remove(uuid)[event.getExpLevelCost()];
-		Map<Enchantment, Integer> enchantments = this.enchantmentOffers.get(uuid).get(event.getItem().getType()).get(level);
+		Map<Enchantment, Integer> enchantments = this.enchantmentOffers.get(uuid).get(event.getItem().getType()).get(event.getExpLevelCost());
 
 		event.getEnchantsToAdd().putAll(enchantments);
 	}
@@ -143,7 +136,6 @@ public class TableEnchanter implements Listener {
 		UUID uuid = event.getEnchanter().getUniqueId();
 		this.enchantmentOfferLevels.remove(uuid);
 		this.enchantmentOffers.remove(uuid);
-		this.lastOffer.remove(uuid);
 	}
 
 }

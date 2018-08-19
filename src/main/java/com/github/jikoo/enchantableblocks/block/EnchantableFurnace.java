@@ -1,9 +1,7 @@
 package com.github.jikoo.enchantableblocks.block;
 
-import java.util.Iterator;
-
 import com.github.jikoo.enchantableblocks.util.CompatibilityUtil;
-import org.bukkit.Bukkit;
+import com.github.jikoo.enchantableblocks.util.FurnaceRecipeContainer;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
@@ -11,9 +9,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceInventory;
-import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
 
 /**
  * Class for tracking custom furnace properties and applying certain effects.
@@ -40,7 +36,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	public Furnace getFurnaceTile() {
 		try {
-			if (this.getBlock().getType() == Material.FURNACE || this.getBlock().getType() == Material.BURNING_FURNACE) {
+			if (this.getBlock().getType() == Material.FURNACE) {
 				return (Furnace) this.getBlock().getState();
 			}
 			return null;
@@ -67,7 +63,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
-	public boolean shouldPause(final Event event) {
+	public boolean shouldPause(final Event event, FurnaceRecipeContainer recipe) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -99,32 +95,19 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return true;
 		}
 
-		// Verify that the smelting item cannot produce a result
-		return !this.canProduceResult(furnaceInv.getResult(), furnaceInv.getSmelting());
-	}
+		if (recipe == null) {
+			recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
+		}
 
-	@SuppressWarnings("deprecation")
-	private boolean canProduceResult(final ItemStack result, final ItemStack smelting) {
-		Iterator<Recipe> recipes =  result != null ? Bukkit.getRecipesFor(result).iterator() : Bukkit.recipeIterator();
-		while (recipes.hasNext()) {
-			Recipe r = recipes.next();
-			if (!(r instanceof FurnaceRecipe)) {
-				continue;
-			}
-			ItemStack input = ((FurnaceRecipe) r).getInput();
-			ItemStack output = r.getResult();
-			if (input.getType() != smelting.getType()) {
-				continue;
-			}
-			if (input.getData().getData() > -1 && !input.getData().equals(smelting.getData())) {
-				continue;
-			}
-			if (result != null && !result.isSimilar(output)) {
-				continue;
-			}
+		if (recipe == null) {
 			return true;
 		}
-		return false;
+
+		// Verify that the smelting item cannot produce a result
+		return !recipe.getEligibleMaterials().contains(furnaceInv.getSmelting().getType())
+				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
+				&& !recipe.getResult().isSimilar(furnaceInv.getResult()));
+
 	}
 
 	public void pause() {
@@ -157,7 +140,15 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		if (!this.canProduceResult(furnaceInv.getResult(), furnaceInv.getSmelting())) {
+		FurnaceRecipeContainer recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
+
+		if (recipe == null) {
+			return false;
+		}
+
+		if (!recipe.getEligibleMaterials().contains(furnaceInv.getSmelting().getType())
+				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
+				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
 			return false;
 		}
 
@@ -172,13 +163,13 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause && this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0;
 	}
 
-	public short getFrozenTicks() {
+	private short getFrozenTicks() {
 		return (short) this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH);
 	}
 
 	@Override
 	public boolean isCorrectType(final Material type) {
-		return type == Material.BURNING_FURNACE || type == Material.FURNACE;
+		return type == Material.FURNACE;
 	}
 
 	@Override

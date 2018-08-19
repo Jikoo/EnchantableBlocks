@@ -3,15 +3,28 @@ package com.github.jikoo.enchantableblocks.util;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.minecraft.server.v1_13_R1.IRecipe;
+import net.minecraft.server.v1_13_R1.NonNullList;
+import net.minecraft.server.v1_13_R1.RecipeItemStack;
+import net.minecraft.server.v1_13_R1.TileEntityFurnace;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.v1_13_R1.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 
 /**
  * A very basic utility for using reflection to attempt the NMS access EnchantedFurnace requires for
@@ -230,6 +243,71 @@ public class CompatibilityUtil {
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static FurnaceRecipeContainer getFurnaceRecipe(FurnaceInventory inventory) {
+		if (!FURNACE_SUPPORT) {
+			Iterator<Recipe> iterator = Bukkit.recipeIterator();
+			FurnaceRecipe bestRecipe = null;
+			while (iterator.hasNext()) {
+				Recipe recipe = iterator.next();
+				if (!(recipe instanceof FurnaceRecipe)) {
+					continue;
+				}
+				FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
+				ItemStack input = furnaceRecipe.getInput();
+				if (input.getType() != inventory.getSmelting().getType()) {
+					continue;
+				}
+				if (input.getData().getData() == -1) {
+					// Inexact match, continue iterating
+					bestRecipe = furnaceRecipe;
+				}
+				if (input.getData().equals(inventory.getSmelting().getData())) {
+					// Exact match
+					bestRecipe = furnaceRecipe;
+					break;
+				}
+			}
+
+			if (bestRecipe != null) {
+				return new FurnaceRecipeContainer(EnumSet.of(bestRecipe.getInput().getType()), bestRecipe.getCookingTime(), bestRecipe.getResult());
+			}
+
+			return  null;
+		}
+
+		InventoryHolder holder = inventory.getHolder();
+		if (holder == null || !CRAFTFURNACE.isAssignableFrom(holder.getClass())) {
+			return null;
+		}
+		TileEntityFurnace tileEntityFurnace = null;
+		try {
+			Object tileEntityFurnaceObj = CRAFTFURNACE_GETTILEENTITY.invoke(holder);
+			if (tileEntityFurnaceObj == null
+					|| !TILEENTITYFURNACE.isAssignableFrom(tileEntityFurnaceObj.getClass())) {
+				return null;
+			}
+			tileEntityFurnace = (TileEntityFurnace) tileEntityFurnaceObj;
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		IRecipe irecipe = tileEntityFurnace.getWorld().D().b(tileEntityFurnace, tileEntityFurnace.getWorld());
+		if (!(irecipe instanceof net.minecraft.server.v1_13_R1.FurnaceRecipe)) {
+			return null;
+		}
+
+		net.minecraft.server.v1_13_R1.FurnaceRecipe recipe = (net.minecraft.server.v1_13_R1.FurnaceRecipe) irecipe;
+		NonNullList<RecipeItemStack> itemsList = recipe.e();
+		EnumSet<Material> materials = EnumSet.noneOf(Material.class);
+		for (RecipeItemStack recipeItemStack : itemsList) {
+			recipeItemStack.buildChoices();
+			for (net.minecraft.server.v1_13_R1.ItemStack nmsItem : recipeItemStack.choices) {
+				materials.add(CraftItemStack.asBukkitCopy(nmsItem).getType());
+			}
+		}
+
+		return new FurnaceRecipeContainer(materials, recipe.h(), CraftItemStack.asBukkitCopy(recipe.d()));
 	}
 
 	private CompatibilityUtil() {}
