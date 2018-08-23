@@ -34,7 +34,7 @@ autosave: 5
 fortune_list_mode: blacklist
 fortune_list:
 - WET_SPONGE
-- STONE_BRICK
+- STONE_BRICKS
 disabled_furnace_enchantments: []
 furnace_enchantability: 5
 enchantment_incompatibilities:

@@ -178,20 +178,22 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		}
 
 		this.incompatibleEnchants = HashMultimap.create();
-		for (String enchantment : this.getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
-			Enchantment key = Enchantment.getByName(enchantment);
-			String enchantmentValue = this.getConfig().getString("enchantment_incompatibilities." + enchantment);
-			Enchantment value = Enchantment.getByName(enchantmentValue);
-			if (key == null || value == null) {
-				this.getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
-				this.getConfig().set("enchantment_incompatibilities." + enchantment, null);
+		if (this.getConfig().isConfigurationSection("enchantment_incompatibilities")) {
+			for (String enchantment : this.getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
+				Enchantment key = Enchantment.getByName(enchantment);
+				String enchantmentValue = this.getConfig().getString("enchantment_incompatibilities." + enchantment);
+				Enchantment value = Enchantment.getByName(enchantmentValue);
+				if (key == null || value == null) {
+					this.getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
+					this.getConfig().set("enchantment_incompatibilities." + enchantment, null);
+				}
+				if (this.incompatibleEnchants.containsEntry(key, value)) {
+					// User probably included reverse mapping
+					continue;
+				}
+				this.incompatibleEnchants.put(key, value);
+				this.incompatibleEnchants.put(value, key);
 			}
-			if (this.incompatibleEnchants.containsEntry(key, value)) {
-				// User probably included reverse mapping
-				continue;
-			}
-			this.incompatibleEnchants.put(key, value);
-			this.incompatibleEnchants.put(value, key);
 		}
 
 		this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
