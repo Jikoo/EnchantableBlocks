@@ -8,15 +8,15 @@ import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraft.server.v1_13_R1.IRecipe;
-import net.minecraft.server.v1_13_R1.NonNullList;
-import net.minecraft.server.v1_13_R1.RecipeItemStack;
-import net.minecraft.server.v1_13_R1.TileEntityFurnace;
+import net.minecraft.server.v1_13_R2.IRecipe;
+import net.minecraft.server.v1_13_R2.NonNullList;
+import net.minecraft.server.v1_13_R2.RecipeItemStack;
+import net.minecraft.server.v1_13_R2.TileEntityFurnace;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.craftbukkit.v1_13_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_13_R2.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.FurnaceInventory;
@@ -292,17 +292,17 @@ public class CompatibilityUtil {
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
 		}
-		IRecipe irecipe = tileEntityFurnace.getWorld().D().b(tileEntityFurnace, tileEntityFurnace.getWorld());
-		if (!(irecipe instanceof net.minecraft.server.v1_13_R1.FurnaceRecipe)) {
+		IRecipe irecipe = tileEntityFurnace.getWorld().E().b(tileEntityFurnace, tileEntityFurnace.getWorld());
+		if (!(irecipe instanceof net.minecraft.server.v1_13_R2.FurnaceRecipe)) {
 			return null;
 		}
 
-		net.minecraft.server.v1_13_R1.FurnaceRecipe recipe = (net.minecraft.server.v1_13_R1.FurnaceRecipe) irecipe;
+		net.minecraft.server.v1_13_R2.FurnaceRecipe recipe = (net.minecraft.server.v1_13_R2.FurnaceRecipe) irecipe;
 		NonNullList<RecipeItemStack> itemsList = recipe.e();
 		EnumSet<Material> materials = EnumSet.noneOf(Material.class);
 		for (RecipeItemStack recipeItemStack : itemsList) {
 			recipeItemStack.buildChoices();
-			for (net.minecraft.server.v1_13_R1.ItemStack nmsItem : recipeItemStack.choices) {
+			for (net.minecraft.server.v1_13_R2.ItemStack nmsItem : recipeItemStack.choices) {
 				materials.add(CraftItemStack.asBukkitCopy(nmsItem).getType());
 			}
 		}

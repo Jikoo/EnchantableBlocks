@@ -436,10 +436,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 			if (enchantableBlock == null) {
 				// Invalid EnchantableBlock, could not load.
-				chunkStorage.set(xyz, null);
-				saveData.setValue(true);
 				this.getLogger().warning(String.format("Removed invalid save: %s at %s",
 						chunkStorage.getItemStack(xyz + ".itemstack"), block.getLocation()));
+				chunkStorage.set(xyz, null);
+				saveData.setValue(true);
 				continue;
 			}
 
@@ -574,16 +574,9 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	private void loadEnchantableBlocks() {
 
-		File furnaceFile = new File(this.getDataFolder(), "furnaces.yml");
+		File enchantedFurnaceFolder = new File(this.getDataFolder().getParentFile(), "EnchantedFurnace");
+		File furnaceFile = new File(enchantedFurnaceFolder, "furnaces.yml");
 		YamlConfiguration furnaceConfig = YamlConfiguration.loadConfiguration(furnaceFile);
-
-		// Backwards compatibility for versions < 1.4.0
-		if (this.getConfig().isConfigurationSection("furnaces") || furnaceFile.exists()) {
-			this.convertManuallyDefinedFurnaces(this.getConfig().getConfigurationSection("furnaces"),
-					furnaceConfig.getConfigurationSection("furnaces"));
-			this.getConfig().set("furnaces", null);
-			furnaceConfig.set("furnaces", null);
-		}
 
 		// Backwards compatibility for versions < 2.0.0
 		if (furnaceFile.exists()) {
@@ -664,74 +657,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			}
 
 		}
-	}
-
-	private void convertManuallyDefinedFurnaces(final ConfigurationSection... sections) {
-		if (sections == null || sections.length < 1) {
-			// No saves here
-			return;
-		}
-
-		this.getLogger().info("Starting conversion of legacy furnaces - this may take a little time.");
-
-		for (ConfigurationSection section : sections) {
-			if (section == null) {
-				continue;
-			}
-
-			for (String legacy : section.getKeys(false)) {
-				String worldName;
-				Vector coordinates;
-				String[] loc = legacy.split(",");
-
-				// Parse old location string into modern location string
-				if (loc.length != 4) {
-					this.getLogger().warning("Unable to split location properly! " + legacy + " split to " + Arrays.toString(loc));
-					continue;
-				}
-
-				if (this.getConfig().getStringList("disabled_worlds").contains(loc[0].toLowerCase())) {
-					continue;
-				}
-
-				try {
-					worldName = loc[0];
-					coordinates = new Vector(Integer.valueOf(loc[1]), Integer.valueOf(loc[2]), Integer.valueOf(loc[3]));
-				} catch (Exception e) {
-					this.getLogger().warning("Error loading legacy 1.0.0 block: " + legacy);
-					if (e instanceof NumberFormatException) {
-						this.getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(loc));
-					} else {
-						this.getLogger().severe("An unknown exception occurred!");
-						e.printStackTrace();
-						this.getLogger().severe("Please report this error!");
-					}
-					continue;
-				}
-
-				ItemStack furnaceStack = new ItemStack(Material.FURNACE);
-				int level = section.getInt(legacy + ".efficiency", 0);
-				if (level > 0) {
-					furnaceStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, level);
-				}
-				level = section.getInt(legacy + ".unbreaking", 0);
-				if (level > 0) {
-					furnaceStack.addUnsafeEnchantment(Enchantment.DURABILITY, level);
-				}
-				level = section.getInt(legacy + ".fortune", 0);
-				if (level > 0) {
-					furnaceStack.addUnsafeEnchantment(Enchantment.LOOT_BONUS_BLOCKS, level);
-				}
-				level = section.getInt(legacy + ".silk", -1);
-				if (level > -1) {
-					furnaceStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, level);
-				}
-
-				this.loadLegacyFurnace(worldName, coordinates, furnaceStack);
-				section.set(legacy, null);
-			}
-		}
-		this.getLogger().info("Legacy furnace conversion (< 1.4.0) complete!");
 	}
 
 	private void loadLegacyFurnace(final String worldName, final Vector coordinates, final ItemStack itemStack) {
