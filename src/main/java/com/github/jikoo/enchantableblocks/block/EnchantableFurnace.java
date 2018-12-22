@@ -1,7 +1,6 @@
 package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.util.CompatibilityUtil;
-import com.github.jikoo.enchantableblocks.util.FurnaceRecipeContainer;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
@@ -9,6 +8,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 
 /**
@@ -63,7 +63,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
-	public boolean shouldPause(final Event event, FurnaceRecipeContainer recipe) {
+	public boolean shouldPause(final Event event, FurnaceRecipe recipe) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -104,7 +104,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 
 		// Verify that the smelting item cannot produce a result
-		return !recipe.getEligibleMaterials().contains(furnaceInv.getSmelting().getType())
+		return !CompatibilityUtil.canSmelt(recipe, furnaceInv.getSmelting())
 				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
 				&& !recipe.getResult().isSimilar(furnaceInv.getResult()));
 
@@ -140,13 +140,13 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		FurnaceRecipeContainer recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
+		FurnaceRecipe recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
 
 		if (recipe == null) {
 			return false;
 		}
 
-		if (!recipe.getEligibleMaterials().contains(furnaceInv.getSmelting().getType())
+		if (!CompatibilityUtil.canSmelt(recipe, furnaceInv.getSmelting())
 				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
 				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
 			return false;

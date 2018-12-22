@@ -254,7 +254,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		if (block == null) {
 			throw new IllegalArgumentException("Block cannot be null.");
 		}
-		if (itemStack == null || itemStack.getType() == Material.AIR) {
+
+		if (itemStack == null || itemStack.getType() == Material.AIR || itemStack.getEnchantments().isEmpty()) {
 			return null;
 		}
 

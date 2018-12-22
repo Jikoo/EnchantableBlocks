@@ -6,7 +6,6 @@ import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import com.github.jikoo.enchantableblocks.util.CompatibilityUtil;
-import com.github.jikoo.enchantableblocks.util.FurnaceRecipeContainer;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Furnace;
 import org.bukkit.event.EventHandler;
@@ -19,6 +18,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -75,7 +75,7 @@ public class FurnaceListener implements Listener {
 			return;
 		}
 
-		FurnaceRecipeContainer recipe = CompatibilityUtil.getFurnaceRecipe(((Furnace) state).getInventory());
+		FurnaceRecipe recipe = CompatibilityUtil.getFurnaceRecipe(((Furnace) state).getInventory());
 
 		if (enchantableFurnace.getFortune() > 0) {
 			boolean listContains = this.plugin.getFortuneList().contains(event.getSource().getType().name());
@@ -124,7 +124,7 @@ public class FurnaceListener implements Listener {
 
 	@SuppressWarnings("deprecation")
 	private void applyFortune(final FurnaceSmeltEvent event, final EnchantableFurnace enchantableFurnace,
-			  final FurnaceRecipeContainer recipe) {
+			  final FurnaceRecipe recipe) {
 		FurnaceInventory inventory = enchantableFurnace.getFurnaceTile().getInventory();
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.

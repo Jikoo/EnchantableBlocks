@@ -3,25 +3,17 @@ package com.github.jikoo.enchantableblocks.util;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraft.server.v1_13_R2.IRecipe;
-import net.minecraft.server.v1_13_R2.NonNullList;
-import net.minecraft.server.v1_13_R2.RecipeItemStack;
-import net.minecraft.server.v1_13_R2.TileEntityFurnace;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.craftbukkit.v1_13_R2.inventory.CraftItemStack;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -41,6 +33,7 @@ public class CompatibilityUtil {
 
 	private static boolean ANVIL_SUPPORT = false;
 	private static boolean FURNACE_SUPPORT = false;
+	private static boolean recipeMultiInput;
 
 	// CraftInventoryView
 	private static Method CRAFTINVENTORYVIEW_GETHANDLE;
@@ -109,6 +102,13 @@ public class CompatibilityUtil {
 			VERSION_MINOR = Integer.parseInt(matcher.group(2));
 			packageOBC += '.' + VERSION_STRING;
 			packageNMS += '.' + VERSION_STRING;
+		}
+
+		try {
+			FurnaceRecipe.class.getMethod("getInputChoice");
+			recipeMultiInput = true;
+		} catch (NoSuchMethodException e) {
+			recipeMultiInput = false;
 		}
 
 		initAnvilSupport(packageOBC, packageNMS);
@@ -245,69 +245,49 @@ public class CompatibilityUtil {
 		}
 	}
 
-	public static FurnaceRecipeContainer getFurnaceRecipe(FurnaceInventory inventory) {
-		if (!FURNACE_SUPPORT) {
-			Iterator<Recipe> iterator = Bukkit.recipeIterator();
-			FurnaceRecipe bestRecipe = null;
-			while (iterator.hasNext()) {
-				Recipe recipe = iterator.next();
-				if (!(recipe instanceof FurnaceRecipe)) {
-					continue;
-				}
-				FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
-				ItemStack input = furnaceRecipe.getInput();
-				if (input.getType() != inventory.getSmelting().getType()) {
-					continue;
-				}
-				if (input.getData().getData() == -1) {
-					// Inexact match, continue iterating
-					bestRecipe = furnaceRecipe;
-				}
-				if (input.getData().equals(inventory.getSmelting().getData())) {
-					// Exact match
+	public static FurnaceRecipe getFurnaceRecipe(FurnaceInventory inventory) {
+		Iterator<Recipe> iterator = Bukkit.recipeIterator();
+		FurnaceRecipe bestRecipe = null;
+		while (iterator.hasNext()) {
+			Recipe recipe = iterator.next();
+			if (!(recipe instanceof FurnaceRecipe)) {
+				continue;
+			}
+
+			FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
+			ItemStack input = furnaceRecipe.getInput();
+
+			if (recipeMultiInput) {
+				if (furnaceRecipe.getInputChoice().test(input)) {
 					bestRecipe = furnaceRecipe;
 					break;
 				}
+				continue;
 			}
 
-			if (bestRecipe != null) {
-				return new FurnaceRecipeContainer(EnumSet.of(bestRecipe.getInput().getType()), bestRecipe.getCookingTime(), bestRecipe.getResult());
+			if (input.getType() != inventory.getSmelting().getType()) {
+				continue;
 			}
-
-			return  null;
-		}
-
-		InventoryHolder holder = inventory.getHolder();
-		if (holder == null || !CRAFTFURNACE.isAssignableFrom(holder.getClass())) {
-			return null;
-		}
-		TileEntityFurnace tileEntityFurnace = null;
-		try {
-			Object tileEntityFurnaceObj = CRAFTFURNACE_GETTILEENTITY.invoke(holder);
-			if (tileEntityFurnaceObj == null
-					|| !TILEENTITYFURNACE.isAssignableFrom(tileEntityFurnaceObj.getClass())) {
-				return null;
+			if (input.getData().getData() == -1) {
+				// Inexact match, continue iterating
+				bestRecipe = furnaceRecipe;
 			}
-			tileEntityFurnace = (TileEntityFurnace) tileEntityFurnaceObj;
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		IRecipe irecipe = tileEntityFurnace.getWorld().E().b(tileEntityFurnace, tileEntityFurnace.getWorld());
-		if (!(irecipe instanceof net.minecraft.server.v1_13_R2.FurnaceRecipe)) {
-			return null;
-		}
-
-		net.minecraft.server.v1_13_R2.FurnaceRecipe recipe = (net.minecraft.server.v1_13_R2.FurnaceRecipe) irecipe;
-		NonNullList<RecipeItemStack> itemsList = recipe.e();
-		EnumSet<Material> materials = EnumSet.noneOf(Material.class);
-		for (RecipeItemStack recipeItemStack : itemsList) {
-			recipeItemStack.buildChoices();
-			for (net.minecraft.server.v1_13_R2.ItemStack nmsItem : recipeItemStack.choices) {
-				materials.add(CraftItemStack.asBukkitCopy(nmsItem).getType());
+			if (input.getData().equals(inventory.getSmelting().getData())) {
+				// Exact match
+				bestRecipe = furnaceRecipe;
+				break;
 			}
 		}
 
-		return new FurnaceRecipeContainer(materials, recipe.h(), CraftItemStack.asBukkitCopy(recipe.d()));
+		return bestRecipe;
+
+	}
+
+	public static boolean canSmelt(FurnaceRecipe recipe, ItemStack input) {
+		if (recipeMultiInput) {
+			return recipe.getInputChoice().test(input);
+		}
+		return recipe.getInput().getType() == input.getType();
 	}
 
 	private CompatibilityUtil() {}
