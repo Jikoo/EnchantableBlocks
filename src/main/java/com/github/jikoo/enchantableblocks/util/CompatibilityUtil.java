@@ -257,9 +257,14 @@ public class CompatibilityUtil {
 			FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
 
 			if (recipeMultiInput) {
-				if (furnaceRecipe.getInputChoice().test(inventory.getSmelting())) {
-					bestRecipe = furnaceRecipe;
-					break;
+				try {
+					if (furnaceRecipe.getInputChoice().test(inventory.getSmelting())) {
+						bestRecipe = furnaceRecipe;
+						break;
+					}
+				} catch (NullPointerException e) {
+					// FurnaceRecipe ingredient is null, should not be possible
+					System.out.println(String.format("[EnchantableBlocks] Recipe with null InputChoice: %s outputting %s", furnaceRecipe.getKey().toString(), furnaceRecipe.getResult().toString()));
 				}
 				continue;
 			}
