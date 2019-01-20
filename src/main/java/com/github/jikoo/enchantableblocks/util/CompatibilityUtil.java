@@ -255,15 +255,16 @@ public class CompatibilityUtil {
 			}
 
 			FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
-			ItemStack input = furnaceRecipe.getInput();
 
 			if (recipeMultiInput) {
-				if (furnaceRecipe.getInputChoice().test(input)) {
+				if (furnaceRecipe.getInputChoice().test(inventory.getSmelting())) {
 					bestRecipe = furnaceRecipe;
 					break;
 				}
 				continue;
 			}
+
+			ItemStack input = furnaceRecipe.getInput();
 
 			if (input.getType() != inventory.getSmelting().getType()) {
 				continue;
@@ -284,10 +285,7 @@ public class CompatibilityUtil {
 	}
 
 	public static boolean canSmelt(FurnaceRecipe recipe, ItemStack input) {
-		if (recipeMultiInput) {
-			return recipe.getInputChoice().test(input);
-		}
-		return recipe.getInput().getType() == input.getType();
+		return recipe.getInputChoice().test(input);
 	}
 
 	private CompatibilityUtil() {}
