@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.block;
 
-import com.github.jikoo.enchantableblocks.util.CompatibilityUtil;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
@@ -10,6 +10,10 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+
+import java.util.EnumSet;
+import java.util.Iterator;
 
 /**
  * Class for tracking custom furnace properties and applying certain effects.
@@ -18,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public class EnchantableFurnace extends EnchantableBlock {
 
+	private static final EnumSet<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
 	private final boolean canPause;
 
 	public EnchantableFurnace(final Block block, final ItemStack itemStack) {
@@ -96,7 +101,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 
 		if (recipe == null) {
-			recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
+			recipe = getFurnaceRecipe(furnaceInv);
 		}
 
 		if (recipe == null) {
@@ -104,7 +109,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 
 		// Verify that the smelting item cannot produce a result
-		return !CompatibilityUtil.canSmelt(recipe, furnaceInv.getSmelting())
+		return !recipe.getInputChoice().test(furnaceInv.getSmelting())
 				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
 				&& !recipe.getResult().isSimilar(furnaceInv.getResult()));
 
@@ -140,13 +145,13 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		FurnaceRecipe recipe = CompatibilityUtil.getFurnaceRecipe(furnaceInv);
+		FurnaceRecipe recipe = getFurnaceRecipe(furnaceInv);
 
 		if (recipe == null) {
 			return false;
 		}
 
-		if (!CompatibilityUtil.canSmelt(recipe, furnaceInv.getSmelting())
+		if (!recipe.getInputChoice().test(furnaceInv.getSmelting())
 				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
 				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
 			return false;
@@ -169,47 +174,43 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	@Override
 	public boolean isCorrectType(final Material type) {
-		return type == Material.FURNACE;
+		return isApplicableMaterial(type);
 	}
 
-	@Override
-	public void tick() {
-		if (CompatibilityUtil.areFurnacesSupported()) {
-			return;
-		}
+	public static boolean isApplicableMaterial(Material material) {
+		return MATERIALS.contains(material);
+	}
 
-		if (this.getCookModifier() <= 0) {
-			// Not efficiency, we're done here
-			return;
-		}
-
+	public void setCookTimeTotal(final int duration) {
 		Furnace furnace = this.getFurnaceTile();
-		if (furnace == null) {
-			// Unloaded furnace or not actually a furnace
-			return;
+		if (furnace != null) {
+			furnace.setCookTimeTotal(duration);
 		}
-		try {
-			// Update cook progress only if there is fuel and something is cooking
-			// tile.getInventory().getSmelting() != null incorrectly returns true sometimes
-			if (furnace.getBurnTime() > 0 && furnace.getCookTime() > 0) {
-				// PaperSpigot compatibility: lag compensation patch can set furnaces to negative cook time.
-				int cookTime = Math.max(0, furnace.getCookTime()) + this.getCookModifier();
-				if (cookTime > 200) {
-					cookTime = 200;
-				}
-				furnace.setCookTime((short) cookTime);
-				furnace.update();
+	}
+
+	public static FurnaceRecipe getFurnaceRecipe(FurnaceInventory inventory) {
+		if (inventory.getSmelting() == null) {
+			return null;
+		}
+
+		Iterator<Recipe> iterator = Bukkit.recipeIterator();
+		FurnaceRecipe bestRecipe = null;
+		while (iterator.hasNext()) {
+			Recipe recipe = iterator.next();
+			if (!(recipe instanceof FurnaceRecipe)) {
+				continue;
 			}
-		} catch (Exception e) {
-			/*
-			 * User reported a NPE with a stack trace pointing to CraftFurnace.getBurnTime()
-			 * That can only be thrown if the CraftFurnace's internal TileEntityFurnace is null
-			 * or if TileEntityFurnace.burnTime is null. Neither of those issues are my fault,
-			 * and I can neither replicate nor fix them.
-			 *
-			 * Just eat all exceptions - if anything happens here, it's a server implementation issue.
-			 */
+
+			FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
+
+			if (furnaceRecipe.getInputChoice().test(inventory.getSmelting())) {
+				bestRecipe = furnaceRecipe;
+				break;
+			}
 		}
+
+		return bestRecipe;
+
 	}
 
 }

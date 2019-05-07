@@ -16,7 +16,7 @@ public abstract class EnchantableBlock {
 	private final ItemStack itemStack;
 	private boolean dirty = false;
 
-	public EnchantableBlock(final Block block, final ItemStack itemStack) {
+	EnchantableBlock(final Block block, final ItemStack itemStack) {
 		this.block = block;
 		this.itemStack = itemStack;
 	}
@@ -59,7 +59,7 @@ public abstract class EnchantableBlock {
 	/**
 	 * Ticks the EnchantableBlock.
 	 */
-	public abstract void tick();
+	public void tick() {}
 
 	/**
 	 * Check if the EnchantableBlock has unsaved changes pending.

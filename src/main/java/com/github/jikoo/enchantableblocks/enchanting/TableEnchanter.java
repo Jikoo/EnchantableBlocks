@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 
+import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
@@ -36,8 +37,7 @@ public class TableEnchanter implements Listener {
 	public void onPrepareItemEnchant(final PrepareItemEnchantEvent event) {
 
 		if (event.getItem().getEnchantments().size() > 0
-				// TODO: enchantable materials list
-				|| event.getItem().getType() != Material.FURNACE
+				|| EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
 				|| this.plugin.getEnchantments().size() <= 0
 				// TODO: rework permissions
@@ -117,8 +117,7 @@ public class TableEnchanter implements Listener {
 	@EventHandler
 	public void onEnchantItem(final EnchantItemEvent event) {
 
-		// TODO: all of the above
-		if (event.getItem().getType() != Material.FURNACE
+		if (EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
 				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;

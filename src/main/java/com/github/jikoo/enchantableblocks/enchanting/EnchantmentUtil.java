@@ -60,7 +60,7 @@ class EnchantmentUtil {
 			possibleEnchants.remove(ench);
 			iterator = possibleEnchants.iterator();
 			while (iterator.hasNext()) {
-				if (!plugin.areEnchantmentsCompatible(ench, iterator.next())) {
+				if (plugin.areEnchantmentsIncompatible(ench, iterator.next())) {
 					iterator.remove();
 				}
 			}
