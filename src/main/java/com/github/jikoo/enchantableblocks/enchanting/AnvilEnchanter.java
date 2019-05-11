@@ -21,10 +21,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
-import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -35,52 +35,21 @@ import java.util.Map.Entry;
  */
 public class AnvilEnchanter implements Listener {
 
-	private class AnvilEnchantUpdate extends BukkitRunnable {
-
-		private final InventoryView view;
-
-		AnvilEnchantUpdate(final InventoryView view) {
-			this.view = view;
-		}
-
-		@Override
-		public void run() {
-			Inventory inv = this.view.getTopInventory();
-			if (inv.getItem(0) == null || inv.getItem(1) == null || !EnchantableFurnace.isApplicableMaterial(inv.getItem(0).getType())
-					|| inv.getItem(0).getAmount() > 1 || inv.getItem(1).getAmount() > 1
-					|| inv.getItem(1).getType() != Material.ENCHANTED_BOOK && inv.getItem(0).getType() != inv.getItem(1).getType()) {
-				return;
-			}
-
-			ItemStack result = AnvilEnchanter.this.combine(this.view, inv.getItem(0), inv.getItem(1));
-
-			if (result == null) {
-				return;
-			}
-
-			inv.setItem(2, result);
-
-			if (this.view.getPlayer() instanceof Player) {
-				((Player) this.view.getPlayer()).updateInventory();
-			}
-		}
-	}
-
 	private final EnchantableBlocksPlugin plugin;
 
 	public AnvilEnchanter(final EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
-	private ItemStack combine(final InventoryView view, ItemStack base, final ItemStack addition) {
+	private void combine(final InventoryView view, ItemStack base, final ItemStack addition) {
 		if (!(view.getTopInventory() instanceof AnvilInventory)) {
-			return null;
+			return;
 		}
 		AnvilInventory inventory = (AnvilInventory) view.getTopInventory();
 		ItemMeta baseMeta = base.getItemMeta();
 		ItemMeta additionMeta = addition.getItemMeta();
 		if (!(baseMeta instanceof Repairable) || !(additionMeta instanceof Repairable)) {
-			return null;
+			return;
 		}
 		Repairable baseRepairable = (Repairable) baseMeta;
 		Repairable additionRepairable = (Repairable) additionMeta;
@@ -94,7 +63,7 @@ public class AnvilEnchanter implements Listener {
 			cost += additionRepairable.getRepairCost();
 		}
 
-		Map<Enchantment, Integer> baseEnchants = new HashMap<>(base.getEnchantments());
+		Map<Enchantment, Integer> resultEnchants = new HashMap<>(base.getEnchantments());
 		Map<Enchantment, Integer> additionEnchants;
 		boolean book = additionMeta instanceof EnchantmentStorageMeta;
 		if (book) {
@@ -107,24 +76,24 @@ public class AnvilEnchanter implements Listener {
 			if (!this.plugin.getEnchantments().contains(entry.getKey())) {
 				continue;
 			}
-			for (Enchantment e : baseEnchants.keySet()) {
+			for (Enchantment e : resultEnchants.keySet()) {
 				if (!e.equals(entry.getKey()) && this.plugin.areEnchantmentsIncompatible(e, entry.getKey())) {
 					// Incompatible but valid enchant: +1 cost
 					cost += 1;
 					continue nextEnchant;
 				}
 			}
-			if (!baseEnchants.containsKey(entry.getKey())) {
+			if (!resultEnchants.containsKey(entry.getKey())) {
 				// Compatible enchant: + multiplier * final level
 				int level = entry.getValue();
 				if (level > entry.getKey().getMaxLevel()) {
 					level = entry.getKey().getMaxLevel();
 				}
 				cost += this.getEnchantmentMultiplier(entry.getKey(), book) * level;
-				baseEnchants.put(entry.getKey(), level);
+				resultEnchants.put(entry.getKey(), level);
 				continue;
 			}
-			int baseLvl = baseEnchants.get(entry.getKey());
+			int baseLvl = resultEnchants.get(entry.getKey());
 			int additionLvl = entry.getValue();
 			if (baseLvl < additionLvl) {
 				baseLvl = additionLvl;
@@ -136,40 +105,43 @@ public class AnvilEnchanter implements Listener {
 			}
 			// Compatible enchant: + multiplier * final level
 			cost += this.getEnchantmentMultiplier(entry.getKey(), book) * baseLvl;
-			baseEnchants.put(entry.getKey(), baseLvl);
+			resultEnchants.put(entry.getKey(), baseLvl);
 		}
 
-		if (base.getEnchantments().equals(baseEnchants)) {
-			return null;
+		if (base.getEnchantments().equals(resultEnchants)) {
+			return;
 		}
 
-		base = base.clone();
-		base.addUnsafeEnchantments(baseEnchants);
-		baseMeta = base.getItemMeta();
+		ItemStack result = base.clone();
+		result.addUnsafeEnchantments(resultEnchants);
+		ItemMeta resultMeta = base.getItemMeta();
 
-		if (!(baseMeta instanceof Repairable)) {
-			return null;
+		if (!(resultMeta instanceof Repairable)) {
+			return;
 		}
 
 		String displayName = inventory.getRenameText();
 		if (baseMeta.hasDisplayName() && !baseMeta.getDisplayName().equals(displayName)
 				|| !baseMeta.hasDisplayName() && displayName != null) {
-			baseMeta.setDisplayName(displayName);
+			resultMeta.setDisplayName(displayName);
 			// Renaming always adds 1 to the cost
 			cost += 1;
 		}
-		baseRepairable = (Repairable) baseMeta;
-		baseRepairable.setRepairCost(baseRepairable.hasRepairCost() ? baseRepairable.getRepairCost() * 2 + 1 : 1);
-		base.setItemMeta(baseMeta);
 
+		Repairable resultRepairable = (Repairable) resultMeta;
+		resultRepairable.setRepairCost(baseRepairable.hasRepairCost() ? baseRepairable.getRepairCost() * 2 + 1 : 1);
+		result.setItemMeta(resultMeta);
+
+		// Update inventory
+		inventory.setItem(0, null);
+		inventory.setItem(1, null);
+		List<HumanEntity> viewers = new ArrayList<>(inventory.getViewers());
+		viewers.forEach(HumanEntity::closeInventory);
+		inventory.setItem(0, base);
+		inventory.setItem(1, addition);
+		inventory.setItem(2, result);
 		inventory.setRepairCost(cost);
-		Iterator<HumanEntity> iterator = inventory.getViewers().iterator();
-		//noinspection WhileLoopReplaceableByForEach
-		while (iterator.hasNext()) {
-			iterator.next().openInventory(view);
-		}
-
-		return base;
+		viewers.forEach(humanEntity -> humanEntity.openInventory(view));
 	}
 
 	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {
@@ -216,7 +188,8 @@ public class AnvilEnchanter implements Listener {
 	}
 
 	private void onInventoryInteract(final InventoryInteractEvent event) {
-		if (event.getView().getTopInventory().getType() != InventoryType.ANVIL
+		InventoryView view = event.getView();
+		if (view.getTopInventory().getType() != InventoryType.ANVIL
 				|| !(event.getWhoClicked() instanceof Player)) {
 			return;
 		}
@@ -226,7 +199,18 @@ public class AnvilEnchanter implements Listener {
 			return;
 		}
 
-		new AnvilEnchantUpdate(event.getView()).runTask(this.plugin);
+		this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+			Inventory inv = view.getTopInventory();
+			ItemStack base = inv.getItem(0);
+			ItemStack addition = inv.getItem(1);
+			if (base == null || addition == null || !EnchantableFurnace.isApplicableMaterial(base.getType())
+					|| base.getAmount() > 1 || addition.getAmount() > 1
+					|| addition.getType() != Material.ENCHANTED_BOOK && base.getType() != addition.getType()) {
+				return;
+			}
+
+			AnvilEnchanter.this.combine(view, base, addition);
+		});
 	}
 
 }

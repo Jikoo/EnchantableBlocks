@@ -120,7 +120,11 @@ public class FurnaceListener implements Listener {
 
 	private void applyFortune(final FurnaceSmeltEvent event, final EnchantableFurnace enchantableFurnace,
 			  final FurnaceRecipe recipe) {
-		FurnaceInventory inventory = enchantableFurnace.getFurnaceTile().getInventory();
+		Furnace furnace = enchantableFurnace.getFurnaceTile();
+		if (furnace == null) {
+			return;
+		}
+		FurnaceInventory inventory = furnace.getInventory();
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
 		int bonus = ThreadLocalRandom.current().nextInt(enchantableFurnace.getFortune() + 2) - 1;

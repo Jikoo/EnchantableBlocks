@@ -3,7 +3,9 @@ package com.github.jikoo.enchantableblocks.block;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Furnace;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
@@ -11,6 +13,8 @@ import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -25,31 +29,19 @@ public class EnchantableFurnace extends EnchantableBlock {
 	private static final EnumSet<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
 	private final boolean canPause;
 
-	public EnchantableFurnace(final Block block, final ItemStack itemStack) {
-		super(block, itemStack);
+	public EnchantableFurnace(final Block block, final ItemStack itemStack, ConfigurationSection storage) {
+		super(block, itemStack, storage);
 		this.canPause = itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
 		if (this.canPause && itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
 			// New furnaces shouldn't get 1 tick flame for free, but old furnaces need to re-light
 			itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
-			this.setDirty();
-		}
-		if (itemStack.getAmount() > 1) {
-			itemStack.setAmount(1);
-			this.setDirty();
+			this.updateStorage();
 		}
 	}
 
-	public Furnace getFurnaceTile() {
-		try {
-			if (this.getBlock().getType() == Material.FURNACE) {
-				return (Furnace) this.getBlock().getState();
-			}
-			return null;
-		} catch (Exception e) {
-			// This should not be capable of happening, but just in case I'd rather not break efficiency.
-			e.printStackTrace();
-			return null;
-		}
+	public @Nullable Furnace getFurnaceTile() {
+		BlockState state = this.getBlock().getState();
+		return state instanceof Furnace ? (Furnace) state : null;
 	}
 
 	public int getCookModifier() {
@@ -121,8 +113,13 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 
 		Furnace furnace = this.getFurnaceTile();
+
+		if (furnace == null) {
+			return;
+		}
+
 		this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, furnace.getBurnTime());
-		this.setDirty();
+		this.updateStorage();
 		furnace.setBurnTime((short) 0);
 		furnace.update(true);
 	}
@@ -130,7 +127,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 	public boolean resume() {
 		Furnace furnace = this.getFurnaceTile();
 		// Is furnace unfrozen already?
-		if (furnace.getBurnTime() > 0 || this.getFrozenTicks() < 1) {
+		if (furnace == null || furnace.getBurnTime() > 0 || this.getFrozenTicks() < 1) {
 			return false;
 		}
 
@@ -160,7 +157,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		furnace.setBurnTime(this.getFrozenTicks());
 		furnace.update(true);
 		this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
-		this.setDirty();
+		this.updateStorage();
 		return true;
 	}
 
@@ -188,7 +185,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 	}
 
-	public static FurnaceRecipe getFurnaceRecipe(FurnaceInventory inventory) {
+	public static @Nullable FurnaceRecipe getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		if (inventory.getSmelting() == null) {
 			return null;
 		}

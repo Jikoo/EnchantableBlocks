@@ -3,9 +3,6 @@ package com.github.jikoo.enchantableblocks.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 /**
  * A small class for converting coordinates between block, chunks, and regions.
  *
@@ -96,7 +93,7 @@ public class CoordinateConversions {
 			throw new IllegalArgumentException(regionFileName + " does not match the region file name format!");
 		}
 
-		return new ImmutablePair<>(CoordinateConversions.regionToChunk(Integer.parseInt(matcher.group(1))),
+		return new Pair<>(CoordinateConversions.regionToChunk(Integer.parseInt(matcher.group(1))),
 				CoordinateConversions.regionToChunk(Integer.parseInt(matcher.group(2))));
 	}
 

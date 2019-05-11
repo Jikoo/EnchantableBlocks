@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Base for an enchantable block.
@@ -14,11 +15,17 @@ public abstract class EnchantableBlock {
 
 	private final Block block;
 	private final ItemStack itemStack;
+	private final ConfigurationSection storage;
 	private boolean dirty = false;
 
-	EnchantableBlock(final Block block, final ItemStack itemStack) {
+	EnchantableBlock(@NotNull final Block block, @NotNull final ItemStack itemStack, @NotNull ConfigurationSection storage) {
 		this.block = block;
 		this.itemStack = itemStack;
+		if (itemStack.getAmount() > 1) {
+			itemStack.setAmount(1);
+		}
+		this.storage = storage;
+		this.updateStorage();
 	}
 
 	/**
@@ -26,7 +33,7 @@ public abstract class EnchantableBlock {
 	 *
 	 * @return the Block
 	 */
-	public Block getBlock() {
+	public @NotNull Block getBlock() {
 		return this.block;
 	}
 
@@ -35,7 +42,7 @@ public abstract class EnchantableBlock {
 	 *
 	 * @return the ItemStack
 	 */
-	public ItemStack getItemStack() {
+	public @NotNull ItemStack getItemStack() {
 		return this.itemStack;
 	}
 
@@ -67,14 +74,8 @@ public abstract class EnchantableBlock {
 	 * @return true if the EnchantableBlock needs to be saved
 	 */
 	public boolean isDirty() {
+		this.updateStorage();
 		return this.dirty;
-	}
-
-	/**
-	 * Set the EnchantableBlock as needing to be saved.
-	 */
-	public void setDirty() {
-		this.setDirty(true);
 	}
 
 	/**
@@ -82,27 +83,26 @@ public abstract class EnchantableBlock {
 	 *
 	 * @param dirty true if the EnchantableBlock needs to be saved
 	 */
-	public void setDirty(final boolean dirty) {
+	public void setDirty(boolean dirty) {
 		this.dirty = dirty;
 	}
 
 	/**
-	 * Saves the EnchantableBlock to a ConfigurationSection.
-	 * <p>
-	 * If the EnchantableBlock is being saved for the first time, the return value is ignored.
-	 * However, if the EnchantableBlock already exists, the return value should reflect whether or
-	 * not the stored data has changed.
-	 *
-	 * @param saveSection the ConfigurationSection
-	 * @return true if existing data may have changed
+	 * Updates the ConfigurationSection containing the EnchantableBlock's save data.
 	 */
-	public boolean save(final ConfigurationSection saveSection) {
-		if (this.itemStack == null || this.itemStack.equals(saveSection.getItemStack("itemstack"))) {
-			return false;
+	public void updateStorage() {
+		if (!this.itemStack.equals(getStorage().getItemStack("itemstack"))) {
+			getStorage().set("itemstack", this.itemStack);
+			this.dirty = true;
 		}
-
-		saveSection.set("itemstack", this.itemStack);
-		return true;
 	}
 
+	/**
+	 * Gets the ConfigurationSection containing the EnchantableBlock's save data.
+	 *
+	 * @return the ConfigurationSection
+	 */
+	protected @NotNull ConfigurationSection getStorage() {
+		return storage;
+	}
 }

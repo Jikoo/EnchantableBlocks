@@ -1,47 +1,40 @@
 package com.github.jikoo.enchantableblocks;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
 import com.github.jikoo.enchantableblocks.enchanting.TableEnchanter;
 import com.github.jikoo.enchantableblocks.listener.FurnaceListener;
 import com.github.jikoo.enchantableblocks.listener.WorldListener;
+import com.github.jikoo.enchantableblocks.util.BlockMap;
 import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
 import com.github.jikoo.enchantableblocks.util.CoordinateConversions;
 import com.github.jikoo.enchantableblocks.util.Function;
 import com.github.jikoo.enchantableblocks.util.LoadFunction;
-import com.github.jikoo.enchantableblocks.util.Wrapper;
-
+import com.github.jikoo.enchantableblocks.util.Pair;
+import com.github.jikoo.enchantableblocks.util.RegionStorage;
+import com.github.jikoo.enchantableblocks.util.Triple;
 import com.google.common.collect.HashMultimap;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * A Bukkit plugin for adding effects to block based on enchantments.
@@ -50,9 +43,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class EnchantableBlocksPlugin extends JavaPlugin {
 
-	private final Map<String, TreeMap<Integer, TreeMap<Integer, Map<Integer, EnchantableBlock>>>> chunkEnchantedBlocks = new HashMap<>();
+	private final BlockMap<EnchantableBlock> blockMap = new BlockMap<>();
+	private Cache<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>> saveFileCache;
 
-	private Cache<Pair<String, String>, Pair<YamlConfiguration, Boolean>> saveFileCache;
 	private HashSet<Enchantment> enchantments;
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
@@ -60,44 +53,38 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		this.saveFileCache = new CacheBuilder<Pair<String, String>, Pair<YamlConfiguration, Boolean>>()
+		this.saveFileCache = new CacheBuilder<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>>()
 				.withRetention(Math.max(this.getConfig().getInt("autosave", 5) * 6000, 6000L))
-				.withInUseCheck(new Function<Pair<String, String>, Pair<YamlConfiguration, Boolean>>() {
+				.withInUseCheck(new Function<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>>() {
 					@Override
-					public boolean run(final Pair<String, String> key,
-									   final Pair<YamlConfiguration, Boolean> value) {
-						boolean loaded = false;
-						World world = Bukkit.getWorld(key.getLeft());
-						String[] regionSplit = key.getRight().split("_");
+					public boolean run(final Triple<World, Integer, Integer> key, final Pair<RegionStorage, Boolean> value) {
 
-						try {
-							int minChunkX = CoordinateConversions.regionToChunk(Integer.parseInt(regionSplit[0]));
-							int minChunkZ = CoordinateConversions.regionToChunk(Integer.parseInt(regionSplit[1]));
+						RegionStorage storage = value.getLeft();
+						int minChunkX = CoordinateConversions.regionToChunk(storage.getRegionX());
+						int minChunkZ = CoordinateConversions.regionToChunk(storage.getRegionZ());
+						boolean loaded = false, dirty = value.getRight();
 
-							// Ensure backing YAML is up-to-date and check if chunks are loaded
-							for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
-								for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
-									EnchantableBlocksPlugin.this.storeChunkEnchantedBlocks(key.getLeft(), chunkX, chunkZ);
-									if (!loaded && world != null) {
-										loaded = world.isChunkLoaded(chunkX, chunkZ);
-									}
+						// Check if chunks are loaded or dirty
+						chunkCheck: for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
+							for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
+								loaded = loaded || storage.getWorld().isChunkLoaded(chunkX, chunkZ);
+								dirty = dirty || blockMap.get(storage.getWorld().getName(), chunkX, chunkZ).stream()
+										.anyMatch(EnchantableBlock::isDirty);
+								if (dirty && loaded) {
+									break chunkCheck;
 								}
 							}
-						} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-							// Shouldn't be possible, but what the heck.
-							e.printStackTrace();
 						}
 
-						if (!value.getRight()) {
+						if (!dirty) {
 							return loaded;
 						}
 
-						File saveFile = EnchantableBlocksPlugin.this.getSaveFile(key);
 
-						Collection<String> keys = value.getLeft().getKeys(true);
+						Collection<String> keys = storage.getKeys(true);
 						boolean delete = true;
 						for (String path : keys) {
-							if (value.getLeft().get(path) != null) {
+							if (storage.get(path) != null) {
 								delete = false;
 								break;
 							}
@@ -105,33 +92,37 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 						if (delete) {
 							//noinspection ResultOfMethodCallIgnored
-							saveFile.delete();
-							File parentFile = saveFile.getParentFile();
-							String[] files = parentFile.list();
-							if (files == null || files.length == 0) {
-								//noinspection ResultOfMethodCallIgnored
-								parentFile.delete();
-							}
+							storage.getDataFile().delete();
 							return loaded;
 						}
 
 						try {
-							value.getLeft().save(saveFile);
-							value.setValue(false);
+							storage.save();
+							for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
+								for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
+									blockMap.get(key.getLeft().getName(), chunkX, chunkZ).forEach(
+											enchantableBlock -> enchantableBlock.setDirty(false));
+								}
+							}
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
 
 						return loaded;
 					}
-				}).withLoadFunction(new LoadFunction<Pair<String, String>, Pair<YamlConfiguration, Boolean>>() {
+				}).withLoadFunction(new LoadFunction<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>>() {
 					@Override
-					public Pair<YamlConfiguration, Boolean> run(final Pair<String, String> key, final boolean create) {
-						File flagFile = EnchantableBlocksPlugin.this.getSaveFile(key);
-						if (flagFile.exists()) {
-							return new MutablePair<>(YamlConfiguration.loadConfiguration(flagFile), false);
+					public Pair<RegionStorage, Boolean> run(final Triple<World, Integer, Integer> key, final boolean create) {
+						RegionStorage storage = new RegionStorage(EnchantableBlocksPlugin.this, key.getLeft(), key.getMiddle(), key.getRight());
+						if (!storage.getDataFile().exists() && !create) {
+							return null;
 						}
-						return create ? new MutablePair<>(new YamlConfiguration(), false) : null;
+						try {
+							storage.load();
+						} catch (IOException | InvalidConfigurationException e) {
+							e.printStackTrace();
+						}
+						return new Pair<>(storage, false);
 					}
 				}).build();
 
@@ -231,13 +222,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		return ench1.equals(ench2) || this.incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
-	public EnchantableBlock createEnchantableBlock(final Block block, final ItemStack itemStack) {
+	@SuppressWarnings("UnusedReturnValue")
+	public EnchantableBlock createEnchantableBlock(@NotNull final Block block, @NotNull final ItemStack itemStack) {
 
-		if (block == null) {
-			throw new IllegalArgumentException("Block cannot be null.");
-		}
-
-		if (itemStack == null || itemStack.getType() == Material.AIR || itemStack.getEnchantments().isEmpty()) {
+		if (itemStack.getType() == Material.AIR || itemStack.getEnchantments().isEmpty()) {
 			return null;
 		}
 
@@ -251,35 +239,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return null;
 		}
 
-		this.chunkEnchantedBlocks.compute(block.getWorld().getName(), (worldName, worldMap) -> {
-			if (worldMap == null) {
-				worldMap = new TreeMap<>();
-			}
-
-			worldMap.compute(block.getX(), (blockX, blockXMap) -> {
-				if (blockXMap == null) {
-					blockXMap = new TreeMap<>();
-				}
-
-				blockXMap.compute(block.getZ(), (blockZ, blockZMap) -> {
-					if (blockZMap == null) {
-						blockZMap = new HashMap<>();
-					}
-
-					blockZMap.put(block.getY(), enchantableBlock);
-					// Saving is handled when the cache is cleaned, no need to actually alter the entry.
-					this.saveFileCache.get(this.getSaveFileIdentifier(worldName,
-							CoordinateConversions.blockToChunk(blockX),
-							CoordinateConversions.blockToChunk(blockZ))).setValue(true);
-
-					return blockZMap;
-				});
-
-				return blockXMap;
-			});
-
-			return worldMap;
-		});
+		this.blockMap.put(block, enchantableBlock);
 
 		return enchantableBlock;
 	}
@@ -291,34 +251,24 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @return the ItemStack representation of the EnchantableBlock or null if the Block was not a valid EnchantableBlock
 	 */
 	public ItemStack destroyEnchantableBlock(final Block block) {
-		Wrapper<EnchantableBlock> wrapper = new Wrapper<>();
-
-		this.chunkEnchantedBlocks.computeIfPresent(block.getWorld().getName(), (worldName, worldMap) -> {
-			worldMap.computeIfPresent(block.getX(), (blockX, blockXMap) -> {
-				blockXMap.computeIfPresent(block.getZ(), (blockZ, blockZMap) -> {
-					wrapper.set(blockZMap.remove(block.getY()));
-					return blockZMap.isEmpty() ? null : blockZMap;
-				});
-				return blockXMap.isEmpty() ? null : blockXMap;
-			});
-			return worldMap.isEmpty() ? null : worldMap;
-		});
-
-		EnchantableBlock enchantableBlock = wrapper.get();
+		EnchantableBlock enchantableBlock = this.blockMap.remove(block);
 
 		if (enchantableBlock == null || !enchantableBlock.isCorrectType(block.getType())) {
 			return null;
 		}
 
+		int regionX = CoordinateConversions.blockToRegion(block.getX());
+		int regionZ = CoordinateConversions.blockToRegion(block.getZ());
+		Pair<RegionStorage, Boolean> saveData = this.saveFileCache
+				.get(this.getRegionIdentifier(block.getWorld(), regionX, regionZ));
+
 		int chunkX = CoordinateConversions.blockToChunk(block.getX());
 		int chunkZ = CoordinateConversions.blockToChunk(block.getZ());
-		Pair<YamlConfiguration, Boolean> saveData = this.saveFileCache
-				.get(this.getSaveFileIdentifier(block.getWorld().getName(), chunkX, chunkZ));
 
 		String chunkPath = chunkX + "_" + chunkZ;
 
 		ItemStack itemStack = enchantableBlock.getItemStack();
-		if (itemStack != null && itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
+		if (itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
 			// Silk time isn't supposed to be preserved when broken.
 			itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
 		}
@@ -337,7 +287,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			saveData.getLeft().set(chunkPath, null);
 		}
 
-		saveData.setValue(true);
+		saveData.setRight(true);
 
 		return itemStack;
 	}
@@ -348,25 +298,12 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @param block the Block
 	 * @return the EnchantableBlock, or null the Block is not an enchanted block
 	 */
-	public EnchantableBlock getEnchantableBlockByBlock(final Block block) {
-		if (block == null || this.getConfig().getStringList("disabled_worlds").contains(block.getWorld().getName().toLowerCase())) {
+	public EnchantableBlock getEnchantableBlockByBlock(@NotNull final Block block) {
+		if (this.getConfig().getStringList("disabled_worlds").contains(block.getWorld().getName().toLowerCase())) {
 			return null;
 		}
 
-		Wrapper<EnchantableBlock> wrapper = new Wrapper<>();
-
-		this.chunkEnchantedBlocks.computeIfPresent(block.getWorld().getName(), (worldName, worldMap) -> {
-			worldMap.computeIfPresent(block.getX(), (blockX, blockXMap) -> {
-				blockXMap.computeIfPresent(block.getZ(), (blockZ, blockZMap) -> {
-					wrapper.set(blockZMap.get(block.getY()));
-					return blockZMap.isEmpty() ? null : blockZMap;
-				});
-				return blockXMap.isEmpty() ? null : blockXMap;
-			});
-			return worldMap.isEmpty() ? null : worldMap;
-		});
-
-		return wrapper.get();
+		return this.blockMap.get(block);
 
 	}
 
@@ -381,7 +318,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return;
 		}
 
-		Pair<YamlConfiguration, Boolean> saveData = this.saveFileCache.get(this.getSaveFileIdentifier(worldName, chunk.getX(), chunk.getZ()), false);
+		Pair<RegionStorage, Boolean> saveData = this.saveFileCache.get(this.getRegionIdentifier(chunk.getWorld(),
+				CoordinateConversions.chunkToRegion(chunk.getX()), CoordinateConversions.chunkToRegion(chunk.getZ())), false);
 
 		if (saveData == null) {
 			return;
@@ -416,35 +354,11 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 				this.getLogger().warning(String.format("Removed invalid save: %s at %s",
 						chunkStorage.getItemStack(xyz + ".itemstack"), block.getLocation()));
 				chunkStorage.set(xyz, null);
-				saveData.setValue(true);
+				saveData.setRight(true);
 				continue;
 			}
 
-			this.chunkEnchantedBlocks.compute(worldName, (key, worldMap) -> {
-				if (worldMap == null) {
-					worldMap = new TreeMap<>();
-				}
-
-				worldMap.compute(block.getX(), (blockX, blockXMap) -> {
-					if (blockXMap == null) {
-						blockXMap = new TreeMap<>();
-					}
-
-					blockXMap.compute(block.getZ(), (blockZ, blockZMap) -> {
-						if (blockZMap == null) {
-							blockZMap = new HashMap<>();
-						}
-
-						blockZMap.put(block.getY(), enchantableBlock);
-
-						return blockZMap;
-					});
-
-					return blockXMap;
-				});
-
-				return worldMap;
-			});
+			this.blockMap.put(block, enchantableBlock);
 		}
 	}
 
@@ -484,69 +398,14 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		itemStack = itemStack.clone();
 		itemStack.setAmount(1);
 		if (EnchantableFurnace.isApplicableMaterial(type)) {
-			return new EnchantableFurnace(block, itemStack);
+			return new EnchantableFurnace(block, itemStack, getBlockStorage(block));
 		}
 		return null;
 	}
 
 	public void unloadChunkEnchantableBlocks(final Chunk chunk) {
-		this.storeChunkEnchantedBlocks(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
-
 		// Clear out and clean up loaded EnchantableBlocks.
-		this.chunkEnchantedBlocks.computeIfPresent(chunk.getWorld().getName(), (worldName, worldMap) -> {
-			int blockXMin = CoordinateConversions.chunkToBlock(chunk.getX());
-			Map<Integer, TreeMap<Integer, Map<Integer, EnchantableBlock>>> blockXMap = worldMap.subMap(blockXMin, blockXMin + 16);
-			blockXMap.entrySet().removeIf(blockXMapping -> {
-				int blockZMin = CoordinateConversions.chunkToBlock(chunk.getZ());
-				Map<Integer, Map<Integer, EnchantableBlock>> blockZMap = blockXMapping.getValue().subMap(blockZMin, blockZMin + 16);
-				blockZMap.entrySet().removeIf(blockZMapping -> {
-					blockZMapping.getValue().clear();
-					return true;
-				});
-				return blockXMapping.getValue().isEmpty();
-			});
-			return worldMap.isEmpty() ? null : worldMap;
-		});
-	}
-
-	private void storeChunkEnchantedBlocks(final String worldName, final int chunkX, final int chunkZ) {
-		this.chunkEnchantedBlocks.computeIfPresent(worldName, (entryWorldName, worldMap) -> {
-			int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
-			Map<Integer, TreeMap<Integer, Map<Integer, EnchantableBlock>>> blockXMap = worldMap.subMap(blockXMin, blockXMin + 16);
-			blockXMap.forEach((blockX, blockZMap) -> {
-				int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
-				Map<Integer, Map<Integer, EnchantableBlock>> blockZSubMap = blockZMap.subMap(blockZMin, blockZMin + 16);
-				blockZSubMap.forEach((blockZ, blockYMap) -> {
-
-					Pair<YamlConfiguration, Boolean> saveFile = this.saveFileCache.get(this.getSaveFileIdentifier(worldName, chunkX, chunkZ));
-					String chunkPath = chunkX + "_" + chunkZ;
-
-					ConfigurationSection chunkSection;
-					if (saveFile.getLeft().isConfigurationSection(chunkPath)) {
-						chunkSection = saveFile.getLeft().getConfigurationSection(chunkPath);
-					} else {
-						chunkSection = saveFile.getKey().createSection(chunkPath);
-					}
-
-					blockYMap.forEach((blockY, enchantableBlock) -> {
-						String blockPath = blockX + "_" + blockY + "_" + blockZ;
-						ConfigurationSection blockSection;
-
-						if (Objects.requireNonNull(chunkSection).isConfigurationSection(blockPath)) {
-							blockSection = chunkSection.getConfigurationSection(blockPath);
-						} else {
-							blockSection = chunkSection.createSection(blockPath);
-						}
-
-						if (enchantableBlock.save(blockSection)) {
-							saveFile.setValue(true);
-						}
-					});
-				});
-			});
-
-			return worldMap.isEmpty() ? null : worldMap;
-		});
+		this.blockMap.remove(chunk);
 	}
 
 	private void loadEnchantableBlocks() {
@@ -563,13 +422,33 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	}
 
-	private File getSaveFile(final Pair<String, String> data) {
-		return new File(this.getDataFolder(), String.format("data%1$s%2$s%1$s%3$s.yml", File.separatorChar, data.getLeft(), data.getRight()));
+	private ConfigurationSection getChunkStorage(World world, int chunkX, int chunkZ) {
+		ConfigurationSection regionStorage = saveFileCache.get(getRegionIdentifier(world,
+				CoordinateConversions.chunkToRegion(chunkX), CoordinateConversions.chunkToRegion(chunkZ))).getLeft();
+		String chunkPath = chunkX + "_" + chunkZ;
+
+		if (regionStorage.isConfigurationSection(chunkPath)) {
+			return regionStorage.getConfigurationSection(chunkPath);
+		}
+
+		return regionStorage.createSection(chunkPath);
 	}
 
-	private Pair<String, String> getSaveFileIdentifier(final String world, final int chunkX, final int chunkZ) {
-		return new ImmutablePair<>(world,
-				CoordinateConversions.chunkToRegion(chunkX) + "_" + CoordinateConversions.chunkToRegion(chunkZ));
+	private ConfigurationSection getBlockStorage(Block block) {
+		ConfigurationSection chunkStorage = this.getChunkStorage(block.getWorld(),
+				CoordinateConversions.blockToChunk(block.getX()),
+				CoordinateConversions.blockToChunk(block.getZ()));
+		String blockPath = block.getX() + "_" + block.getY() + "_" + block.getZ();
+
+		if (chunkStorage.isConfigurationSection(blockPath)) {
+			return chunkStorage.getConfigurationSection(blockPath);
+		}
+
+		return chunkStorage.createSection(blockPath);
+	}
+
+	private Triple<World, Integer, Integer> getRegionIdentifier(World world, int regionX, int regionZ) {
+		return new Triple<>(world, regionX, regionZ);
 	}
 
 	private void updateConfig() {
@@ -594,4 +473,5 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 		this.getConfig().options().copyHeader(true);
 	}
+
 }
