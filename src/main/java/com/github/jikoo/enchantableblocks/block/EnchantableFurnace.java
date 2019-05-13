@@ -2,17 +2,21 @@ package com.github.jikoo.enchantableblocks.block;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.BlastFurnace;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Furnace;
+import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.inventory.BlastingRecipe;
+import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
-import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.SmokingRecipe;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +64,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
-	public boolean shouldPause(final Event event, FurnaceRecipe recipe) {
+	public boolean shouldPause(final Event event, CookingRecipe recipe) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -142,15 +146,18 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		FurnaceRecipe recipe = getFurnaceRecipe(furnaceInv);
+		CookingRecipe recipe = getFurnaceRecipe(furnaceInv);
 
 		if (recipe == null) {
 			return false;
 		}
 
+		// Ensure recipe is valid
 		if (!recipe.getInputChoice().test(furnaceInv.getSmelting())
 				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
-				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
+				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))
+				||!(recipe instanceof BlastingRecipe) && !(furnace instanceof BlastFurnace)
+				|| !(recipe instanceof SmokingRecipe) && !(furnace instanceof Smoker)) {
 			return false;
 		}
 
@@ -178,30 +185,68 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return MATERIALS.contains(material);
 	}
 
-	public void setCookTimeTotal(final int duration) {
-		Furnace furnace = this.getFurnaceTile();
-		if (furnace != null) {
-			furnace.setCookTimeTotal(duration);
+	public void setCookTimeTotal(@NotNull CookingRecipe recipe) {
+		if (this.getCookModifier() == 0) {
+			return;
 		}
+
+		Furnace furnace = this.getFurnaceTile();
+
+		if (furnace == null) {
+			return;
+		}
+
+		double fractionModifier = 0.5;
+		if (furnace instanceof Smoker || furnace instanceof BlastFurnace) {
+			fractionModifier *= getCookModifier() > 0 ? 2 : 0.5;
+		}
+
+		furnace.setCookTimeTotal(getCappedTicks(recipe.getCookingTime(), this.getCookModifier(), fractionModifier));
+		furnace.update();
 	}
 
-	public static @Nullable FurnaceRecipe getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
+	public int applyBurnTimeModifiers(int burnTime) {
+		// Unbreaking causes furnace to burn for longer, increase burn time
+		burnTime = getCappedTicks(burnTime, -getBurnModifier(), 0.2);
+		// Efficiency causes furnace to burn at different rates, change burn time to match smelt rate change
+		double fractionModifier = 0.5;
+		if (getItemStack().getType() == Material.SMOKER || getItemStack().getType() == Material.BLAST_FURNACE) {
+			fractionModifier *= getCookModifier() > 0 ? 2 : 0.5;
+		}
+		return getCappedTicks(burnTime, getCookModifier(), fractionModifier);
+	}
+
+	private static int getCappedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
+		return Math.max(1, Math.min(Short.MAX_VALUE, getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
+	}
+
+	private static int getModifiedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
+		if (baseModifier == 0) {
+			return baseTicks;
+		}
+		if (baseModifier > 0) {
+			return (int) (baseTicks / (1 + baseModifier * fractionModifier));
+		}
+		return (int) (baseTicks * (1 - baseModifier * fractionModifier));
+	}
+
+	public static @Nullable CookingRecipe getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		if (inventory.getSmelting() == null) {
 			return null;
 		}
 
 		Iterator<Recipe> iterator = Bukkit.recipeIterator();
-		FurnaceRecipe bestRecipe = null;
+		CookingRecipe bestRecipe = null;
 		while (iterator.hasNext()) {
 			Recipe recipe = iterator.next();
-			if (!(recipe instanceof FurnaceRecipe)) {
+			if (!(recipe instanceof CookingRecipe)) {
 				continue;
 			}
 
-			FurnaceRecipe furnaceRecipe = ((FurnaceRecipe) recipe);
+			CookingRecipe cookingRecipe = ((CookingRecipe) recipe);
 
-			if (furnaceRecipe.getInputChoice().test(inventory.getSmelting())) {
-				bestRecipe = furnaceRecipe;
+			if (cookingRecipe.getInputChoice().test(inventory.getSmelting())) {
+				bestRecipe = cookingRecipe;
 				break;
 			}
 		}

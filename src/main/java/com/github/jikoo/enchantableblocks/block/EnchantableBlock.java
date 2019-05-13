@@ -105,4 +105,10 @@ public abstract class EnchantableBlock {
 	protected @NotNull ConfigurationSection getStorage() {
 		return storage;
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getName() + "[itemStack=" + itemStack.toString()+"]";
+	}
+
 }

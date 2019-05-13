@@ -1,13 +1,13 @@
 package com.github.jikoo.enchantableblocks.util;
 
+import com.google.common.collect.TreeMultimap;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
-
-import com.google.common.collect.TreeMultimap;
 
 /**
  * A minimal thread-safe time-based cache implementation backed by a HashMap and TreeMultimap.
@@ -83,8 +83,8 @@ public class Cache<K, V> {
 	 * @param value value to be associated with the specified key
 	 */
 	public void put(final K key, final V value) {
-		// Invalidate key - runs lazy check and ensures value won't be cleaned up early
-		this.invalidate(key);
+		// Run lazy check to clean cache
+		this.lazyCheck();
 
 		if (value == null) {
 			return;
@@ -125,15 +125,21 @@ public class Cache<K, V> {
 		this.lazyCheck();
 
 		synchronized (this.internal) {
+			V value;
 			if (!this.internal.containsKey(key) && this.load != null) {
-				V value = this.load.run(key, create);
+				value = this.load.run(key, create);
 				if (value != null) {
-					this.put(key, value);
+					this.internal.put(key, value);
 				}
-				return value;
+			} else {
+				value = this.internal.get(key);
 			}
 
-			return this.internal.get(key);
+			if (value != null) {
+				this.expiry.put(System.currentTimeMillis() + this.retention, key);
+			}
+
+			return value;
 		}
 	}
 

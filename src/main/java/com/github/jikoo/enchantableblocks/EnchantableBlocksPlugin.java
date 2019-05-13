@@ -26,6 +26,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -250,7 +251,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @param block the EnchantableBlock
 	 * @return the ItemStack representation of the EnchantableBlock or null if the Block was not a valid EnchantableBlock
 	 */
-	public ItemStack destroyEnchantableBlock(final Block block) {
+	public @Nullable ItemStack destroyEnchantableBlock(@NotNull final Block block) {
 		EnchantableBlock enchantableBlock = this.blockMap.remove(block);
 
 		if (enchantableBlock == null || !enchantableBlock.isCorrectType(block.getType())) {
@@ -312,7 +313,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 *
 	 * @param chunk the Chunk
 	 */
-	public void loadChunkEnchantableBlocks(final Chunk chunk) {
+	public void loadChunkEnchantableBlocks(@NotNull final Chunk chunk) {
 		String worldName = chunk.getWorld().getName();
 		if (this.getConfig().getStringList("disabled_worlds").contains(worldName.toLowerCase())) {
 			return;
@@ -369,7 +370,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @param storage the ConfigurationSection to load the EnchantableBlock from
 	 * @return the EnchantableBlock, or null if the EnchantableBlock is not valid.
 	 */
-	private EnchantableBlock loadEnchantableBlock(final Block block, final ConfigurationSection storage) {
+	private @Nullable EnchantableBlock loadEnchantableBlock(@NotNull final Block block, @NotNull final ConfigurationSection storage) {
 		ItemStack itemStack = storage.getItemStack("itemstack");
 
 		if (itemStack == null || itemStack.getType() == Material.AIR) {
@@ -393,7 +394,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 *
 	 * @return the EnchantableBlock or null if no EnchantableBlock is valid for the given ItemStack
 	 */
-	private EnchantableBlock getEnchantableBlock(final Block block, ItemStack itemStack) {
+	private @Nullable EnchantableBlock getEnchantableBlock(@NotNull final Block block, @NotNull ItemStack itemStack) {
 		Material type = itemStack.getType();
 		itemStack = itemStack.clone();
 		itemStack.setAmount(1);
@@ -403,7 +404,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		return null;
 	}
 
-	public void unloadChunkEnchantableBlocks(final Chunk chunk) {
+	public void unloadChunkEnchantableBlocks(@NotNull final Chunk chunk) {
 		// Clear out and clean up loaded EnchantableBlocks.
 		this.blockMap.remove(chunk);
 	}
