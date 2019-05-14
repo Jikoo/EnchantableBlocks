@@ -5,26 +5,17 @@ import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryInteractEvent;
-import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -41,11 +32,26 @@ public class AnvilEnchanter implements Listener {
 		this.plugin = plugin;
 	}
 
-	private void combine(final InventoryView view, ItemStack base, final ItemStack addition) {
-		if (!(view.getTopInventory() instanceof AnvilInventory)) {
+	@EventHandler
+	public void onPrepareAnvil(PrepareAnvilEvent event) {
+		if (!(event.getView().getPlayer() instanceof Player)) {
 			return;
 		}
-		AnvilInventory inventory = (AnvilInventory) view.getTopInventory();
+		Player clicker = (Player) event.getView().getPlayer();
+		if (!clicker.hasPermission("enchantableblocks.enchant.anvil")
+				|| clicker.getGameMode() == GameMode.CREATIVE) {
+			return;
+		}
+
+		AnvilInventory inventory = event.getInventory();
+		ItemStack base = inventory.getItem(0);
+		ItemStack addition = inventory.getItem(1);
+		if (base == null || addition == null || !EnchantableFurnace.isApplicableMaterial(base.getType())
+				|| base.getAmount() > 1 || addition.getAmount() > 1
+				|| addition.getType() != Material.ENCHANTED_BOOK && base.getType() != addition.getType()) {
+			return;
+		}
+
 		ItemMeta baseMeta = base.getItemMeta();
 		ItemMeta additionMeta = addition.getItemMeta();
 		if (!(baseMeta instanceof Repairable) || !(additionMeta instanceof Repairable)) {
@@ -114,7 +120,7 @@ public class AnvilEnchanter implements Listener {
 
 		ItemStack result = base.clone();
 		result.addUnsafeEnchantments(resultEnchants);
-		ItemMeta resultMeta = base.getItemMeta();
+		ItemMeta resultMeta = result.getItemMeta();
 
 		if (!(resultMeta instanceof Repairable)) {
 			return;
@@ -132,16 +138,9 @@ public class AnvilEnchanter implements Listener {
 		resultRepairable.setRepairCost(baseRepairable.hasRepairCost() ? baseRepairable.getRepairCost() * 2 + 1 : 1);
 		result.setItemMeta(resultMeta);
 
-		// Update inventory
-		inventory.setItem(0, null);
-		inventory.setItem(1, null);
-		List<HumanEntity> viewers = new ArrayList<>(inventory.getViewers());
-		viewers.forEach(HumanEntity::closeInventory);
-		inventory.setItem(0, base);
-		inventory.setItem(1, addition);
-		inventory.setItem(2, result);
-		inventory.setRepairCost(cost);
-		viewers.forEach(humanEntity -> humanEntity.openInventory(view));
+		event.setResult(result);
+		final int repairCost = cost;
+		plugin.getServer().getScheduler().runTask(plugin, () -> inventory.setRepairCost(repairCost));
 	}
 
 	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {
@@ -175,42 +174,6 @@ public class AnvilEnchanter implements Listener {
 		}
 
 		return multiplier;
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(final InventoryClickEvent event) {
-		this.onInventoryInteract(event);
-	}
-
-	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(final InventoryDragEvent event) {
-		this.onInventoryInteract(event);
-	}
-
-	private void onInventoryInteract(final InventoryInteractEvent event) {
-		InventoryView view = event.getView();
-		if (view.getTopInventory().getType() != InventoryType.ANVIL
-				|| !(event.getWhoClicked() instanceof Player)) {
-			return;
-		}
-		Player clicker = (Player) event.getWhoClicked();
-		if (!clicker.hasPermission("enchantableblocks.enchant.anvil")
-				|| clicker.getGameMode() == GameMode.CREATIVE) {
-			return;
-		}
-
-		this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
-			Inventory inv = view.getTopInventory();
-			ItemStack base = inv.getItem(0);
-			ItemStack addition = inv.getItem(1);
-			if (base == null || addition == null || !EnchantableFurnace.isApplicableMaterial(base.getType())
-					|| base.getAmount() > 1 || addition.getAmount() > 1
-					|| addition.getType() != Material.ENCHANTED_BOOK && base.getType() != addition.getType()) {
-				return;
-			}
-
-			AnvilEnchanter.this.combine(view, base, addition);
-		});
 	}
 
 }

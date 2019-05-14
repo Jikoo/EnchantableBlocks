@@ -37,7 +37,7 @@ public class TableEnchanter implements Listener {
 	public void onPrepareItemEnchant(final PrepareItemEnchantEvent event) {
 
 		if (event.getItem().getEnchantments().size() > 0
-				|| EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
+				|| !EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
 				|| this.plugin.getEnchantments().size() <= 0
 				// TODO: rework permissions
@@ -86,6 +86,7 @@ public class TableEnchanter implements Listener {
 				// Set up EnchantmentOffers
 				for (int i = 0; i < event.getOffers().length; ++i) {
 					if (i >= levels.length) {
+						//noinspection ConstantConditions See javadocs, @NotNull only pertains to array, not contents
 						event.getOffers()[i] = null;
 						continue;
 					}
@@ -97,6 +98,7 @@ public class TableEnchanter implements Listener {
 					Map<Enchantment, Integer> enchantments = levelOffers.get(buttonLevel);
 
 					if (enchantments.isEmpty() || levels[i] < 1) {
+						//noinspection ConstantConditions See javadocs, @NotNull only pertains to array, not contents
 						event.getOffers()[i] = null;
 						continue;
 					}
@@ -117,7 +119,7 @@ public class TableEnchanter implements Listener {
 	@EventHandler
 	public void onEnchantItem(final EnchantItemEvent event) {
 
-		if (EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
+		if (!EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
 				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
