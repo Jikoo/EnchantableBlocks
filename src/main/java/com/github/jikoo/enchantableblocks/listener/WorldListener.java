@@ -24,12 +24,11 @@ public class WorldListener implements Listener {
 
 	public WorldListener(EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
-		// TODO: Enable version-specific  block listener
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onChunkLoad(final ChunkLoadEvent event) {
-		this.plugin.loadChunkEnchantableBlocks(event.getChunk());
+		plugin.getServer().getScheduler().runTask(plugin, () -> plugin.loadChunkEnchantableBlocks(event.getChunk()));
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
