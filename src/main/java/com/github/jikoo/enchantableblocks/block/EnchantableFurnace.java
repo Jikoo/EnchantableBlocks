@@ -14,6 +14,7 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
@@ -196,12 +197,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return;
 		}
 
-		double fractionModifier = 0.5;
-		if (furnace instanceof Smoker || furnace instanceof BlastFurnace) {
-			fractionModifier *= getCookModifier() > 0 ? 2 : 0.5;
-		}
-
-		furnace.setCookTimeTotal(getCappedTicks(recipe.getCookingTime(), this.getCookModifier(), fractionModifier));
+		furnace.setCookTimeTotal(getCappedTicks(recipe.getCookingTime(), this.getCookModifier(), 0.5));
 		furnace.update();
 	}
 
@@ -209,11 +205,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		// Unbreaking causes furnace to burn for longer, increase burn time
 		burnTime = getCappedTicks(burnTime, -getBurnModifier(), 0.2);
 		// Efficiency causes furnace to burn at different rates, change burn time to match smelt rate change
-		double fractionModifier = 0.5;
-		if (getItemStack().getType() == Material.SMOKER || getItemStack().getType() == Material.BLAST_FURNACE) {
-			fractionModifier *= getCookModifier() > 0 ? 2 : 0.5;
-		}
-		return getCappedTicks(burnTime, getCookModifier(), fractionModifier);
+		return getCappedTicks(burnTime, getCookModifier(), 0.5);
 	}
 
 	private static int getCappedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
@@ -239,11 +231,19 @@ public class EnchantableFurnace extends EnchantableBlock {
 		CookingRecipe bestRecipe = null;
 		while (iterator.hasNext()) {
 			Recipe recipe = iterator.next();
-			if (!(recipe instanceof CookingRecipe)) {
+			if (inventory.getHolder() instanceof BlastFurnace) {
+				if (!(recipe instanceof BlastingRecipe)) {
+					continue;
+				}
+			} else if (inventory.getHolder() instanceof Smoker) {
+				if (!(recipe instanceof SmokingRecipe)) {
+					continue;
+				}
+			} else if (!(recipe instanceof FurnaceRecipe)) {
 				continue;
 			}
 
-			CookingRecipe cookingRecipe = ((CookingRecipe) recipe);
+			CookingRecipe cookingRecipe = (CookingRecipe) recipe;
 
 			if (cookingRecipe.getInputChoice().test(inventory.getSmelting())) {
 				bestRecipe = cookingRecipe;
