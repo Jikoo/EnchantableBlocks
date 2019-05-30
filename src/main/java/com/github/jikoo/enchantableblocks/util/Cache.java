@@ -211,12 +211,13 @@ public class Cache<K, V> {
 
 			keys.forEach(key -> {
 
-				if (this.inUseCheck != null && this.inUseCheck.run(key, this.internal.get(key))) {
+				V value = this.internal.get(key);
+				if (value != null && this.inUseCheck != null && this.inUseCheck.run(key, value)) {
 					this.expiry.put(nextExpiry, key);
 					return;
 				}
 
-				V value = this.internal.remove(key);
+				this.internal.remove(key);
 
 				if (value == null) {
 					return;

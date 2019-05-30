@@ -60,6 +60,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 					@Override
 					public boolean run(final Triple<World, Integer, Integer> key, final Pair<RegionStorage, Boolean> value) {
 
+						if (value == null) {
+							return false;
+						}
+
 						RegionStorage storage = value.getLeft();
 						int minChunkX = CoordinateConversions.regionToChunk(storage.getRegionX());
 						int minChunkZ = CoordinateConversions.regionToChunk(storage.getRegionZ());
