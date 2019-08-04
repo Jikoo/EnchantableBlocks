@@ -1,5 +1,10 @@
 package com.github.jikoo.enchantableblocks.block;
 
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.BlastFurnace;
@@ -21,9 +26,6 @@ import org.bukkit.inventory.SmokingRecipe;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.EnumSet;
-import java.util.Iterator;
-
 /**
  * Class for tracking custom furnace properties and applying certain effects.
  *
@@ -31,8 +33,17 @@ import java.util.Iterator;
  */
 public class EnchantableFurnace extends EnchantableBlock {
 
-	private static final EnumSet<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
+	private static final Set<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
+	private static final Set<CookingRecipe> BLASTING_RECIPES = new HashSet<>();
+	private static final Set<CookingRecipe> SMOKING_RECIPES = new HashSet<>();
+	private static final Set<CookingRecipe> FURNACE_RECIPES = new HashSet<>();
+
+	static {
+		cacheRecipes();
+	}
+
 	private final boolean canPause;
+	private boolean updating = false;
 
 	public EnchantableFurnace(final Block block, final ItemStack itemStack, ConfigurationSection storage) {
 		super(block, itemStack, storage);
@@ -222,37 +233,83 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return (int) (baseTicks * (1 - baseModifier * fractionModifier));
 	}
 
+	public static void update(EnchantableBlocksPlugin plugin, FurnaceInventory inventory) {
+
+		if (inventory.getHolder() == null) {
+			return;
+		}
+
+		EnchantableBlock enchantableBlock = plugin.getEnchantableBlockByBlock(inventory.getHolder().getBlock());
+
+		if (!(enchantableBlock instanceof EnchantableFurnace)) {
+			return;
+		}
+
+		EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
+
+
+		if (enchantableFurnace.updating || enchantableFurnace.getCookModifier() == 0 || !enchantableFurnace.canPause()) {
+			return;
+		}
+
+		enchantableFurnace.updating = true;
+
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			CookingRecipe recipe = getFurnaceRecipe(inventory);
+			if (enchantableFurnace.getCookModifier() != 0 && recipe != null) {
+				enchantableFurnace.setCookTimeTotal(recipe);
+			}
+			if (enchantableFurnace.isPaused()) {
+				enchantableFurnace.resume();
+			} else if (enchantableFurnace.shouldPause(null, recipe)) {
+				enchantableFurnace.pause();
+			}
+			enchantableFurnace.updating = false;
+		});
+	}
+
 	public static @Nullable CookingRecipe getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		if (inventory.getSmelting() == null) {
 			return null;
 		}
 
-		Iterator<Recipe> iterator = Bukkit.recipeIterator();
-		CookingRecipe bestRecipe = null;
-		while (iterator.hasNext()) {
-			Recipe recipe = iterator.next();
-			if (inventory.getHolder() instanceof BlastFurnace) {
-				if (!(recipe instanceof BlastingRecipe)) {
-					continue;
-				}
-			} else if (inventory.getHolder() instanceof Smoker) {
-				if (!(recipe instanceof SmokingRecipe)) {
-					continue;
-				}
-			} else if (!(recipe instanceof FurnaceRecipe)) {
-				continue;
-			}
+		Set<CookingRecipe> recipes;
+		if (inventory.getHolder() instanceof BlastFurnace) {
+			recipes = BLASTING_RECIPES;
+		} else if (inventory.getHolder() instanceof Smoker) {
+			recipes = SMOKING_RECIPES;
+		} else {
+			recipes = FURNACE_RECIPES;
+		}
 
-			CookingRecipe cookingRecipe = (CookingRecipe) recipe;
-
-			if (cookingRecipe.getInputChoice().test(inventory.getSmelting())) {
-				bestRecipe = cookingRecipe;
-				break;
+		for (CookingRecipe recipe : recipes) {
+			if (recipe.getInputChoice().test(inventory.getSmelting())) {
+				return recipe;
 			}
 		}
 
-		return bestRecipe;
+		return null;
+	}
 
+	public static void cacheRecipes() {
+		Iterator<Recipe> iterator = Bukkit.recipeIterator();
+		while (iterator.hasNext()) {
+			Recipe recipe = iterator.next();
+
+			if (recipe instanceof BlastingRecipe) {
+				BLASTING_RECIPES.add((CookingRecipe) recipe);
+			} else if (recipe instanceof SmokingRecipe) {
+				SMOKING_RECIPES.add((CookingRecipe) recipe);
+			} else if (recipe instanceof FurnaceRecipe) {
+				FURNACE_RECIPES.add((CookingRecipe) recipe);
+			}
+		}
+	}
+
+	public static void clearCache() {
+		BLASTING_RECIPES.clear();
+		SMOKING_RECIPES.clear();
+		FURNACE_RECIPES.clear();
 	}
 
 }

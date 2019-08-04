@@ -20,6 +20,8 @@ import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.enchantments.Enchantment;
@@ -204,6 +206,20 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		this.saveFileCache.expireAll();
 		this.enchantments.clear();
 		this.enchantments = null;
+	}
+
+	@Override
+	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+		if (args.length < 1 || !args[0].equalsIgnoreCase("reload")) {
+			sender.sendMessage("EnchantableBlocks v" + getDescription().getVersion());
+			return false;
+		}
+
+		EnchantableFurnace.clearCache();
+		EnchantableFurnace.cacheRecipes();
+		reloadConfig();
+		sender.sendMessage("[EnchantableBlocks v" + getDescription().getVersion() + "] Reloaded config and recipe cache.");
+		return true;
 	}
 
 	@SuppressWarnings("unchecked")

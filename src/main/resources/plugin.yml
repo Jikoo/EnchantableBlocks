@@ -3,7 +3,7 @@ name: EnchantableBlocks
 main: com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin
 version: ${project.version}
 author: Jikoo
-api-version: 1.14
+api-version: "1.14"
 
 permissions:
  enchantableblocks.enchant:
@@ -11,3 +11,9 @@ permissions:
   children:
    enchantableblocks.enchant.table: true
    enchantableblocks.enchant.anvil: true
+
+commands:
+ enchantableblocks:
+  usage: /enchantableblocks reload
+  description: Command used to control EnchantableBlocks.
+  permission: enchantableblocks.admin

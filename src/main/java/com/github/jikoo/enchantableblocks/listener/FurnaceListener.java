@@ -143,58 +143,24 @@ public class FurnaceListener implements Listener {
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryClick(final InventoryClickEvent event) {
 		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
-			this.furnaceContentsChanged((FurnaceInventory) event.getView().getTopInventory());
+			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryMoveItem(final InventoryMoveItemEvent event) {
 		if (event.getDestination() instanceof FurnaceInventory) {
-			this.furnaceContentsChanged((FurnaceInventory) event.getDestination());
+			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getDestination());
 		} else if (event.getSource() instanceof FurnaceInventory) {
-			this.furnaceContentsChanged((FurnaceInventory) event.getSource());
+			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getSource());
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	public void onInventoryDrag(final InventoryDragEvent event) {
 		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
-			this.furnaceContentsChanged((FurnaceInventory) event.getView().getTopInventory());
+			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
 		}
-	}
-
-	private void furnaceContentsChanged(final FurnaceInventory inventory) {
-		if (inventory.getHolder() == null) {
-			return;
-		}
-
-		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(inventory.getHolder().getBlock());
-
-		if (!(enchantableBlock instanceof EnchantableFurnace)) {
-			return;
-		}
-
-		final EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
-		final int cookModifier = enchantableFurnace.getCookModifier();
-
-		if (cookModifier != 0 && !enchantableFurnace.canPause()) {
-			return;
-		}
-
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				CookingRecipe recipe = EnchantableFurnace.getFurnaceRecipe(inventory);
-				if (cookModifier != 0 && recipe != null) {
-					enchantableFurnace.setCookTimeTotal(recipe);
-				}
-				if (enchantableFurnace.isPaused()) {
-					enchantableFurnace.resume();
-				} else if (enchantableFurnace.shouldPause(null, recipe)) {
-					enchantableFurnace.pause();
-				}
-			}
-		}.runTask(this.plugin);
 	}
 
 }
