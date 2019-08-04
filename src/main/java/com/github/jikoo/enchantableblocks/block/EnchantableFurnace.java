@@ -2,8 +2,9 @@ package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import java.util.EnumSet;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,7 +20,6 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
-import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
@@ -34,13 +34,9 @@ import org.jetbrains.annotations.Nullable;
 public class EnchantableFurnace extends EnchantableBlock {
 
 	private static final Set<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
-	private static final Set<CookingRecipe> BLASTING_RECIPES = new HashSet<>();
-	private static final Set<CookingRecipe> SMOKING_RECIPES = new HashSet<>();
-	private static final Set<CookingRecipe> FURNACE_RECIPES = new HashSet<>();
-
-	static {
-		cacheRecipes();
-	}
+	private static final Map<Integer, CookingRecipe> BLASTING_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe> SMOKING_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe> FURNACE_RECIPES = new HashMap<>();
 
 	private final boolean canPause;
 	private boolean updating = false;
@@ -273,7 +269,10 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return null;
 		}
 
-		Set<CookingRecipe> recipes;
+		ItemStack cacheData = inventory.getSmelting().clone();
+		cacheData.setAmount(1);
+		Integer cacheID = cacheData.hashCode();
+		Map<Integer, CookingRecipe> recipes;
 		if (inventory.getHolder() instanceof BlastFurnace) {
 			recipes = BLASTING_RECIPES;
 		} else if (inventory.getHolder() instanceof Smoker) {
@@ -282,28 +281,34 @@ public class EnchantableFurnace extends EnchantableBlock {
 			recipes = FURNACE_RECIPES;
 		}
 
-		for (CookingRecipe recipe : recipes) {
-			if (recipe.getInputChoice().test(inventory.getSmelting())) {
-				return recipe;
+		if (recipes.containsKey(cacheID)) {
+			CookingRecipe recipe = recipes.get(cacheID);
+			if (!recipe.getInputChoice().test(inventory.getSmelting())) {
+				return null;
 			}
+			return recipe;
 		}
 
-		return null;
-	}
-
-	public static void cacheRecipes() {
 		Iterator<Recipe> iterator = Bukkit.recipeIterator();
 		while (iterator.hasNext()) {
-			Recipe recipe = iterator.next();
+			Recipe next = iterator.next();
 
-			if (recipe instanceof BlastingRecipe) {
-				BLASTING_RECIPES.add((CookingRecipe) recipe);
-			} else if (recipe instanceof SmokingRecipe) {
-				SMOKING_RECIPES.add((CookingRecipe) recipe);
-			} else if (recipe instanceof FurnaceRecipe) {
-				FURNACE_RECIPES.add((CookingRecipe) recipe);
+			if (!(next instanceof CookingRecipe)) {
+				continue;
 			}
+			if (inventory.getHolder() instanceof BlastFurnace && !(next instanceof BlastingRecipe)) {
+				continue;
+			} else if (inventory.getHolder() instanceof Smoker && !(next instanceof SmokingRecipe)) {
+				continue;
+			}
+
+			CookingRecipe recipe = (CookingRecipe) next;
+			recipes.put(cacheID, recipe);
+			return recipe;
 		}
+
+		recipes.put(cacheID, null);
+		return null;
 	}
 
 	public static void clearCache() {

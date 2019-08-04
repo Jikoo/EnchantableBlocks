@@ -216,7 +216,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		}
 
 		EnchantableFurnace.clearCache();
-		EnchantableFurnace.cacheRecipes();
 		reloadConfig();
 		sender.sendMessage("[EnchantableBlocks v" + getDescription().getVersion() + "] Reloaded config and recipe cache.");
 		return true;
