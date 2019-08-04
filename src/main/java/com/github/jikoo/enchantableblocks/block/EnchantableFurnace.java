@@ -20,6 +20,7 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
@@ -283,7 +284,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 		if (recipes.containsKey(cacheID)) {
 			CookingRecipe recipe = recipes.get(cacheID);
-			if (!recipe.getInputChoice().test(inventory.getSmelting())) {
+			if (recipe == null || !recipe.getInputChoice().test(inventory.getSmelting())) {
 				return null;
 			}
 			return recipe;
@@ -296,13 +297,24 @@ public class EnchantableFurnace extends EnchantableBlock {
 			if (!(next instanceof CookingRecipe)) {
 				continue;
 			}
-			if (inventory.getHolder() instanceof BlastFurnace && !(next instanceof BlastingRecipe)) {
-				continue;
-			} else if (inventory.getHolder() instanceof Smoker && !(next instanceof SmokingRecipe)) {
+			if (inventory.getHolder() instanceof BlastFurnace) {
+				if (!(next instanceof BlastingRecipe)) {
+					continue;
+				}
+			} else if (inventory.getHolder() instanceof Smoker) {
+				if (!(next instanceof SmokingRecipe)) {
+					continue;
+				}
+			} else if (!(next instanceof FurnaceRecipe)) {
 				continue;
 			}
 
 			CookingRecipe recipe = (CookingRecipe) next;
+
+			if (!recipe.getInputChoice().test(inventory.getSmelting())) {
+				continue;
+			}
+
 			recipes.put(cacheID, recipe);
 			return recipe;
 		}
