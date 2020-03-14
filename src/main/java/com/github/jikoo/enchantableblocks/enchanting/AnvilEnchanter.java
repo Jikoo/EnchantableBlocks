@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -140,7 +141,10 @@ public class AnvilEnchanter implements Listener {
 
 		event.setResult(result);
 		final int repairCost = cost;
-		plugin.getServer().getScheduler().runTask(plugin, () -> inventory.setRepairCost(repairCost));
+		plugin.getServer().getScheduler().runTask(plugin, () -> {
+			inventory.setRepairCost(repairCost);
+			clicker.setWindowProperty(InventoryView.Property.REPAIR_COST, repairCost);
+		});
 	}
 
 	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {

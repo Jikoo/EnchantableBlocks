@@ -1,8 +1,12 @@
 package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
@@ -11,10 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import org.bukkit.inventory.InventoryView;
 
 /**
  * Listener for handling enchanting in an enchantment table.
@@ -113,6 +114,19 @@ public class TableEnchanter implements Listener {
 			return materialOffers;
 		});
 
+		// Force button refresh
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON1, event.getOffers()[0].getCost());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON2, event.getOffers()[1].getCost());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON3, event.getOffers()[2].getCost());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL1, event.getOffers()[0].getEnchantmentLevel());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL2, event.getOffers()[1].getEnchantmentLevel());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL3, event.getOffers()[2].getEnchantmentLevel());
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID1, getEnchantmentId(event.getOffers()[0].getEnchantment()));
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID2, getEnchantmentId(event.getOffers()[1].getEnchantment()));
+			event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID3, getEnchantmentId(event.getOffers()[2].getEnchantment()));
+		}, 1L);
+
 	}
 
 
@@ -137,6 +151,24 @@ public class TableEnchanter implements Listener {
 		UUID uuid = event.getEnchanter().getUniqueId();
 		this.enchantmentOfferLevels.remove(uuid);
 		this.enchantmentOffers.remove(uuid);
+	}
+
+	private int getEnchantmentId(Enchantment enchantment) {
+		String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
+		String nmsVersion = split[split.length - 1];
+
+		try {
+			Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
+			Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
+			Method methodIRegistry_a = clazzIRegistry.getDeclaredMethod("a", Object.class);
+
+			Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
+			Method methodCraftEnchant_getRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
+
+			return (int) methodIRegistry_a.invoke(enchantmentRegistry, methodCraftEnchant_getRaw.invoke(null, enchantment));
+		} catch (ReflectiveOperationException e) {
+			return 0;
+		}
 	}
 
 }
