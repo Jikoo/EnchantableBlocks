@@ -1,87 +1,79 @@
 package com.github.jikoo.enchantableblocks.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class BlockMap<V> {
 
 	private final Map<String, TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>>> serverMap = new HashMap<>();
 
 	public @Nullable V put(@NotNull Block block, @Nullable V value) {
-		Wrapper<V> previousValue = new Wrapper<>();
+		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.computeIfAbsent(block.getWorld().getName(), k -> new TreeMap<>());
+		TreeMap<Integer, Map<Integer, V>> blockXMap = worldMap.computeIfAbsent(block.getX(), k -> new TreeMap<>());
+		Map<Integer, V> blockZMap = blockXMap.computeIfAbsent(block.getZ(), HashMap::new);
 
-		this.serverMap.compute(block.getWorld().getName(), (worldName, worldMap) -> {
-			if (worldMap == null) {
-				worldMap = new TreeMap<>();
-			}
-
-			worldMap.compute(block.getX(), (blockX, blockXMap) -> {
-				if (blockXMap == null) {
-					blockXMap = new TreeMap<>();
-				}
-
-				blockXMap.compute(block.getZ(), (blockZ, blockZMap) -> {
-					if (blockZMap == null) {
-						blockZMap = new HashMap<>();
-					}
-
-					previousValue.set(blockZMap.put(block.getY(), value));
-
-					return blockZMap.isEmpty() ? null : blockZMap;
-				});
-
-				return blockXMap.isEmpty() ? null : blockXMap;
-			});
-
-			return worldMap.isEmpty() ? null : worldMap;
-		});
-
-		return previousValue.get();
+		return blockZMap.put(block.getY(), value);
 	}
 
 	public @Nullable V get(@NotNull Block block) {
-		Wrapper<V> wrapper = new Wrapper<>();
+		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.get(block.getWorld().getName());
+		if (worldMap == null) {
+			return null;
+		}
 
-		this.serverMap.computeIfPresent(block.getWorld().getName(), (worldName, worldMap) -> {
-			worldMap.computeIfPresent(block.getX(), (blockX, blockXMap) -> {
-				blockXMap.computeIfPresent(block.getZ(), (blockZ, blockZMap) -> {
-					wrapper.set(blockZMap.get(block.getY()));
-					return blockZMap.isEmpty() ? null : blockZMap;
-				});
-				return blockXMap.isEmpty() ? null : blockXMap;
-			});
-			return worldMap.isEmpty() ? null : worldMap;
-		});
+		TreeMap<Integer, Map<Integer, V>> blockXMap = worldMap.get(block.getX());
+		if (blockXMap == null) {
+			return null;
+		}
 
-		return wrapper.get();
+		Map<Integer, V> blockZMap = blockXMap.get(block.getZ());
+		if (blockZMap == null) {
+			return null;
+		}
+
+		return blockZMap.get(block.getY());
 	}
 
 	public @Nullable V remove(@NotNull Block block) {
-		Wrapper<V> previousValue = new Wrapper<>();
+		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.get(block.getWorld().getName());
+		if (worldMap == null) {
+			return null;
+		}
 
-		this.serverMap.computeIfPresent(block.getWorld().getName(), (worldName, worldMap) -> {
-			worldMap.computeIfPresent(block.getX(), (blockX, blockXMap) -> {
-				blockXMap.computeIfPresent(block.getZ(), (blockZ, blockZMap) -> {
+		TreeMap<Integer, Map<Integer, V>> blockXMap = worldMap.get(block.getX());
+		if (blockXMap == null) {
+			return null;
+		}
 
-					previousValue.set(blockZMap.remove(block.getY()));
+		Map<Integer, V> blockZMap = blockXMap.get(block.getZ());
+		if (blockZMap == null) {
+			return null;
+		}
 
-					return blockZMap.isEmpty() ? null : blockZMap;
-				});
-				return blockXMap.isEmpty() ? null : blockXMap;
-			});
-			return worldMap.isEmpty() ? null : worldMap;
-		});
+		V value = blockZMap.remove(block.getY());
 
-		return previousValue.get();
+		if (blockZMap.isEmpty()) {
+			blockXMap.remove(block.getZ());
+			if (blockXMap.isEmpty()) {
+				worldMap.remove(block.getX());
+				if (worldMap.isEmpty()) {
+					serverMap.remove(block.getWorld().getName());
+				}
+			}
+		}
+
+		return value;
 	}
 
 	public @NotNull Collection<V> get(@NotNull Chunk chunk) {
@@ -89,26 +81,26 @@ public class BlockMap<V> {
 	}
 
 	public @NotNull Collection<V> get(@NotNull String world, int chunkX, int chunkZ) {
+		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.get(world);
+		if (worldMap == null) {
+			return Collections.emptyList();
+		}
+
+		int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
+		SortedMap<Integer, TreeMap<Integer, Map<Integer, V>>> chunkXSubMap = worldMap.subMap(blockXMin, blockXMin + 16);
+		if (chunkXSubMap.isEmpty()) {
+			return Collections.emptyList();
+		}
+
 		List<V> values = new ArrayList<>();
+		int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
+		for (Map.Entry<Integer, TreeMap<Integer, Map<Integer, V>>> blockXEntry : chunkXSubMap.entrySet()) {
+			SortedMap<Integer, Map<Integer, V>> chunkZSubMap = blockXEntry.getValue().subMap(blockZMin, blockZMin + 16);
 
-		this.serverMap.computeIfPresent(world, (worldName, worldMap) -> {
-			int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
-			Map<Integer, TreeMap<Integer, Map<Integer, V>>> blockXMap = worldMap.subMap(blockXMin, blockXMin + 16);
-
-			blockXMap.entrySet().removeIf(blockXMapping -> {
-				int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
-				Map<Integer, Map<Integer, V>> blockZMap = blockXMapping.getValue().subMap(blockZMin, blockZMin + 16);
-
-				blockZMap.entrySet().removeIf(blockZMapping -> {
-					values.addAll(blockZMapping.getValue().values());
-					return blockZMapping.getValue().isEmpty();
-				});
-
-				return blockXMapping.getValue().isEmpty();
-			});
-
-			return worldMap.isEmpty() ? null : worldMap;
-		});
+			for (Map<Integer, V> blockYMap : chunkZSubMap.values()) {
+				values.addAll(blockYMap.values());
+			}
+		}
 
 		return values;
 	}
@@ -118,27 +110,37 @@ public class BlockMap<V> {
 	}
 
 	public @NotNull Collection<V> remove(@NotNull String world, int chunkX, int chunkZ) {
+		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.get(world);
+		if (worldMap == null) {
+			return Collections.emptyList();
+		}
+
+		int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
+		SortedMap<Integer, TreeMap<Integer, Map<Integer, V>>> chunkXSubMap = worldMap.subMap(blockXMin, blockXMin + 16);
+		if (chunkXSubMap.isEmpty()) {
+			return Collections.emptyList();
+		}
+
 		List<V> values = new ArrayList<>();
+		int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
 
-		this.serverMap.computeIfPresent(world, (worldName, worldMap) -> {
-			int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
-			Map<Integer, TreeMap<Integer, Map<Integer, V>>> blockXMap = worldMap.subMap(blockXMin, blockXMin + 16);
+		for (Iterator<TreeMap<Integer, Map<Integer, V>>> blockXIterator = chunkXSubMap.values().iterator(); blockXIterator.hasNext(); ) {
+			TreeMap<Integer, Map<Integer, V>> blockXValue = blockXIterator.next();
+			SortedMap<Integer, Map<Integer, V>> chunkZSubMap = blockXValue.subMap(blockZMin, blockZMin + 16);
 
-			blockXMap.entrySet().removeIf(blockXMapping -> {
-				int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
-				Map<Integer, Map<Integer, V>> blockZMap = blockXMapping.getValue().subMap(blockZMin, blockZMin + 16);
+			for (Iterator<Map<Integer, V>> blockZIterator = chunkZSubMap.values().iterator(); blockZIterator.hasNext(); ) {
+				values.addAll(blockZIterator.next().values());
+				blockZIterator.remove();
+			}
 
-				blockZMap.entrySet().removeIf(blockZMapping -> {
-					values.addAll(blockZMapping.getValue().values());
-					blockZMapping.getValue().clear();
-					return true;
-				});
+			if (blockXValue.isEmpty()) {
+				blockXIterator.remove();
+			}
+		}
 
-				return blockXMapping.getValue().isEmpty();
-			});
-
-			return worldMap.isEmpty() ? null : worldMap;
-		});
+		if (worldMap.isEmpty()) {
+			serverMap.remove(world);
+		}
 
 		return values;
 	}
