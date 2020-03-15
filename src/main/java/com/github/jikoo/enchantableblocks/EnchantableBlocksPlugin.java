@@ -167,6 +167,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		for (String enchantment : this.getConfig().getStringList("disabled_furnace_enchantments")) {
 			allowedEnchantments.remove(enchantment);
 		}
+		// TODO swap to enchantment keys
 		this.enchantments = new HashSet<>();
 		for (String enchantment : allowedEnchantments) {
 			this.enchantments.add(Enchantment.getByName(enchantment));
@@ -361,7 +362,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			Block block;
 
 			try {
-				block = chunk.getWorld().getBlockAt(Integer.valueOf(split[0]), Integer.valueOf(split[1]), Integer.valueOf(split[2]));
+				block = chunk.getWorld().getBlockAt(Integer.parseInt(split[0]), Integer.parseInt(split[1]), Integer.parseInt(split[2]));
 			} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
 				this.getLogger().warning("Coordinates cannot be parsed from " + Arrays.toString(split));
 				continue;

@@ -35,9 +35,9 @@ import org.jetbrains.annotations.Nullable;
 public class EnchantableFurnace extends EnchantableBlock {
 
 	private static final Set<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
-	private static final Map<Integer, CookingRecipe> BLASTING_RECIPES = new HashMap<>();
-	private static final Map<Integer, CookingRecipe> SMOKING_RECIPES = new HashMap<>();
-	private static final Map<Integer, CookingRecipe> FURNACE_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> BLASTING_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> SMOKING_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> FURNACE_RECIPES = new HashMap<>();
 
 	private final boolean canPause;
 	private boolean updating = false;
@@ -52,7 +52,8 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 	}
 
-	public @Nullable Furnace getFurnaceTile() {
+	@Nullable
+	public Furnace getFurnaceTile() {
 		BlockState state = this.getBlock().getState();
 		return state instanceof Furnace ? (Furnace) state : null;
 	}
@@ -73,7 +74,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
-	public boolean shouldPause(final Event event, CookingRecipe recipe) {
+	public boolean shouldPause(final Event event, CookingRecipe<?> recipe) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -155,7 +156,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		CookingRecipe recipe = getFurnaceRecipe(furnaceInv);
+		CookingRecipe<?> recipe = getFurnaceRecipe(furnaceInv);
 
 		if (recipe == null) {
 			return false;
@@ -194,7 +195,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return MATERIALS.contains(material);
 	}
 
-	public void setCookTimeTotal(@NotNull CookingRecipe recipe) {
+	public void setCookTimeTotal(@NotNull CookingRecipe<?> recipe) {
 		if (this.getCookModifier() == 0) {
 			return;
 		}
@@ -252,7 +253,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		enchantableFurnace.updating = true;
 
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
-			CookingRecipe recipe = getFurnaceRecipe(inventory);
+			CookingRecipe<?> recipe = getFurnaceRecipe(inventory);
 			if (enchantableFurnace.getCookModifier() != 0 && recipe != null) {
 				enchantableFurnace.setCookTimeTotal(recipe);
 			}
@@ -265,7 +266,8 @@ public class EnchantableFurnace extends EnchantableBlock {
 		});
 	}
 
-	public static @Nullable CookingRecipe getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
+	@Nullable
+	public static CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		if (inventory.getSmelting() == null) {
 			return null;
 		}
@@ -273,7 +275,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		ItemStack cacheData = inventory.getSmelting().clone();
 		cacheData.setAmount(1);
 		Integer cacheID = cacheData.hashCode();
-		Map<Integer, CookingRecipe> recipes;
+		Map<Integer, CookingRecipe<?>> recipes;
 		if (inventory.getHolder() instanceof BlastFurnace) {
 			recipes = BLASTING_RECIPES;
 		} else if (inventory.getHolder() instanceof Smoker) {
@@ -283,7 +285,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 
 		if (recipes.containsKey(cacheID)) {
-			CookingRecipe recipe = recipes.get(cacheID);
+			CookingRecipe<?> recipe = recipes.get(cacheID);
 			if (recipe == null || !recipe.getInputChoice().test(inventory.getSmelting())) {
 				return null;
 			}
@@ -309,7 +311,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 				continue;
 			}
 
-			CookingRecipe recipe = (CookingRecipe) next;
+			CookingRecipe<?> recipe = (CookingRecipe<?>) next;
 
 			if (!recipe.getInputChoice().test(inventory.getSmelting())) {
 				continue;

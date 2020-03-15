@@ -51,7 +51,7 @@ public class FurnaceListener implements Listener {
 					if (furnace == null) {
 						return;
 					}
-					CookingRecipe recipe = EnchantableFurnace.getFurnaceRecipe(furnace.getInventory());
+					CookingRecipe<?> recipe = EnchantableFurnace.getFurnaceRecipe(furnace.getInventory());
 					if (recipe != null) {
 						enchantableFurnace.setCookTimeTotal(recipe);
 					}
@@ -82,7 +82,7 @@ public class FurnaceListener implements Listener {
 			return;
 		}
 
-		CookingRecipe recipe = EnchantableFurnace.getFurnaceRecipe(furnace.getInventory());
+		CookingRecipe<?> recipe = EnchantableFurnace.getFurnaceRecipe(furnace.getInventory());
 
 		if (enchantableFurnace.shouldPause(event, recipe)) {
 			new BukkitRunnable() {
@@ -116,7 +116,7 @@ public class FurnaceListener implements Listener {
 	}
 
 	private void applyFortune(final FurnaceSmeltEvent event, final EnchantableFurnace enchantableFurnace,
-			  final CookingRecipe recipe) {
+			 final CookingRecipe<?> recipe) {
 		Furnace furnace = enchantableFurnace.getFurnaceTile();
 		if (furnace == null) {
 			return;
