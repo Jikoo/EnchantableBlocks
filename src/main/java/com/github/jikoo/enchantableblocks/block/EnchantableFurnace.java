@@ -162,12 +162,9 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
-		// Ensure recipe is valid
-		if (!recipe.getInputChoice().test(furnaceInv.getSmelting())
-				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
-				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))
-				||!(recipe instanceof BlastingRecipe) && !(furnace instanceof BlastFurnace)
-				|| !(recipe instanceof SmokingRecipe) && !(furnace instanceof Smoker)) {
+		// Ensure result matches current output
+		if ((furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
+				&& !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
 			return false;
 		}
 
