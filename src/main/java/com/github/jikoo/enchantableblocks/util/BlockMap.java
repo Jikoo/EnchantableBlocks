@@ -21,7 +21,7 @@ public class BlockMap<V> {
 	public @Nullable V put(@NotNull Block block, @Nullable V value) {
 		TreeMap<Integer, TreeMap<Integer, Map<Integer, V>>> worldMap = serverMap.computeIfAbsent(block.getWorld().getName(), k -> new TreeMap<>());
 		TreeMap<Integer, Map<Integer, V>> blockXMap = worldMap.computeIfAbsent(block.getX(), k -> new TreeMap<>());
-		Map<Integer, V> blockZMap = blockXMap.computeIfAbsent(block.getZ(), (blockZ) -> new HashMap<>());
+		Map<Integer, V> blockZMap = blockXMap.computeIfAbsent(block.getZ(), blockZ -> new HashMap<>());
 
 		return blockZMap.put(block.getY(), value);
 	}
