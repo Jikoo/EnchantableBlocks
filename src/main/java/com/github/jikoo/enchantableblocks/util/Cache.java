@@ -1,37 +1,41 @@
 package com.github.jikoo.enchantableblocks.util;
 
 import com.google.common.collect.TreeMultimap;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A minimal thread-safe time-based cache implementation backed by a HashMap and TreeMultimap.
  *
  * @author Jikoo
  */
+@SuppressWarnings("unused")
 public class Cache<K, V> {
 
 	public static class CacheBuilder<K, V> {
 		private long retention = 300000L;
-		private LoadFunction<K, V> load;
-		private Function<K, V> inUseCheck, postRemoval;
+		private BiFunction<K, Boolean, V> load;
+		private BiFunction<K, V, Boolean> inUseCheck;
+		private BiConsumer<K, V> postRemoval;
 
-		public CacheBuilder<K, V> withLoadFunction(final LoadFunction<K, V> load) {
+		public CacheBuilder<K, V> withLoadFunction(final BiFunction<K, Boolean, V> load) {
 			this.load = load;
 			return this;
 		}
 
-		public CacheBuilder<K, V> withInUseCheck(final Function<K, V> function) {
+		public CacheBuilder<K, V> withInUseCheck(final BiFunction<K, V, Boolean> function) {
 			this.inUseCheck = function;
 			return this;
 		}
 
-		public CacheBuilder<K, V> withPostRemoval(final Function<K, V> function) {
+		public CacheBuilder<K, V> withPostRemoval(final BiConsumer<K, V> function) {
 			this.postRemoval = function;
 			return this;
 		}
@@ -52,8 +56,9 @@ public class Cache<K, V> {
 	private final Map<K, V> internal;
 	private final TreeMultimap<Long, K> expiry;
 	private final long retention;
-	private final LoadFunction<K, V> load;
-	private final Function<K, V> inUseCheck, postRemoval;
+	private final BiFunction<K, Boolean, V> load;
+	private final BiFunction<K, V, Boolean> inUseCheck;
+	private final BiConsumer<K, V> postRemoval;
 
 	/**
 	 * Constructs a Cache with the specified retention duration, in use function, and post-removal
@@ -63,8 +68,8 @@ public class Cache<K, V> {
 	 * @param inUseCheck Function used to check if a key is considered in use
 	 * @param postRemoval Function used to perform any operations required when a key is invalidated
 	 */
-	private Cache(final long retention, final LoadFunction<K, V> load,
-			final Function<K, V> inUseCheck, final Function<K, V> postRemoval) {
+	private Cache(final long retention, final BiFunction<K, Boolean, V> load,
+			final BiFunction<K, V, Boolean> inUseCheck, final BiConsumer<K, V> postRemoval) {
 		this.internal = new HashMap<>();
 
 		this.expiry = TreeMultimap.create(Comparator.naturalOrder(), (k1, k2) -> k1 == k2 || k1.equals(k2) ? 0 : 1);
@@ -106,7 +111,7 @@ public class Cache<K, V> {
 	 * @return the value to which the specified key is mapped or null if no value is mapped for the
 	 *         key and no load function is defined
 	 */
-	public V get(final K key) {
+	public @Nullable V get(final K key) {
 		return this.get(key, true);
 	}
 
@@ -120,14 +125,14 @@ public class Cache<K, V> {
 	 * @param create whether or not the load function should create a new value if none exists to be loaded
 	 * @return the value to which the specified key is mapped or null
 	 */
-	public V get(final K key, final boolean create) {
+	public @Nullable V get(final K key, final boolean create) {
 		// Run lazy check to clean cache
 		this.lazyCheck();
 
 		synchronized (this.internal) {
 			V value;
 			if (!this.internal.containsKey(key) && this.load != null) {
-				value = this.load.run(key, create);
+				value = this.load.apply(key, create);
 				if (value != null) {
 					this.internal.put(key, value);
 				}
@@ -212,7 +217,7 @@ public class Cache<K, V> {
 			keys.forEach(key -> {
 
 				V value = this.internal.get(key);
-				if (value != null && this.inUseCheck != null && this.inUseCheck.run(key, value)) {
+				if (value != null && this.inUseCheck != null && this.inUseCheck.apply(key, value)) {
 					this.expiry.put(nextExpiry, key);
 					return;
 				}
@@ -224,7 +229,7 @@ public class Cache<K, V> {
 				}
 
 				if (this.postRemoval != null) {
-					this.postRemoval.run(key, value);
+					this.postRemoval.accept(key, value);
 				}
 			});
 		}

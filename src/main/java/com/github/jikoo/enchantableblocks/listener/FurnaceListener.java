@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.concurrent.ThreadLocalRandom;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Listener for furnace-specific events.
@@ -28,12 +29,12 @@ public class FurnaceListener implements Listener {
 
 	private final EnchantableBlocksPlugin plugin;
 
-	public FurnaceListener(final EnchantableBlocksPlugin plugin) {
+	public FurnaceListener(final @NotNull EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onFurnaceConsumeFuel(final FurnaceBurnEvent event) {
+	public void onFurnaceConsumeFuel(final @NotNull FurnaceBurnEvent event) {
 		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(event.getBlock());
 
 		if (!(enchantableBlock instanceof EnchantableFurnace)) {
@@ -68,7 +69,7 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onFurnaceSmelt(final FurnaceSmeltEvent event) {
+	public void onFurnaceSmelt(final @NotNull FurnaceSmeltEvent event) {
 		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(event.getBlock());
 
 		if (!(enchantableBlock instanceof EnchantableFurnace)) {
@@ -115,7 +116,7 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	private void applyFortune(final FurnaceSmeltEvent event, final EnchantableFurnace enchantableFurnace,
+	private void applyFortune(final @NotNull FurnaceSmeltEvent event, final @NotNull EnchantableFurnace enchantableFurnace,
 			 final CookingRecipe<?> recipe) {
 		Furnace furnace = enchantableFurnace.getFurnaceTile();
 		if (furnace == null) {
@@ -141,14 +142,14 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryClick(final InventoryClickEvent event) {
+	public void onInventoryClick(final @NotNull InventoryClickEvent event) {
 		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
 			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryMoveItem(final InventoryMoveItemEvent event) {
+	public void onInventoryMoveItem(final @NotNull InventoryMoveItemEvent event) {
 		if (event.getDestination() instanceof FurnaceInventory) {
 			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getDestination());
 		} else if (event.getSource() instanceof FurnaceInventory) {
@@ -157,7 +158,7 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onInventoryDrag(final InventoryDragEvent event) {
+	public void onInventoryDrag(final @NotNull InventoryDragEvent event) {
 		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
 			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
 		}

@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.util;
 
 import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("unused")
 public class Pair<L, R> {
 
 	private L left;
@@ -44,7 +45,7 @@ public class Pair<L, R> {
 		if (!getClass().isInstance(obj)) {
 			return false;
 		}
-		Pair other = (Pair) obj;
+		Pair<?, ?> other = (Pair<?, ?>) obj;
 		return left.equals(other.left) && right.equals(other.right);
 	}
 

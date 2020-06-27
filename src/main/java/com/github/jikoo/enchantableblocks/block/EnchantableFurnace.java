@@ -42,7 +42,8 @@ public class EnchantableFurnace extends EnchantableBlock {
 	private final boolean canPause;
 	private boolean updating = false;
 
-	public EnchantableFurnace(final Block block, final ItemStack itemStack, ConfigurationSection storage) {
+	public EnchantableFurnace(final @NotNull Block block, final @NotNull ItemStack itemStack,
+			final @NotNull ConfigurationSection storage) {
 		super(block, itemStack, storage);
 		this.canPause = itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
 		if (this.canPause && itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
@@ -52,8 +53,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 	}
 
-	@Nullable
-	public Furnace getFurnaceTile() {
+	public @Nullable Furnace getFurnaceTile() {
 		BlockState state = this.getBlock().getState();
 		return state instanceof Furnace ? (Furnace) state : null;
 	}
@@ -74,7 +74,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
-	public boolean shouldPause(final Event event, CookingRecipe<?> recipe) {
+	public boolean shouldPause(final @Nullable Event event, @Nullable CookingRecipe<?> recipe) {
 		if (!this.canPause) {
 			return false;
 		}
@@ -184,7 +184,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 	}
 
 	@Override
-	public boolean isCorrectType(final Material type) {
+	public boolean isCorrectType(final @NotNull Material type) {
 		return isApplicableMaterial(type);
 	}
 
@@ -263,8 +263,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		});
 	}
 
-	@Nullable
-	public static CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
+	public static @Nullable CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		if (inventory.getSmelting() == null) {
 			return null;
 		}

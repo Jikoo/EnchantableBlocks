@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class RegionStorage extends YamlConfiguration {
-	
+
 	private final Plugin plugin;
 	private final World world;
 	private final int regionX, regionZ;

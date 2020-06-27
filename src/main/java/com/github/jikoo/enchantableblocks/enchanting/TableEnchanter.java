@@ -16,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.inventory.InventoryView;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Listener for handling enchanting in an enchantment table.
@@ -36,7 +37,7 @@ public class TableEnchanter implements Listener {
 
 	@SuppressWarnings("ConstantConditions") // Suppressed for null checks in improper notnull annotation on PrepareItemEnchantEvent#getOffers
 	@EventHandler
-	public void onPrepareItemEnchant(final PrepareItemEnchantEvent event) {
+	public void onPrepareItemEnchant(final @NotNull PrepareItemEnchantEvent event) {
 
 		if (event.getItem().getEnchantments().size() > 0
 				|| !EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
@@ -139,7 +140,7 @@ public class TableEnchanter implements Listener {
 
 
 	@EventHandler
-	public void onEnchantItem(final EnchantItemEvent event) {
+	public void onEnchantItem(final @NotNull EnchantItemEvent event) {
 
 		if (!EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
@@ -154,7 +155,7 @@ public class TableEnchanter implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-	public void onEnchantItemSucceed(final EnchantItemEvent event) {
+	public void onEnchantItemSucceed(final @NotNull EnchantItemEvent event) {
 		// Player has attempted enchanting anything, all enchants are re-rolled.
 		UUID uuid = event.getEnchanter().getUniqueId();
 		this.enchantmentOfferLevels.remove(uuid);

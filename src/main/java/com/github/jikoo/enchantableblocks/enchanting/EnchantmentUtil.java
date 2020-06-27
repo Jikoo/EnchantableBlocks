@@ -1,15 +1,14 @@
 package com.github.jikoo.enchantableblocks.enchanting;
 
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-
 import org.bukkit.enchantments.Enchantment;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility for calculating enchantments.
@@ -39,9 +38,9 @@ class EnchantmentUtil {
 		return levels;
 	}
 
-	static Map<Enchantment, Integer> calculateFurnaceEnchants(EnchantableBlocksPlugin plugin, int enchantingLevel) {
+	static Map<Enchantment, Integer> calculateFurnaceEnchants(@NotNull EnchantableBlocksPlugin plugin, int enchantingLevel) {
 		int effectiveLevel = getFurnaceEnchantingLevel(plugin, enchantingLevel);
-		HashSet<Enchantment> possibleEnchants = plugin.getEnchantments();
+		Set<Enchantment> possibleEnchants = plugin.getEnchantments();
 		Iterator<Enchantment> iterator = possibleEnchants.iterator();
 
 		while (iterator.hasNext()) {
@@ -69,7 +68,7 @@ class EnchantmentUtil {
 		return enchantments;
 	}
 
-	private static int getFurnaceEnchantingLevel(EnchantableBlocksPlugin plugin, int displayedLevel) {
+	private static int getFurnaceEnchantingLevel(@NotNull EnchantableBlocksPlugin plugin, int displayedLevel) {
 		// Vanilla: enchant level = button level + rand(enchantabity / 4 + 1) + rand(enchantabity / 4 + 1) + 1
 		int enchantability = plugin.getFurnaceEnchantability() / 4 + 1;
 		Random random = ThreadLocalRandom.current();
@@ -77,10 +76,10 @@ class EnchantmentUtil {
 		// Vanilla: random enchantability bonus 85-115%
 		double bonus = (random.nextDouble() + random.nextDouble() - 1) * 0.15 + 1;
 		enchantingLevel = (int) (enchantingLevel * bonus + 0.5);
-		return enchantingLevel < 1 ? 1 : enchantingLevel;
+		return Math.max(enchantingLevel, 1);
 	}
 
-	private static int getFurnaceEnchantmentLevel(Enchantment enchant, int lvl) {
+	private static int getFurnaceEnchantmentLevel(@NotNull Enchantment enchant, int lvl) {
 		// Not worried about high end cap reducing silk/fortune rates
 
 		// Enchantments use upper value if within multiple ranges. Why there's a larger range at all, I don't know.
@@ -103,7 +102,7 @@ class EnchantmentUtil {
 		return 0;
 	}
 
-	private static int getWeight(Enchantment enchant) {
+	private static int getWeight(@NotNull Enchantment enchant) {
 		if (enchant.equals(Enchantment.DIG_SPEED)) {
 			return 10;
 		}
@@ -119,7 +118,7 @@ class EnchantmentUtil {
 		return 0;
 	}
 
-	private static Enchantment getWeightedEnchant(HashSet<Enchantment> enchants) {
+	private static Enchantment getWeightedEnchant(@NotNull Set<Enchantment> enchants) {
 		int randInt = 0;
 		for (Enchantment ench : enchants) {
 			randInt += getWeight(ench);

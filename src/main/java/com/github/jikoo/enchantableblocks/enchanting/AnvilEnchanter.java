@@ -19,6 +19,7 @@ import org.bukkit.inventory.meta.Repairable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Handles enchantments/combinations in an anvil.
@@ -29,12 +30,12 @@ public class AnvilEnchanter implements Listener {
 
 	private final EnchantableBlocksPlugin plugin;
 
-	public AnvilEnchanter(final EnchantableBlocksPlugin plugin) {
+	public AnvilEnchanter(final @NotNull EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
 	}
 
 	@EventHandler
-	public void onPrepareAnvil(PrepareAnvilEvent event) {
+	public void onPrepareAnvil(final @NotNull PrepareAnvilEvent event) {
 		if (!(event.getView().getPlayer() instanceof Player)) {
 			return;
 		}
@@ -147,7 +148,7 @@ public class AnvilEnchanter implements Listener {
 		});
 	}
 
-	private int getEnchantmentMultiplier(final Enchantment enchantment, final boolean book) {
+	private int getEnchantmentMultiplier(final @NotNull Enchantment enchantment, final boolean book) {
 		// TODO new enchants
 		int multiplier;
 		if (enchantment.equals(Enchantment.ARROW_DAMAGE)

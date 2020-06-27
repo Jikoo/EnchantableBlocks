@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.util;
 
 import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("unused")
 public class Triple<L, M, R> extends Pair<L, R> {
 
 	private M middle;
@@ -26,7 +27,7 @@ public class Triple<L, M, R> extends Pair<L, R> {
 
 	@Override
 	public boolean equals(Object obj) {
-		return super.equals(obj) && middle.equals(((Triple) obj).middle);
+		return super.equals(obj) && middle.equals(((Triple<?, ?, ?>) obj).middle);
 	}
 
 }

@@ -61,7 +61,7 @@ public abstract class EnchantableBlock {
 	 * @param material the Material to check
 	 * @return true if the Material is valid
 	 */
-	public abstract boolean isCorrectType(Material material);
+	public abstract boolean isCorrectType(@NotNull Material material);
 
 	/**
 	 * Ticks the EnchantableBlock.
