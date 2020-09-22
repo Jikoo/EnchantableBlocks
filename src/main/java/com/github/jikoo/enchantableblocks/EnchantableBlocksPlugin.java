@@ -26,11 +26,13 @@ import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -254,12 +256,21 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	}
 
 	/**
+	 * @deprecated use {@link #removeEnchantableBlock(Block)}
+	 */
+	@Deprecated
+	public @Nullable ItemStack destroyEnchantableBlock(@NotNull final Block block) {
+		List<ItemStack> drops = removeEnchantableBlock(block);
+		return drops != null && !drops.isEmpty() ? drops.get(0) : null;
+	}
+
+	/**
 	 * Remove an EnchantableBlock.
 	 *
 	 * @param block the EnchantableBlock
-	 * @return the ItemStack representation of the EnchantableBlock or null if the Block was not a valid EnchantableBlock
+	 * @return the drops of the EnchantableBlock, or null if the Block is not an EnchantableBlock
 	 */
-	public @Nullable ItemStack destroyEnchantableBlock(@NotNull final Block block) {
+	public @Nullable List<ItemStack> removeEnchantableBlock(@NotNull final Block block) {
 		EnchantableBlock enchantableBlock = this.blockMap.remove(block);
 
 		if (enchantableBlock == null || !enchantableBlock.isCorrectType(block.getType())) {
@@ -275,23 +286,35 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return null;
 		}
 
-		int chunkX = CoordinateConversions.blockToChunk(block.getX());
-		int chunkZ = CoordinateConversions.blockToChunk(block.getZ());
-
-		String chunkPath = chunkX + "_" + chunkZ;
-
 		ItemStack itemStack = enchantableBlock.getItemStack();
+
 		if (itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
 			// Silk time isn't supposed to be preserved when broken.
 			itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
 		}
 
-		if (!saveData.getLeft().isConfigurationSection(chunkPath)) {
-			saveData.getLeft().set(chunkPath, null);
-			return itemStack;
+		List<ItemStack> drops = new ArrayList<>();
+		drops.add(itemStack);
+
+		BlockState state = block.getState();
+		if (state instanceof InventoryHolder) {
+			for (ItemStack slotItem : ((InventoryHolder) state).getInventory().getContents()) {
+				//noinspection ConstantConditions // Improper Spigot annotation, @NotNull ItemStack[] should be ItemStack @NotNull []
+				if (slotItem != null && slotItem.getType() != Material.AIR) {
+					drops.add(slotItem);
+				}
+			}
 		}
 
+		int chunkX = CoordinateConversions.blockToChunk(block.getX());
+		int chunkZ = CoordinateConversions.blockToChunk(block.getZ());
+		String chunkPath = chunkX + "_" + chunkZ;
 		ConfigurationSection chunkSection = saveData.getLeft().getConfigurationSection(chunkPath);
+
+		if (chunkSection == null) {
+			saveData.getLeft().set(chunkPath, null);
+			return drops;
+		}
 		String coordPath = block.getX() + "_" + block.getY() + "_" + block.getZ();
 
 		Objects.requireNonNull(chunkSection).set(coordPath, null);
@@ -302,7 +325,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 		saveData.setRight(true);
 
-		return itemStack;
+		return drops;
 	}
 
 	/**

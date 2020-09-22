@@ -1,7 +1,10 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import java.util.List;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,9 +46,9 @@ public class WorldListener implements Listener {
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
 	public void onBlockBreak(final @NotNull BlockBreakEvent event) {
-		ItemStack itemStack = this.plugin.destroyEnchantableBlock(event.getBlock());
+		List<ItemStack> drops = this.plugin.removeEnchantableBlock(event.getBlock());
 
-		if (itemStack == null || !event.isDropItems()) {
+		if (drops == null || !event.isDropItems()) {
 			return;
 		}
 
@@ -55,8 +58,13 @@ public class WorldListener implements Listener {
 		Player player = event.getPlayer();
 		if (player.getGameMode() != GameMode.CREATIVE
 				&& !event.getBlock().getDrops(event.getPlayer().getInventory().getItemInMainHand()).isEmpty()) {
-			plugin.getServer().getScheduler().runTask(plugin,
-					() -> event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), itemStack));
+			plugin.getServer().getScheduler().runTask(plugin, () -> {
+				World world = event.getBlock().getWorld();
+				Location blockCenter = event.getBlock().getLocation().add(0.5, 0.1, 0.5);
+				for (ItemStack itemStack : drops) {
+					world.dropItem(blockCenter, itemStack);
+				}
+			});
 		}
 	}
 
