@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author Jikoo
  */
-@SuppressWarnings("unused")
 public class Cache<K, V> {
 
 	public static class CacheBuilder<K, V> {

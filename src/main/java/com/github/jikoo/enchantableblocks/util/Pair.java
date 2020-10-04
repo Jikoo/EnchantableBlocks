@@ -2,7 +2,6 @@ package com.github.jikoo.enchantableblocks.util;
 
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("unused")
 public class Pair<L, R> {
 
 	private L left;
