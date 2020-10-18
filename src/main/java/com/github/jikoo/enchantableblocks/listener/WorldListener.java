@@ -77,7 +77,7 @@ public class WorldListener implements Listener {
 		}
 
 		for (Iterator<Item> iterator = event.getItems().iterator(); iterator.hasNext();) {
-			if (!iterator.next().getItemStack().equals(dropChange.getLeft())) {
+			if (iterator.next().getItemStack().equals(dropChange.getLeft())) {
 				iterator.remove();
 				break;
 			}
