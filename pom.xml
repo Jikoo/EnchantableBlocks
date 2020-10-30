@@ -34,13 +34,7 @@
       <version>1.16.3-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>21.0</version>
-      <type>jar</type>
-      <scope>provided</scope>
-    </dependency>
+
   </dependencies>
 
   <build>
