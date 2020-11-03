@@ -40,8 +40,8 @@ public class Cache<K, V> {
 		}
 
 		public CacheBuilder<K, V> withRetention(final long retention) {
-			if (retention < 6000L) {
-				throw new IllegalArgumentException("Cache retention must be at least 6000ms.");
+			if (retention < 60000L) {
+				throw new IllegalArgumentException("Cache retention must be at least 60000ms.");
 			}
 			this.retention = retention;
 			return this;
