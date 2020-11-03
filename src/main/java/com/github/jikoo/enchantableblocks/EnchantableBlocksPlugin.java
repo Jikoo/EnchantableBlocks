@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -33,6 +35,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -189,6 +192,12 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 		this.loadEnchantableBlocks();
 
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				saveFileCache.lazyCheck();
+			}
+		}.runTaskTimer(this, 0, 20 * 5);
 	}
 
 	@Override

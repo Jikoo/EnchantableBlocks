@@ -88,7 +88,7 @@ public class Cache<K, V> {
 	 */
 	public void put(final K key, final V value) {
 		// Run lazy check to clean cache
-		this.lazyCheck();
+		//this.lazyCheck();
 
 		if (value == null) {
 			return;
@@ -126,7 +126,7 @@ public class Cache<K, V> {
 	 */
 	public @Nullable V get(final K key, final boolean create) {
 		// Run lazy check to clean cache
-		this.lazyCheck();
+		//this.lazyCheck();
 
 		synchronized (this.internal) {
 			V value;
@@ -155,7 +155,7 @@ public class Cache<K, V> {
 	 */
 	public boolean containsKey(final K key) {
 		// Run lazy check to clean cache
-		this.lazyCheck();
+		//this.lazyCheck();
 
 		synchronized (this.internal) {
 			return this.internal.containsKey(key);
@@ -170,7 +170,7 @@ public class Cache<K, V> {
 	 */
 	public void invalidate(final K key) {
 		// Run lazy check to clean cache
-		this.lazyCheck();
+		//this.lazyCheck();
 
 		synchronized (this.internal) {
 			if (!this.internal.containsKey(key)) {
@@ -195,14 +195,14 @@ public class Cache<K, V> {
 			this.internal.keySet().forEach(key -> this.expiry.put(0L, key));
 		}
 
-		this.lazyCheck();
+		//this.lazyCheck();
 	}
 
 	/**
 	 * Invalidate all expired keys that are not considered in use. If a key is expired but is
 	 * considered in use by the provided Function, its expiration time is reset.
 	 */
-	private void lazyCheck() {
+	public void lazyCheck() {
 		long now = System.currentTimeMillis();
 		synchronized (this.internal) {
 			SortedMap<Long, Collection<K>> subMap = this.expiry.asMap().headMap(now);
