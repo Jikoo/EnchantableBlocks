@@ -81,7 +81,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 						return loaded;
 					}
 
-
 					Collection<String> keys = storage.getKeys(true);
 					boolean delete = true;
 					for (String path : keys) {

@@ -7,8 +7,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -20,8 +22,9 @@ public class Cache<K, V> {
 
 	public static class CacheBuilder<K, V> {
 		private long retention = 300000L;
+		private long lazyFrequency = 10000L;
 		private BiFunction<K, Boolean, V> load;
-		private BiFunction<K, V, Boolean> inUseCheck;
+		private BiPredicate<K, V> inUseCheck;
 		private BiConsumer<K, V> postRemoval;
 
 		public CacheBuilder<K, V> withLoadFunction(final BiFunction<K, Boolean, V> load) {
@@ -29,7 +32,7 @@ public class Cache<K, V> {
 			return this;
 		}
 
-		public CacheBuilder<K, V> withInUseCheck(final BiFunction<K, V, Boolean> function) {
+		public CacheBuilder<K, V> withInUseCheck(final BiPredicate<K, V> function) {
 			this.inUseCheck = function;
 			return this;
 		}
@@ -47,16 +50,23 @@ public class Cache<K, V> {
 			return this;
 		}
 
+		public CacheBuilder<K, V> withLazyFrequency(final long lazyFrequency) {
+			this.lazyFrequency = Math.max(0, lazyFrequency);
+			return this;
+		}
+
 		public Cache<K, V> build() {
-			return new Cache<>(this.retention, this.load, this.inUseCheck, this.postRemoval);
+			return new Cache<>(this.retention, this.lazyFrequency, this.load, this.inUseCheck, this.postRemoval);
 		}
 	}
 
 	private final Map<K, V> internal;
 	private final TreeMultimap<Long, K> expiry;
 	private final long retention;
+	private final long lazyFrequency;
+	private final AtomicLong lastLazyCheck;
 	private final BiFunction<K, Boolean, V> load;
-	private final BiFunction<K, V, Boolean> inUseCheck;
+	private final BiPredicate<K, V> inUseCheck;
 	private final BiConsumer<K, V> postRemoval;
 
 	/**
@@ -67,14 +77,16 @@ public class Cache<K, V> {
 	 * @param inUseCheck Function used to check if a key is considered in use
 	 * @param postRemoval Function used to perform any operations required when a key is invalidated
 	 */
-	private Cache(final long retention, final BiFunction<K, Boolean, V> load,
-			final BiFunction<K, V, Boolean> inUseCheck, final BiConsumer<K, V> postRemoval) {
+	private Cache(final long retention, long lazyFrequency, final BiFunction<K, Boolean, V> load,
+			final BiPredicate<K, V> inUseCheck, final BiConsumer<K, V> postRemoval) {
 		this.internal = new HashMap<>();
 
 		this.expiry = TreeMultimap.create(Comparator.naturalOrder(), (k1, k2) -> k1 == k2 || k1.equals(k2) ? 0 : 1);
 
 		this.load = load;
 		this.retention = retention;
+		this.lazyFrequency = lazyFrequency;
+		this.lastLazyCheck = new AtomicLong(0);
 		this.inUseCheck = inUseCheck;
 		this.postRemoval = postRemoval;
 	}
@@ -195,6 +207,8 @@ public class Cache<K, V> {
 			this.internal.keySet().forEach(key -> this.expiry.put(0L, key));
 		}
 
+		this.lastLazyCheck.set(0);
+
 		this.lazyCheck();
 	}
 
@@ -204,6 +218,13 @@ public class Cache<K, V> {
 	 */
 	private void lazyCheck() {
 		long now = System.currentTimeMillis();
+
+		if (lastLazyCheck.get() > now - lazyFrequency) {
+			return;
+		}
+
+		lastLazyCheck.set(now);
+
 		synchronized (this.internal) {
 			SortedMap<Long, Collection<K>> subMap = this.expiry.asMap().headMap(now);
 			Collection<K> keys = subMap.values().stream().collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
@@ -216,7 +237,7 @@ public class Cache<K, V> {
 			keys.forEach(key -> {
 
 				V value = this.internal.get(key);
-				if (value != null && this.inUseCheck != null && this.inUseCheck.apply(key, value)) {
+				if (value != null && this.inUseCheck != null && this.inUseCheck.test(key, value)) {
 					this.expiry.put(nextExpiry, key);
 					return;
 				}
