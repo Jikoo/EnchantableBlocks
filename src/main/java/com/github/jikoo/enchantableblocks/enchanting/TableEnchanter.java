@@ -117,22 +117,13 @@ public class TableEnchanter implements Listener {
 
 		// Force button refresh
 		Bukkit.getScheduler().runTaskLater(plugin, () -> {
-			if (event.getOffers()[0] != null) {
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON1, event.getOffers()[0].getCost());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL1, event.getOffers()[0].getEnchantmentLevel());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID1, getEnchantmentId(event.getOffers()[0].getEnchantment()));
-			}
-
-			if (event.getOffers()[1] != null) {
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON2, event.getOffers()[1].getCost());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL2, event.getOffers()[1].getEnchantmentLevel());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID2, getEnchantmentId(event.getOffers()[1].getEnchantment()));
-			}
-
-			if (event.getOffers()[2] != null) {
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_BUTTON3, event.getOffers()[2].getCost());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_LEVEL3, event.getOffers()[2].getEnchantmentLevel());
-				event.getEnchanter().setWindowProperty(InventoryView.Property.ENCHANT_ID3, getEnchantmentId(event.getOffers()[2].getEnchantment()));
+			for (int i = 1; i <= 3; ++i) {
+				EnchantmentOffer offer = event.getOffers()[i - 1];
+				if (offer != null) {
+					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_BUTTON" + i), offer.getCost());
+					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_LEVEL" + i), offer.getEnchantmentLevel());
+					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_ID" + i), getEnchantmentId(offer.getEnchantment()));
+				}
 			}
 		}, 1L);
 
