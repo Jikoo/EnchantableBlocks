@@ -54,7 +54,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		this.saveFileCache = new CacheBuilder<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>>()
-				.withRetention(Math.max(this.getConfig().getInt("autosave", 5) * 60000, 60000L))
+				.withRetention(Math.max(this.getConfig().getInt("autosave", 5) * 60_000, 60_000L))
 				.withInUseCheck((key, value) -> {
 					if (value == null) {
 						return false;

@@ -21,8 +21,8 @@ import org.jetbrains.annotations.Nullable;
 public class Cache<K, V> {
 
 	public static class CacheBuilder<K, V> {
-		private long retention = 300000L;
-		private long lazyFrequency = 10000L;
+		private long retention = 300_000L;
+		private long lazyFrequency = 10_000L;
 		private BiFunction<K, Boolean, V> load;
 		private BiPredicate<K, V> inUseCheck;
 		private BiConsumer<K, V> postRemoval;
@@ -43,7 +43,7 @@ public class Cache<K, V> {
 		}
 
 		public CacheBuilder<K, V> withRetention(final long retention) {
-			if (retention < 60000L) {
+			if (retention < 60_000L) {
 				throw new IllegalArgumentException("Cache retention must be at least 60000ms.");
 			}
 			this.retention = retention;
