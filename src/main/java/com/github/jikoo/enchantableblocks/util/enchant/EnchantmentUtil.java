@@ -48,8 +48,8 @@ public class EnchantmentUtil {
         }
 
         // Determine effective level.
-        int effectiveLevel = getEffectiveLevel(enchantability, buttonLevel);
-        final int firstEffective = effectiveLevel;
+        int enchantQuality = getEnchantQuality(enchantability, buttonLevel);
+        final int firstEffective = enchantQuality;
 
         // Determine available enchantments.
         Collection<EnchantData> enchantData = enchantments.stream().map(EnchantData::of)
@@ -61,11 +61,11 @@ public class EnchantmentUtil {
         }
 
         Map<Enchantment, Integer> selected = new HashMap<>();
-        addEnchant(selected, enchantData, effectiveLevel, incompatibility);
+        addEnchant(selected, enchantData, enchantQuality, incompatibility);
 
-        while (ThreadLocalRandom.current().nextInt(50) < effectiveLevel) {
-            addEnchant(selected, enchantData, effectiveLevel, incompatibility);
-            effectiveLevel /= 2;
+        while (!enchantData.isEmpty() && ThreadLocalRandom.current().nextInt(50) < enchantQuality) {
+            addEnchant(selected, enchantData, enchantQuality, incompatibility);
+            enchantQuality /= 2;
         }
 
         return selected;
@@ -97,7 +97,7 @@ public class EnchantmentUtil {
 
     }
 
-    private static int getEffectiveLevel(int enchantability, int displayedLevel) {
+    private static int getEnchantQuality(int enchantability, int displayedLevel) {
         if (enchantability <= 0) {
             return 0;
         }
