@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentUtil;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,7 +95,10 @@ public class TableEnchanter implements Listener {
 					}
 
 					levelOffers.computeIfAbsent(levels[i], (level) ->
-							EnchantmentUtil.calculateFurnaceEnchants(this.plugin, level));
+							EnchantmentUtil.calculateEnchantments(plugin.getEnchantments(),
+									plugin::areEnchantmentsIncompatible,
+									plugin.getFurnaceEnchantability(),
+									level, 0));
 
 					int buttonLevel = levels[i];
 					Map<Enchantment, Integer> enchantments = levelOffers.get(buttonLevel);
