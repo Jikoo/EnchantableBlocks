@@ -26,7 +26,7 @@ final class EnchantDataReflection {
         return nmsIntUnaryOperator(enchantment, "a", EnchantDataReflection::defaultMinEffectiveLevel);
     }
 
-    protected static int defaultMinEffectiveLevel(int level) {
+    private static int defaultMinEffectiveLevel(int level) {
         return 1 + level * 10;
     }
 
@@ -34,7 +34,7 @@ final class EnchantDataReflection {
         return nmsIntUnaryOperator(enchantment, "b", EnchantDataReflection::defaultMaxEffectiveLevel);
     }
 
-    protected static int defaultMaxEffectiveLevel(int level) {
+    private static int defaultMaxEffectiveLevel(int level) {
         return defaultMinEffectiveLevel(level) + 5;
     }
 

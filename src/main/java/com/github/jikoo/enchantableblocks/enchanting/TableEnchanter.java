@@ -66,7 +66,7 @@ public class TableEnchanter implements Listener {
 			// Calculate enchantments offered for levels offered.
 			Map<Enchantment, Integer> enchantments = EnchantmentUtil.calculateEnchantments(
 					plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
-					Enchantability.Tool.STONE, buttonLevels[buttonNumber], getEnchantmentSeed(event.getEnchanter()));
+					Enchantability.STONE, buttonLevels[buttonNumber], getEnchantmentSeed(event.getEnchanter()));
 
 			// No enchantments available, no offer.
 			if (enchantments.isEmpty()) {
@@ -104,7 +104,7 @@ public class TableEnchanter implements Listener {
 
 		Map<Enchantment, Integer> enchantments = EnchantmentUtil.calculateEnchantments(
 				plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
-				Enchantability.Tool.STONE, event.getExpLevelCost(), getEnchantmentSeed(event.getEnchanter()));
+				Enchantability.STONE, event.getExpLevelCost(), getEnchantmentSeed(event.getEnchanter()));
 
 		event.getEnchantsToAdd().putAll(enchantments);
 	}
