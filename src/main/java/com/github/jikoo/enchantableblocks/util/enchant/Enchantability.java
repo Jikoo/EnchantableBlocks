@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Representation of materials' enchantability.
@@ -54,17 +56,16 @@ public enum Enchantability {
     public static @NotNull Enchantability convert(int enchantability) {
         TreeMap<Integer, Enchantability> values = getMappedValues();
 
-        // Get floor and ceiling values.
         Map.Entry<Integer, Enchantability> floor = values.floorEntry(enchantability);
         Map.Entry<Integer, Enchantability> ceiling = values.ceilingEntry(enchantability);
 
-        // If ceiling is null, no values are higher, so floor is highest.
-        if (ceiling == null || floor != null && floor.getKey() == enchantability) {
+        // Try floor first.
+        if (onlyOrEqual(enchantability, floor, ceiling)) {
             return floor.getValue();
         }
 
-        // If floor is null, no values are lower, so ceiling is lowest.
-        if (floor == null || ceiling.getKey() == enchantability) {
+        // Failing that, try ceiling.
+        if (onlyOrEqual(enchantability, ceiling, floor)) {
             return ceiling.getValue();
         }
 
@@ -87,6 +88,20 @@ public enum Enchantability {
     private static @NotNull TreeMap<Integer, Enchantability> getMappedValues() {
         return Arrays.stream(values()).collect(Collectors.toMap(
                 Enchantability::getEnchantability, Function.identity(), (a, b) -> a, TreeMap::new));
+    }
+
+    /**
+     * Test values to see if an entry should be returned without distance comparison.
+     *
+     * @param value the value to match
+     * @param entry1 the first entry
+     * @param entry2 the second entry
+     * @return true if the first entry is the only value or is equal to the expected value
+     */
+    @Contract("_, _, null -> true")
+    private static boolean onlyOrEqual(int value, @Nullable Map.Entry<Integer, Enchantability> entry1,
+            @Nullable Map.Entry<Integer, Enchantability> entry2) {
+        return entry2 == null || entry1 != null && entry1.getKey() == value;
     }
 
 }
