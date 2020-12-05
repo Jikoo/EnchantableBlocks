@@ -25,7 +25,8 @@ public enum Enchantability {
     STONE(5),
     IRON_TOOL(14),
     GOLD_TOOL(22),
-    BOOK(1);
+    BOOK(1),
+    TRIDENT(1);
 
     private final int enchantability;
 
@@ -74,6 +75,15 @@ public enum Enchantability {
         return floorDiff <= ceilDiff ? floor.getValue() : ceiling.getValue();
     }
 
+    /**
+     * Get sorted values mapped to magic internal enchantability.
+     *
+     * <p>Note: Conflicts result in the first value being preserved.
+     * <br>For example, {@link #LEATHER}, {@link #NETHERITE}, and {@link #WOOD} all have the same magic value.
+     * {@link #LEATHER} comes first, so {@link #NETHERITE} and {@link #WOOD} will never be present.
+     *
+     * @return a map of enchantability for magic values
+     */
     private static @NotNull TreeMap<Integer, Enchantability> getMappedValues() {
         return Arrays.stream(values()).collect(Collectors.toMap(
                 Enchantability::getEnchantability, Function.identity(), (a, b) -> a, TreeMap::new));

@@ -3,11 +3,9 @@ package com.github.jikoo.enchantableblocks.enchanting;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
-import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentUtil;
-import java.lang.reflect.Method;
+import com.github.jikoo.enchantableblocks.util.enchant.EnchantingTableUtil;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
@@ -17,9 +15,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Listener for handling enchanting in an enchantment table.
@@ -37,7 +35,6 @@ public class TableEnchanter implements Listener {
 		this.randomSeed = new NamespacedKey(plugin, "enchant_seed");
 	}
 
-	@SuppressWarnings("ConstantConditions") // Suppressed for null checks in improper notnull annotation on PrepareItemEnchantEvent#getOffers
 	@EventHandler
 	public void onPrepareItemEnchant(final @NotNull PrepareItemEnchantEvent event) {
 
@@ -54,43 +51,43 @@ public class TableEnchanter implements Listener {
 		event.setCancelled(false);
 
 		// Calculate levels offered for bookshelf count.
-		int[] buttonLevels = EnchantmentUtil.getButtonLevels(event.getEnchantmentBonus(),
+		int[] buttonLevels = EnchantingTableUtil.getButtonLevels(event.getEnchantmentBonus(),
 				getEnchantmentSeed(event.getEnchanter()));
 		for (int buttonNumber = 0; buttonNumber < 3; ++buttonNumber) {
-			// If level is too low, no offer.
-			if (buttonLevels[buttonNumber] < 1) {
-				event.getOffers()[buttonNumber] = null;
-				continue;
-			}
-
-			// Calculate enchantments offered for levels offered.
-			Map<Enchantment, Integer> enchantments = EnchantmentUtil.calculateEnchantments(
-					plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
-					Enchantability.STONE, buttonLevels[buttonNumber], getEnchantmentSeed(event.getEnchanter()));
-
-			// No enchantments available, no offer.
-			if (enchantments.isEmpty()) {
-				event.getOffers()[buttonNumber] = null;
-				continue;
-			}
-
-			// Set up offer.
-			Map.Entry<Enchantment, Integer> firstEnchant = enchantments.entrySet().iterator().next();
-			event.getOffers()[buttonNumber] = new EnchantmentOffer(firstEnchant.getKey(), firstEnchant.getValue(), buttonLevels[buttonNumber]);
+			//noinspection ConstantConditions // Improper NotNull annotation, should be EnchantmentOffer @NotNull []
+			event.getOffers()[buttonNumber] = getOffer(event.getEnchanter(), buttonNumber, buttonLevels[buttonNumber]);
 		}
 
 		// Force button refresh.
-		Bukkit.getScheduler().runTaskLater(plugin, () -> {
-			for (int i = 1; i <= 3; ++i) {
-				EnchantmentOffer offer = event.getOffers()[i - 1];
-				if (offer != null) {
-					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_BUTTON" + i), offer.getCost());
-					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_LEVEL" + i), offer.getEnchantmentLevel());
-					event.getEnchanter().setWindowProperty(InventoryView.Property.valueOf("ENCHANT_ID" + i), getEnchantmentId(offer.getEnchantment()));
-				}
-			}
-		}, 1L);
+		EnchantingTableUtil.updateButtons(plugin, event.getEnchanter(), event.getOffers());
+	}
 
+	/**
+	 * Get an offer of the first enchantment that will be rolled at the specified level for the player.
+	 *
+	 * @param player the player enchanting
+	 * @param enchantLevel the level of the enchantment
+	 * @return the offer or null if no enchantments will be available
+	 */
+	private @Nullable EnchantmentOffer getOffer(@NotNull Player player, int buttonNumber, int enchantLevel) {
+		// If level is too low, no offer.
+		if (enchantLevel < 1) {
+			return null;
+		}
+
+		// Calculate enchantments offered for levels offered.
+		Map<Enchantment, Integer> enchantments = EnchantingTableUtil.calculateEnchantments(
+				plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
+				Enchantability.STONE, enchantLevel, getEnchantmentSeed(player) + buttonNumber);
+
+		// No enchantments available, no offer.
+		if (enchantments.isEmpty()) {
+			return null;
+		}
+
+		// Set up offer.
+		Map.Entry<Enchantment, Integer> firstEnchant = enchantments.entrySet().iterator().next();
+		return new EnchantmentOffer(firstEnchant.getKey(), firstEnchant.getValue(), enchantLevel);
 	}
 
 	@EventHandler
@@ -102,9 +99,10 @@ public class TableEnchanter implements Listener {
 			return;
 		}
 
-		Map<Enchantment, Integer> enchantments = EnchantmentUtil.calculateEnchantments(
+		Map<Enchantment, Integer> enchantments = EnchantingTableUtil.calculateEnchantments(
 				plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
-				Enchantability.STONE, event.getExpLevelCost(), getEnchantmentSeed(event.getEnchanter()));
+				Enchantability.STONE, event.getExpLevelCost(),
+				getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
 
 		event.getEnchantsToAdd().putAll(enchantments);
 	}
@@ -115,6 +113,12 @@ public class TableEnchanter implements Listener {
 		resetSeed(event.getEnchanter());
 	}
 
+	/**
+	 * Get the enchantment seed of a player.
+	 *
+	 * @param player the player
+	 * @return the enchantment seed
+	 */
 	private long getEnchantmentSeed(Player player) {
 		try {
 			Object nmsPlayer = player.getClass().getDeclaredMethod("getHandle").invoke(player);
@@ -132,27 +136,15 @@ public class TableEnchanter implements Listener {
 		}
 	}
 
+	/**
+	 * Reset the enchantment seed of a player.
+	 *
+	 * @param player the player
+	 */
 	private void resetSeed(Player player) {
+		// Only reset if we're using our own seed - enchantment event completion randomizes internal seed.
 		if (needOwnSeed) {
 			player.getPersistentDataContainer().remove(randomSeed);
-		}
-	}
-
-	private int getEnchantmentId(Enchantment enchantment) {
-		String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
-		String nmsVersion = split[split.length - 1];
-
-		try {
-			Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
-			Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
-			Method methodIRegistry_a = clazzIRegistry.getDeclaredMethod("a", Object.class);
-
-			Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
-			Method methodCraftEnchant_getRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
-
-			return (int) methodIRegistry_a.invoke(enchantmentRegistry, methodCraftEnchant_getRaw.invoke(null, enchantment));
-		} catch (ReflectiveOperationException | ClassCastException e) {
-			return 0;
 		}
 	}
 

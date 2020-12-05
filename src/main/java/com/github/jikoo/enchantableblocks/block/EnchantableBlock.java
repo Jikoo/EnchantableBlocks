@@ -108,7 +108,7 @@ public abstract class EnchantableBlock {
 
 	@Override
 	public String toString() {
-		return getClass().getName() + "[itemStack=" + itemStack.toString()+"]";
+		return getClass().getName() + "{itemStack=" + itemStack.toString() + "}";
 	}
 
 }
