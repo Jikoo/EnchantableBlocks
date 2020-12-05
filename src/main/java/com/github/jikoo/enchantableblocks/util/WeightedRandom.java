@@ -2,7 +2,7 @@ package com.github.jikoo.enchantableblocks.util;
 
 import java.util.Collection;
 import java.util.Random;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A utility for selecting a weighted choice randomly.
@@ -11,7 +11,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class WeightedRandom {
 
-    public static <T extends Choice> @Nullable T choose(Random random, Collection<T> choices) {
+    /**
+     * Choose an element from a collection of choices.
+     *
+     * @param random the Random to use
+     * @param choices the choices
+     * @param <T> the type of choice
+     * @return the selected choice
+     */
+    public static <T extends Choice> @NotNull T choose(Random random, Collection<T> choices) {
         int choiceMax = sum(choices);
 
         if (choiceMax <= 0) {
@@ -20,10 +28,6 @@ public class WeightedRandom {
 
         int chosen = random.nextInt(choiceMax);
 
-        return choose(choices, chosen);
-    }
-
-    public static <T extends Choice> @Nullable T choose(Collection<T> choices, int chosen) {
         for (T choice : choices) {
             chosen -= choice.getWeight();
             if (chosen <= 0) {
@@ -31,7 +35,7 @@ public class WeightedRandom {
             }
         }
 
-        return null;
+        throw new IllegalStateException("Generated an index out of bounds with " + random.getClass().getName());
     }
 
     private static int sum(Collection<? extends WeightedRandom.Choice> choices) {

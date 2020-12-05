@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentUtil;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ public class TableEnchanter implements Listener {
 				}
 
 				buttonOfferLevels.putIfAbsent(event.getEnchantmentBonus(),
-						EnchantmentUtil.getButtonLevels(event.getEnchantmentBonus()));
+						EnchantmentUtil.getButtonLevels(event.getEnchantmentBonus(), System.currentTimeMillis()));
 
 				return buttonOfferLevels;
 			});
@@ -97,8 +98,8 @@ public class TableEnchanter implements Listener {
 					levelOffers.computeIfAbsent(levels[i], (level) ->
 							EnchantmentUtil.calculateEnchantments(plugin.getEnchantments(),
 									plugin::areEnchantmentsIncompatible,
-									plugin.getFurnaceEnchantability(),
-									level, 0));
+									Enchantability.Tool.STONE,
+									level, System.currentTimeMillis()));
 
 					int buttonLevel = levels[i];
 					Map<Enchantment, Integer> enchantments = levelOffers.get(buttonLevel);
@@ -170,7 +171,7 @@ public class TableEnchanter implements Listener {
 			Method methodCraftEnchant_getRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
 
 			return (int) methodIRegistry_a.invoke(enchantmentRegistry, methodCraftEnchant_getRaw.invoke(null, enchantment));
-		} catch (ReflectiveOperationException e) {
+		} catch (ReflectiveOperationException | ClassCastException e) {
 			return 0;
 		}
 	}

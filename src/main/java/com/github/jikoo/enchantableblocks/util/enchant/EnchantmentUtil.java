@@ -6,12 +6,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A utility for calculating enchantments.
@@ -20,10 +18,17 @@ import org.jetbrains.annotations.Nullable;
  */
 public class EnchantmentUtil {
 
-    public static Integer[] getButtonLevels(int shelves) {
+    /**
+     * Get three integers representing button levels in an enchantment table.
+     *
+     * @param shelves the number of bookshelves to use when calculating levels
+     * @param seed the seed of the calculation
+     * @return an array of three integers
+     */
+    public static @NotNull Integer[] getButtonLevels(int shelves, long seed) {
         shelves = Math.min(shelves, 15);
         Integer[] levels = new Integer[3];
-        Random random = ThreadLocalRandom.current();
+        Random random = new Random(seed);
 
         for (int button = 0; button < 3; ++button) {
             // Vanilla - get levels to display in table buttons
@@ -36,19 +41,32 @@ public class EnchantmentUtil {
         return levels;
     }
 
-    // TODO seeded random
+    /**
+     * Generate a set of levelled enchantments in a similar fashion to vanilla.
+     * Follows provided rules for enchantment incompatibility.
+     *
+     * @param enchantments the list of eligible enchantments
+     * @param incompatibility a method for determining if enchantments are incompatible
+     * @param enchantability the enchantability of the item
+     * @param buttonLevel the level of the enchantment
+     * @param seed the seed of the enchantment
+     * @return the selected enchantments mapped to their corresponding levels
+     */
     public static Map<Enchantment, Integer> calculateEnchantments(
             @NotNull Collection<Enchantment> enchantments,
             @NotNull BiPredicate<Enchantment, Enchantment> incompatibility,
-            int enchantability, int buttonLevel, int seed) {
+            @NotNull Enchantability enchantability, int buttonLevel, long seed) {
 
         // Ensure enchantments present.
         if (enchantments.isEmpty()) {
             return Collections.emptyMap();
         }
 
+        // Seed random as specified.
+        Random random = new Random(seed);
+
         // Determine effective level.
-        int enchantQuality = getEnchantQuality(enchantability, buttonLevel);
+        int enchantQuality = getEnchantQuality(random, enchantability, buttonLevel);
         final int firstEffective = enchantQuality;
 
         // Determine available enchantments.
@@ -61,10 +79,10 @@ public class EnchantmentUtil {
         }
 
         Map<Enchantment, Integer> selected = new HashMap<>();
-        addEnchant(selected, enchantData, enchantQuality, incompatibility);
+        addEnchant(selected, random, enchantData, enchantQuality, incompatibility);
 
-        while (!enchantData.isEmpty() && ThreadLocalRandom.current().nextInt(50) < enchantQuality) {
-            addEnchant(selected, enchantData, enchantQuality, incompatibility);
+        while (!enchantData.isEmpty() && random.nextInt(50) < enchantQuality) {
+            addEnchant(selected, random, enchantData, enchantQuality, incompatibility);
             enchantQuality /= 2;
         }
 
@@ -72,17 +90,13 @@ public class EnchantmentUtil {
     }
 
     private static void addEnchant(@NotNull Map<Enchantment, Integer> selected,
-            @NotNull Collection<EnchantData> available, int effectiveLevel,
-            @NotNull BiPredicate<Enchantment, Enchantment> incompatibility) {
+            @NotNull Random random, @NotNull Collection<EnchantData> available,
+            int effectiveLevel, @NotNull BiPredicate<Enchantment, Enchantment> incompatibility) {
         if (available.isEmpty())  {
             return;
         }
 
-        EnchantData enchantData = getWeightedEnchant(available);
-
-        if (enchantData == null) {
-            return;
-        }
+        EnchantData enchantData = getWeightedEnchant(random, available);
 
         int level = getEnchantmentLevel(enchantData, effectiveLevel);
 
@@ -97,18 +111,17 @@ public class EnchantmentUtil {
 
     }
 
-    private static int getEnchantQuality(int enchantability, int displayedLevel) {
-        if (enchantability <= 0) {
+    private static int getEnchantQuality(@NotNull Random random, @NotNull Enchantability enchantability, int displayedLevel) {
+        if (enchantability.getEnchantability() <= 0) {
             return 0;
         }
 
-        int effectiveLevel = enchantability / 4 + 1;
-        Random random = ThreadLocalRandom.current();
-        effectiveLevel = displayedLevel + 1 + random.nextInt(effectiveLevel) + random.nextInt(effectiveLevel);
+        int enchantQuality = enchantability.getEnchantability() / 4 + 1;
+        enchantQuality = displayedLevel + 1 + random.nextInt(enchantQuality) + random.nextInt(enchantQuality);
         // Random enchantability penatly/bonus 85-115%
         double bonus = (random.nextDouble() + random.nextDouble() - 1) * 0.15 + 1;
-        effectiveLevel = (int) (effectiveLevel * bonus + 0.5);
-        return Math.max(effectiveLevel, 1);
+        enchantQuality = (int) (enchantQuality * bonus + 0.5);
+        return Math.max(enchantQuality, 1);
     }
 
     private static int getEnchantmentLevel(@NotNull EnchantData enchant, int effectiveLevel) {
@@ -123,8 +136,9 @@ public class EnchantmentUtil {
         return 0;
     }
 
-    private static @Nullable EnchantData getWeightedEnchant(@NotNull Collection<EnchantData> enchants) {
-        return WeightedRandom.choose(ThreadLocalRandom.current(), enchants);
+    private static @NotNull EnchantData getWeightedEnchant(@NotNull Random random,
+            @NotNull Collection<EnchantData> enchants) {
+        return WeightedRandom.choose(random, enchants);
     }
 
     private EnchantmentUtil() {}

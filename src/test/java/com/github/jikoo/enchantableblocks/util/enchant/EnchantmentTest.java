@@ -81,14 +81,15 @@ public class EnchantmentTest {
 
         @BeforeEach
         public void beforeEach() {
-            selected = EnchantmentUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, 5,
-                    ThreadLocalRandom.current().nextInt(1, 31), 0);
+            selected = EnchantmentUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, Enchantability.Tool.STONE,
+                    ThreadLocalRandom.current().nextInt(1, 31), System.currentTimeMillis());
         }
 
         @DisplayName("One or more enchantments should be selected")
         @Test
         public void checkSize() {
-            selected = EnchantmentUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, 20, 30, 0);
+            selected = EnchantmentUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, Enchantability.Tool.STONE,
+                    30, System.currentTimeMillis());
             System.out.println(selected.isEmpty());
             assertThat("One or more enchantments must be selected", false, is(selected.isEmpty()));
         }
