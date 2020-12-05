@@ -18,21 +18,23 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EnchantmentUtil {
 
+    private static final Random RANDOM = new Random();
+
     /**
      * Get three integers representing button levels in an enchantment table.
      *
      * @param shelves the number of bookshelves to use when calculating levels
      * @param seed the seed of the calculation
-     * @return an array of three integers
+     * @return an array of three ints
      */
-    public static @NotNull Integer[] getButtonLevels(int shelves, long seed) {
+    public static int[] getButtonLevels(int shelves, long seed) {
         shelves = Math.min(shelves, 15);
-        Integer[] levels = new Integer[3];
-        Random random = new Random(seed);
+        int[] levels = new int[3];
+        RANDOM.setSeed(seed);
 
         for (int button = 0; button < 3; ++button) {
             // Vanilla - get levels to display in table buttons
-            int i = random.nextInt(8) + 1 + (shelves >> 1) + random.nextInt(shelves + 1);
+            int i = RANDOM.nextInt(8) + 1 + (shelves >> 1) + RANDOM.nextInt(shelves + 1);
             int level = button == 0 ?  Math.max(i / 3, 1) : button == 1 ?  i * 2 / 3 + 1 : Math.max(i, shelves * 2);
 
             levels[button] = level > button + 1 ? level : 0;
@@ -48,7 +50,7 @@ public class EnchantmentUtil {
      * @param enchantments the list of eligible enchantments
      * @param incompatibility a method for determining if enchantments are incompatible
      * @param enchantability the enchantability of the item
-     * @param buttonLevel the level of the enchantment
+     * @param buttonLevel the enchantment number
      * @param seed the seed of the enchantment
      * @return the selected enchantments mapped to their corresponding levels
      */
@@ -63,10 +65,10 @@ public class EnchantmentUtil {
         }
 
         // Seed random as specified.
-        Random random = new Random(seed);
+        RANDOM.setSeed(seed);
 
         // Determine effective level.
-        int enchantQuality = getEnchantQuality(random, enchantability, buttonLevel);
+        int enchantQuality = getEnchantQuality(enchantability, buttonLevel);
         final int firstEffective = enchantQuality;
 
         // Determine available enchantments.
@@ -79,10 +81,10 @@ public class EnchantmentUtil {
         }
 
         Map<Enchantment, Integer> selected = new HashMap<>();
-        addEnchant(selected, random, enchantData, enchantQuality, incompatibility);
+        addEnchant(selected, enchantData, enchantQuality, incompatibility);
 
-        while (!enchantData.isEmpty() && random.nextInt(50) < enchantQuality) {
-            addEnchant(selected, random, enchantData, enchantQuality, incompatibility);
+        while (!enchantData.isEmpty() && RANDOM.nextInt(50) < enchantQuality) {
+            addEnchant(selected, enchantData, enchantQuality, incompatibility);
             enchantQuality /= 2;
         }
 
@@ -90,13 +92,13 @@ public class EnchantmentUtil {
     }
 
     private static void addEnchant(@NotNull Map<Enchantment, Integer> selected,
-            @NotNull Random random, @NotNull Collection<EnchantData> available,
-            int effectiveLevel, @NotNull BiPredicate<Enchantment, Enchantment> incompatibility) {
+            @NotNull Collection<EnchantData> available, int effectiveLevel,
+            @NotNull BiPredicate<Enchantment, Enchantment> incompatibility) {
         if (available.isEmpty())  {
             return;
         }
 
-        EnchantData enchantData = getWeightedEnchant(random, available);
+        EnchantData enchantData = getWeightedEnchant(available);
 
         int level = getEnchantmentLevel(enchantData, effectiveLevel);
 
@@ -111,15 +113,15 @@ public class EnchantmentUtil {
 
     }
 
-    private static int getEnchantQuality(@NotNull Random random, @NotNull Enchantability enchantability, int displayedLevel) {
+    private static int getEnchantQuality(@NotNull Enchantability enchantability, int displayedLevel) {
         if (enchantability.getEnchantability() <= 0) {
             return 0;
         }
 
         int enchantQuality = enchantability.getEnchantability() / 4 + 1;
-        enchantQuality = displayedLevel + 1 + random.nextInt(enchantQuality) + random.nextInt(enchantQuality);
+        enchantQuality = displayedLevel + 1 + RANDOM.nextInt(enchantQuality) + RANDOM.nextInt(enchantQuality);
         // Random enchantability penatly/bonus 85-115%
-        double bonus = (random.nextDouble() + random.nextDouble() - 1) * 0.15 + 1;
+        double bonus = (RANDOM.nextDouble() + RANDOM.nextDouble() - 1) * 0.15 + 1;
         enchantQuality = (int) (enchantQuality * bonus + 0.5);
         return Math.max(enchantQuality, 1);
     }
@@ -136,9 +138,8 @@ public class EnchantmentUtil {
         return 0;
     }
 
-    private static @NotNull EnchantData getWeightedEnchant(@NotNull Random random,
-            @NotNull Collection<EnchantData> enchants) {
-        return WeightedRandom.choose(random, enchants);
+    private static @NotNull EnchantData getWeightedEnchant(@NotNull Collection<EnchantData> enchants) {
+        return WeightedRandom.choose(EnchantmentUtil.RANDOM, enchants);
     }
 
     private EnchantmentUtil() {}
