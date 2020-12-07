@@ -42,7 +42,7 @@ public enum Enchantability {
      * @return the magic value
      */
     int getEnchantability() {
-        return enchantability;
+        return this.enchantability;
     }
 
     /**

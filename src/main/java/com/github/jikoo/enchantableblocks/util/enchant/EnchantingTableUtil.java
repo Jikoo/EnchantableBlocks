@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Jikoo
  */
-public class EnchantingTableUtil {
+public final class EnchantingTableUtil {
 
     private static final Random RANDOM = new Random();
 

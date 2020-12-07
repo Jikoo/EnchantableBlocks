@@ -1,29 +1,32 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.util.WeightedRandom;
-
 /**
  * A representation of enchantment rarity.
  *
  * @author Jikoo
  */
-public enum Rarity implements WeightedRandom.Choice {
+public enum Rarity {
 
-    COMMON(10),
-    UNCOMMON(5),
-    RARE(2),
-    VERY_RARE(1),
-    UNKNOWN(0);
+    COMMON(10, 1),
+    UNCOMMON(5, 2),
+    RARE(2, 4),
+    VERY_RARE(1, 8),
+    UNKNOWN(0, 40);
 
     private final int rarity;
+    private final int anvilMultiplier;
 
-    Rarity(int rarity) {
+    Rarity(int rarity, int anvilMultiplier) {
         this.rarity = rarity;
+        this.anvilMultiplier = anvilMultiplier;
     }
 
-    @Override
     public int getWeight() {
         return rarity;
+    }
+
+    public int getAnvilValue() {
+        return anvilMultiplier;
     }
 
     /**

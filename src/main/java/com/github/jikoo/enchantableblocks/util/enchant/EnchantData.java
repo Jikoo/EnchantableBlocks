@@ -131,24 +131,24 @@ class EnchantData implements WeightedRandom.Choice {
     }
 
     public Enchantment getEnchantment() {
-        return enchantment;
+        return this.enchantment;
     }
 
     public Rarity getRarity() {
-        return rarity;
+        return this.rarity;
     }
 
     @Override
     public int getWeight() {
-        return getRarity().getWeight();
+        return this.getRarity().getWeight();
     }
 
     public int getMinEffectiveLevel(int level) {
-        return minEffectiveLevel.applyAsInt(level);
+        return this.minEffectiveLevel.applyAsInt(level);
     }
 
     public int getMaxEffectiveLevel(int level) {
-        return maxEffectiveLevel.applyAsInt(level);
+        return this.maxEffectiveLevel.applyAsInt(level);
     }
 
 }
