@@ -90,7 +90,6 @@ class EnchantmentTest {
         void checkSize() {
             selected = EnchantingTableUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, Enchantability.STONE,
                     30, System.currentTimeMillis());
-            System.out.println(selected.isEmpty());
             assertThat("One or more enchantments must be selected", false, is(selected.isEmpty()));
         }
 
