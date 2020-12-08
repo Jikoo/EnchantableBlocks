@@ -221,12 +221,12 @@ public final class EnchantingTableUtil {
         try {
             Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
             Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
-            Method methodIRegistry_a = clazzIRegistry.getDeclaredMethod("a", Object.class);
+            Method methodIRegistryA = clazzIRegistry.getDeclaredMethod("a", Object.class);
 
             Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
-            Method methodCraftEnchant_getRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
+            Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
 
-            return (int) methodIRegistry_a.invoke(enchantmentRegistry, methodCraftEnchant_getRaw.invoke(null, enchantment));
+            return (int) methodIRegistryA.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
         } catch (ReflectiveOperationException | ClassCastException e) {
             return 0;
         }
