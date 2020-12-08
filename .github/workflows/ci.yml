@@ -5,21 +5,24 @@ on:
     branches:
       - master
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8, 11 ]
+    name: Build Java ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 8
+      - name: Set up JDK
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: ${{ matrix.java }}
 
       - name: Cache Maven packages
         uses: actions/cache@v1
@@ -29,6 +32,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Cache SonarCloud packages
+        if: matrix.java == '11'
         uses: actions/cache@v1
         with:
           path: ~/.sonar/cache
@@ -39,7 +43,8 @@ jobs:
         run: mvn -e clean package
 
       - name: Build and analyze
+        if: matrix.java == '11'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P sonarcloud
