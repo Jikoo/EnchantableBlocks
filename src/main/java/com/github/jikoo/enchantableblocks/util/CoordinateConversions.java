@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  *
  * @author Jikoo
  */
-public class CoordinateConversions {
+public final class CoordinateConversions {
 
 	private static final Pattern REGION_FILE = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
 
@@ -96,5 +96,7 @@ public class CoordinateConversions {
 		return new Pair<>(CoordinateConversions.regionToChunk(Integer.parseInt(matcher.group(1))),
 				CoordinateConversions.regionToChunk(Integer.parseInt(matcher.group(2))));
 	}
+
+	private CoordinateConversions() {}
 
 }

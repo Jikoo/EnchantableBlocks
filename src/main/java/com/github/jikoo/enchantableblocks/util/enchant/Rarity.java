@@ -13,16 +13,16 @@ public enum Rarity {
     VERY_RARE(1, 8),
     UNKNOWN(0, 40);
 
-    private final int rarity;
+    private final int weight;
     private final int anvilMultiplier;
 
-    Rarity(int rarity, int anvilMultiplier) {
-        this.rarity = rarity;
+    Rarity(int weight, int anvilMultiplier) {
+        this.weight = weight;
         this.anvilMultiplier = anvilMultiplier;
     }
 
     public int getWeight() {
-        return rarity;
+        return weight;
     }
 
     public int getAnvilValue() {
@@ -37,7 +37,7 @@ public enum Rarity {
      */
     static Rarity of(int weight) {
         for (Rarity value : values()) {
-            if (value.rarity == weight) {
+            if (value.weight == weight) {
                 return value;
             }
         }

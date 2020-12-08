@@ -102,12 +102,7 @@ class EnchantData implements WeightedRandom.Choice {
     }
 
     public static EnchantData of(Enchantment enchantment) {
-        EnchantData enchantData = ENCHANT_DATA.get(enchantment);
-        if (enchantData == null) {
-            enchantData = new EnchantData(enchantment);
-            ENCHANT_DATA.put(enchantment, enchantData);
-        }
-        return enchantData;
+        return ENCHANT_DATA.computeIfAbsent(enchantment, EnchantData::new);
     }
 
     private final Enchantment enchantment;

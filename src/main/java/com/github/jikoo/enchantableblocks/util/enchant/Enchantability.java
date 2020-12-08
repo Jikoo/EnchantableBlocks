@@ -30,10 +30,10 @@ public enum Enchantability {
     BOOK(1),
     TRIDENT(1);
 
-    private final int enchantability;
+    private final int value;
 
-    Enchantability(int enchantability) {
-        this.enchantability = enchantability;
+    Enchantability(int value) {
+        this.value = value;
     }
 
     /**
@@ -41,8 +41,8 @@ public enum Enchantability {
      *
      * @return the magic value
      */
-    int getEnchantability() {
-        return this.enchantability;
+    int getValue() {
+        return this.value;
     }
 
     /**
@@ -87,7 +87,7 @@ public enum Enchantability {
      */
     private static @NotNull TreeMap<Integer, Enchantability> getMappedValues() {
         return Arrays.stream(values()).collect(Collectors.toMap(
-                Enchantability::getEnchantability, Function.identity(), (a, b) -> a, TreeMap::new));
+                Enchantability::getValue, Function.identity(), (a, b) -> a, TreeMap::new));
     }
 
     /**

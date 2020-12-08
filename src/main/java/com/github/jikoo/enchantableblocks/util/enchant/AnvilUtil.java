@@ -1,5 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
+import com.github.jikoo.enchantableblocks.util.Pair;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -69,14 +70,14 @@ public final class AnvilUtil {
     }
 
     public static @NotNull AnvilResult combine(@NotNull ItemStack base, @NotNull ItemStack addition,
-            @NotNull BiPredicate<ItemStack, Enchantment> itemCompat,
+            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
             @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat,
             boolean doMaterialRepair) {
         ItemMeta baseMeta = base.getItemMeta();
         ItemMeta additionMeta = addition.getItemMeta();
 
         // Items must support stored repair cost value.
-        if (!(baseMeta instanceof Repairable) || !(additionMeta instanceof Repairable)) {
+        if (!(baseMeta instanceof Repairable && additionMeta instanceof Repairable)) {
             return EMPTY;
         }
 
@@ -180,7 +181,7 @@ public final class AnvilUtil {
     }
 
     private static AnvilResult combineEnchantments(@NotNull AnvilResult oldResult, @NotNull ItemStack addition,
-            @NotNull BiPredicate<ItemStack, Enchantment> itemCompat,
+            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
             @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat) {
         ItemStack base = oldResult.getResult();
 
@@ -190,22 +191,22 @@ public final class AnvilUtil {
         int cost = getBaseCost(base, addition) + oldResult.getCost();
         boolean affected = false;
         for (Map.Entry<Enchantment, Integer> added : addedEnchants.entrySet()) {
-            if (!itemCompat.test(base, added.getKey())) {
-                continue;
-            }
             if (!baseEnchants.keySet().stream().allMatch(enchant -> enchantCompat.test(enchant, added.getKey()))) {
                 continue;
             }
-            affected = true;
+
             int newValue = added.getValue();
             int oldValue = baseEnchants.getOrDefault(added.getKey(), 0);
             newValue = oldValue == newValue ? oldValue + 1 : Math.max(oldValue, newValue);
+
+            if (!itemCompat.test(base, new Pair<>(added.getKey(), newValue))) {
+                continue;
+            }
+
+            affected = true;
             baseEnchants.put(added.getKey(), newValue);
 
-            int costMod = EnchantData.of(added.getKey()).getRarity().getAnvilValue();
-            if (addition.getType() == Material.ENCHANTED_BOOK) {
-                costMod /= 2;
-            }
+            int costMod = getMultiplier(added.getKey(), addition.getType() != Material.ENCHANTED_BOOK);
 
             cost += newValue * Math.max(1, costMod);
         }

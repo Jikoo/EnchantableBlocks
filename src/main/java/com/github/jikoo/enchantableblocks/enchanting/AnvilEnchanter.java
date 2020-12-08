@@ -52,7 +52,9 @@ public class AnvilEnchanter implements Listener {
 		}
 
 		AnvilResult anvilResult = AnvilUtil.combine(base, addition,
-				(itemStack, enchantment) -> !plugin.getEnchantments().contains(enchantment),
+				(itemStack, enchantment) ->
+						!plugin.getEnchantments().contains(enchantment.getLeft())
+								&& enchantment.getLeft().getMaxLevel() >= enchantment.getRight(),
 				(enchant1, enchant2) -> !plugin.areEnchantmentsIncompatible(enchant1, enchant2),
 				false);
 

@@ -16,7 +16,8 @@ public class RegionStorage extends YamlConfiguration {
 
 	private final Plugin plugin;
 	private final World world;
-	private final int regionX, regionZ;
+	private final int regionX;
+	private final int regionZ;
 
 	public RegionStorage(Plugin plugin, World world, int regionX, int regionZ) {
 		this.plugin = plugin;

@@ -41,7 +41,7 @@ public class TableEnchanter implements Listener {
 		if (event.getItem().getEnchantments().size() > 0
 				|| !EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
-				|| this.plugin.getEnchantments().size() <= 0
+				|| this.plugin.getEnchantments().isEmpty()
 				// TODO: rework permissions
 				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
@@ -101,7 +101,7 @@ public class TableEnchanter implements Listener {
 
 		Map<Enchantment, Integer> enchantments = EnchantingTableUtil.calculateEnchantments(
 				plugin.getEnchantments(), plugin::areEnchantmentsIncompatible,
-				Enchantability.STONE, event.getExpLevelCost(),
+				Enchantability.convert(plugin.getFurnaceEnchantability()), event.getExpLevelCost(),
 				getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
 
 		event.getEnchantsToAdd().putAll(enchantments);

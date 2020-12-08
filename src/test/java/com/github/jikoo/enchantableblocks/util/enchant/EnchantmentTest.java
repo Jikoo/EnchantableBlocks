@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.not;
  */
 @DisplayName("Feature: Calculate enchantments")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EnchantmentTest {
+class EnchantmentTest {
 
     private static final Collection<Enchantment> TOOL_ENCHANTS = Arrays.asList(
             Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH);
@@ -64,7 +64,7 @@ public class EnchantmentTest {
     @DisplayName("Enchantments should be explicitly supported")
     @ParameterizedTest
     @MethodSource("enchantmentStream")
-    public void testExplicitSupport(Enchantment enchantment) {
+    void testExplicitSupport(Enchantment enchantment) {
         EnchantData enchantData = EnchantData.of(enchantment);
         assertThat("Enchantment should be explicitly supported", Rarity.UNKNOWN, not(enchantData.getRarity()));
     }
@@ -75,19 +75,19 @@ public class EnchantmentTest {
 
     @DisplayName("When enchantments are selected")
     @Nested
-    public class EnchantmentAttempt {
+    class EnchantmentAttempt {
 
         private Map<Enchantment, Integer> selected;
 
         @BeforeEach
-        public void beforeEach() {
+        void beforeEach() {
             selected = EnchantingTableUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, Enchantability.STONE,
                     ThreadLocalRandom.current().nextInt(1, 31), System.currentTimeMillis());
         }
 
         @DisplayName("One or more enchantments should be selected")
         @Test
-        public void checkSize() {
+        void checkSize() {
             selected = EnchantingTableUtil.calculateEnchantments(TOOL_ENCHANTS, this::conflicts, Enchantability.STONE,
                     30, System.currentTimeMillis());
             System.out.println(selected.isEmpty());
@@ -96,7 +96,7 @@ public class EnchantmentTest {
 
         @DisplayName("Enchantments should not conflict")
         @RepeatedTest(10)
-        public void checkConflict() {
+        void checkConflict() {
             Enchantment[] enchantments = selected.keySet().toArray(new Enchantment[0]);
             for (int i = 0; i < enchantments.length; ++i) {
                 for (int j = 0; j < enchantments.length; ++j) {

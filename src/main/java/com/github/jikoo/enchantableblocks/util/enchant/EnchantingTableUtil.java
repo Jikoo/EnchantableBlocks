@@ -154,11 +154,11 @@ public final class EnchantingTableUtil {
      * @return the enchantment quality
      */
     private static int getEnchantQuality(@NotNull Enchantability enchantability, int enchantLevel) {
-        if (enchantability.getEnchantability() <= 0) {
+        if (enchantability.getValue() <= 0) {
             return 0;
         }
 
-        int enchantQuality = enchantability.getEnchantability() / 4 + 1;
+        int enchantQuality = enchantability.getValue() / 4 + 1;
         enchantQuality = enchantLevel + 1 + RANDOM.nextInt(enchantQuality) + RANDOM.nextInt(enchantQuality);
         // Random enchantability penalty/bonus 85-115%
         double bonus = (RANDOM.nextDouble() + RANDOM.nextDouble() - 1) * 0.15 + 1;
