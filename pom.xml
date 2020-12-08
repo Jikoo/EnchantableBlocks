@@ -18,8 +18,6 @@
     <sonar.organization>jikoo</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.language>java</sonar.language>
-    <sonar.tests>junit</sonar.tests>
-    <sonar.junit.reportsPath>target/surefire-reports</sonar.junit.reportsPath>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar.jacoco.reportPath>target/jacoco.exec</sonar.jacoco.reportPath>
   </properties>
