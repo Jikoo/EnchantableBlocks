@@ -18,6 +18,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,13 +49,17 @@ class EnchantmentTest {
     @BeforeAll
     void beforeAll() {
         MockBukkit.mock();
+        fixToolEnchants();
+    }
+
+    static void fixToolEnchants() {
         fixEnchant("efficiency", 5);
         fixEnchant("unbreaking", 3);
         fixEnchant("fortune", 3);
         fixEnchant("silk_touch", 1);
     }
 
-    private void fixEnchant(String id, int levelMax) {
+    private static void fixEnchant(String id, int levelMax) {
         EnchantmentMock mock = (EnchantmentMock) Enchantment.getByKey(NamespacedKey.minecraft(id));
         assert mock != null;
         mock.setMaxLevel(levelMax);
@@ -71,6 +76,13 @@ class EnchantmentTest {
 
     static Stream<Enchantment> enchantmentStream() {
         return Arrays.stream(Enchantment.values());
+    }
+
+    @DisplayName("Enchantability should be able to be converted from magic values")
+    @ParameterizedTest
+    @CsvSource({ "-10,BOOK", "5,STONE", "50,GOLD_ARMOR", "15,LEATHER" })
+    void testEnchantabilityConvert(int number, Enchantability enchantability) {
+        assertThat("Enchantability should match expected", enchantability, is(Enchantability.convert(number)));
     }
 
     @DisplayName("When enchantments are selected")

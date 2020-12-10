@@ -23,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 public final class AnvilUtil {
 
     private static final AnvilResult EMPTY = new AnvilResult();
-
     private static final Map<Material, RecipeChoice> MATERIALS_TO_REPAIRABLE = new EnumMap<>(Material.class);
 
     static {
@@ -44,29 +43,6 @@ public final class AnvilUtil {
         addGear("NETHERITE", armortools, Material.NETHERITE_INGOT);
         addGear("WOODEN", tools, new RecipeChoice.MaterialChoice(Tag.PLANKS));
         addGear("STONE", tools, new RecipeChoice.MaterialChoice(Tag.ITEMS_STONE_TOOL_MATERIALS));
-    }
-
-    private static void addGear(String type, String[] gearType, RecipeChoice repairChoice) {
-        for (String toolType : gearType) {
-            Material material = Material.getMaterial(type + toolType);
-            if (material != null) {
-                MATERIALS_TO_REPAIRABLE.put(material, repairChoice);
-            }
-        }
-    }
-
-    private static void addGear(String type, String[] gearType, Material repairMaterial) {
-        addGear(type, gearType, exactChoice(repairMaterial));
-    }
-
-    private static RecipeChoice exactChoice(Material material) {
-        // RecipeChoice.ExactChoice is draft API, just use singleton list instead.
-        return new RecipeChoice.MaterialChoice(Collections.singletonList(material));
-    }
-
-    static boolean isRepairMaterial(Material material, ItemStack repairMat) {
-        RecipeChoice choice = MATERIALS_TO_REPAIRABLE.get(material);
-        return choice != null && choice.test(repairMat);
     }
 
     public static @NotNull AnvilResult combine(@NotNull ItemStack base, @NotNull ItemStack addition,
@@ -110,6 +86,29 @@ public final class AnvilUtil {
 
     private static boolean canRepairMaterial(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
         return canRepair(toRepair, consumed, () -> isRepairMaterial(toRepair.getType(), consumed));
+    }
+
+    private static boolean isRepairMaterial(Material material, ItemStack repairMat) {
+        RecipeChoice choice = MATERIALS_TO_REPAIRABLE.get(material);
+        return choice != null && choice.test(repairMat);
+    }
+
+    private static void addGear(String type, String[] gearType, RecipeChoice repairChoice) {
+        for (String toolType : gearType) {
+            Material material = Material.getMaterial(type + toolType);
+            if (material != null) {
+                MATERIALS_TO_REPAIRABLE.put(material, repairChoice);
+            }
+        }
+    }
+
+    private static void addGear(String type, String[] gearType, Material repairMaterial) {
+        addGear(type, gearType, exactChoice(repairMaterial));
+    }
+
+    private static RecipeChoice exactChoice(Material material) {
+        // RecipeChoice.ExactChoice is draft API, just use singleton list instead.
+        return new RecipeChoice.MaterialChoice(Collections.singletonList(material));
     }
 
     private static boolean canRepairCombine(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
@@ -191,15 +190,11 @@ public final class AnvilUtil {
         int cost = getBaseCost(base, addition) + oldResult.getCost();
         boolean affected = false;
         for (Map.Entry<Enchantment, Integer> added : addedEnchants.entrySet()) {
-            if (!baseEnchants.keySet().stream().allMatch(enchant -> enchantCompat.test(enchant, added.getKey()))) {
-                continue;
-            }
-
             int newValue = added.getValue();
             int oldValue = baseEnchants.getOrDefault(added.getKey(), 0);
             newValue = oldValue == newValue ? oldValue + 1 : Math.max(oldValue, newValue);
 
-            if (!itemCompat.test(base, new Pair<>(added.getKey(), newValue))) {
+            if (enchantNotCompatible(base, new Pair<>(added.getKey(), newValue), itemCompat, enchantCompat)) {
                 continue;
             }
 
@@ -230,6 +225,15 @@ public final class AnvilUtil {
             return ((EnchantmentStorageMeta) meta).getStoredEnchants();
         }
         return meta.getEnchants();
+    }
+
+    private static boolean enchantNotCompatible(@NotNull ItemStack base,
+            @NotNull Pair<Enchantment, Integer> newEnchant,
+            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
+            @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat) {
+        return !base.getEnchantments().keySet().stream()
+                .allMatch(enchantment -> enchantCompat.test(enchantment, newEnchant.getLeft()))
+                || !itemCompat.test(base, newEnchant);
     }
 
     private static int getMultiplier(@NotNull Enchantment enchantment, boolean notBook) {
