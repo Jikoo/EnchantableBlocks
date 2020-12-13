@@ -57,7 +57,7 @@ public class EnchantmentReflectionTest {
         for (Enchantment newEnchant : newEnchants) {
             byKeyMap.put(newEnchant.getKey(), newEnchant);
         }
-        EnchantmentTest.fixToolEnchants();
+        EnchantingTableTest.fixToolEnchants();
     }
 
     static Stream<Enchantment> enchantmentStream() {

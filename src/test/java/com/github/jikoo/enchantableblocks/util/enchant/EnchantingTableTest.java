@@ -22,7 +22,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 
 /**
@@ -41,7 +43,7 @@ import static org.hamcrest.Matchers.not;
  */
 @DisplayName("Feature: Calculate enchantments")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class EnchantmentTest {
+class EnchantingTableTest {
 
     private static final Collection<Enchantment> TOOL_ENCHANTS = Arrays.asList(
             Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH);
@@ -124,6 +126,23 @@ class EnchantmentTest {
             return enchantment1.conflictsWith(enchantment2) || enchantment2.conflictsWith(enchantment1);
         }
 
+    }
+
+    @DisplayName("Enchanting table button levels should be calculated consistently")
+    @ParameterizedTest
+    @CsvSource({ "1,0", "10,0", "15,0", "1,12348", "10,98124", "15,23479" })
+    void checkButtonLevels(int shelves, int seed) {
+        int[] buttonLevels1 = EnchantingTableUtil.getButtonLevels(shelves, seed);
+        int[] buttonLevels2 = EnchantingTableUtil.getButtonLevels(shelves, seed);
+
+        assertThat("There are always three buttons", buttonLevels1.length, is(3));
+        assertThat("There are always three buttons", buttonLevels2.length, is(3));
+
+        for (int i = 0; i < 3; ++i) {
+            assertThat("Button level should be generated predictably", buttonLevels1[i], is(buttonLevels2[i]));
+            assertThat("Button level may not exceed 30", buttonLevels1[i], lessThanOrEqualTo(30));
+            assertThat("Button level may not be negative", buttonLevels1[i], greaterThanOrEqualTo(0));
+        }
     }
 
     @AfterAll
