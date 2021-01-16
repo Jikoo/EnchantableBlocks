@@ -70,33 +70,26 @@ public final class EnchantingTableUtil {
      * Generate a set of levelled enchantments in a similar fashion to vanilla.
      * Follows provided rules for enchantment incompatibility.
      *
-     * @param enchantments the list of eligible enchantments
-     * @param incompatibility a method for determining if enchantments are incompatible
-     * @param enchantability the enchantability of the item
-     * @param buttonLevel the enchantment number
-     * @param seed the seed of the enchantment
+     * @param data the enchantment data to calculate using
      * @return the selected enchantments mapped to their corresponding levels
      */
-    public static Map<Enchantment, Integer> calculateEnchantments(
-            @NotNull Collection<Enchantment> enchantments,
-            @NotNull BiPredicate<Enchantment, Enchantment> incompatibility,
-            @NotNull Enchantability enchantability, int buttonLevel, long seed) {
+    public static Map<Enchantment, Integer> calculateEnchantments(EnchantOperationData data) {
 
         // Ensure enchantments present.
-        if (enchantments.isEmpty()) {
+        if (data.getEnchantments().isEmpty()) {
             return Collections.emptyMap();
         }
 
         // Seed random as specified.
-        RANDOM.setSeed(seed);
+        RANDOM.setSeed(data.getSeed());
 
         // Determine effective level.
-        int enchantQuality = getEnchantQuality(enchantability, buttonLevel);
+        int enchantQuality = getEnchantQuality(data.getEnchantability(), data.getButtonLevel());
         final int firstEffective = enchantQuality;
 
         // Determine available enchantments.
-        Collection<EnchantData> enchantData = enchantments.stream().map(EnchantData::of)
-                .filter(data -> getEnchantmentLevel(data, firstEffective) > 0).collect(Collectors.toSet());
+        Collection<EnchantData> enchantData = data.getEnchantments().stream().map(EnchantData::of)
+                .filter(enchData -> getEnchantmentLevel(enchData, firstEffective) > 0).collect(Collectors.toSet());
 
         // Ensure enchantments are available.
         if (enchantData.isEmpty()) {
@@ -104,10 +97,10 @@ public final class EnchantingTableUtil {
         }
 
         Map<Enchantment, Integer> selected = new HashMap<>();
-        addEnchant(selected, enchantData, enchantQuality, incompatibility);
+        addEnchant(selected, enchantData, enchantQuality, data.getIncompatibility());
 
         while (!enchantData.isEmpty() && RANDOM.nextInt(50) < enchantQuality) {
-            addEnchant(selected, enchantData, enchantQuality, incompatibility);
+            addEnchant(selected, enchantData, enchantQuality, data.getIncompatibility());
             enchantQuality /= 2;
         }
 
