@@ -94,15 +94,15 @@ public class FurnaceListener implements Listener {
 			}.runTask(this.plugin);
 		}
 
-		if (recipe == null) {
-			return;
-		}
-
 		if (enchantableFurnace.getFortune() > 0) {
 			boolean listContains = this.plugin.getFortuneList().contains(event.getSource().getType().name());
 			if (this.plugin.isBlacklist() != listContains) {
-				this.applyFortune(event, enchantableFurnace, recipe);
+				this.applyFortune(event, enchantableFurnace);
 			}
+		}
+
+		if (recipe == null) {
+			return;
 		}
 
 		final int cookModifier = enchantableFurnace.getCookModifier();
@@ -116,29 +116,23 @@ public class FurnaceListener implements Listener {
 		}
 	}
 
-	private void applyFortune(final @NotNull FurnaceSmeltEvent event, final @NotNull EnchantableFurnace enchantableFurnace,
-			 final CookingRecipe<?> recipe) {
-		Furnace furnace = enchantableFurnace.getFurnaceTile();
-		if (furnace == null) {
-			return;
-		}
-		FurnaceInventory inventory = furnace.getInventory();
+	private void applyFortune(final @NotNull FurnaceSmeltEvent event,
+			final @NotNull EnchantableFurnace enchantableFurnace) {
+		ItemStack result = event.getResult();
+
 		// Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
 		// To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
 		int bonus = ThreadLocalRandom.current().nextInt(enchantableFurnace.getFortune() + 2) - 1;
+
+		// To prevent oversized stacks, restrict bonus to remainder for a max stack.
+		bonus = Math.min(result.getType().getMaxStackSize() - result.getAmount(), bonus);
+
 		if (bonus <= 0) {
 			return;
 		}
-		// Check extras against max - 1 because of guaranteed single output
-		if (inventory.getResult() != null && inventory.getResult().getAmount() + bonus > inventory.getResult().getType().getMaxStackSize() - 1) {
-			bonus = inventory.getResult().getType().getMaxStackSize() - 1 - inventory.getResult().getAmount();
-			if (bonus <= 0) {
-				return;
-			}
-		}
-		ItemStack newResult = inventory.getResult() == null ? recipe.getResult() : inventory.getResult().clone();
-		newResult.setAmount(1 + bonus);
-		event.setResult(newResult);
+
+		result.setAmount(result.getAmount() + bonus);
+		event.setResult(result);
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
