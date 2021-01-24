@@ -122,16 +122,12 @@ public final class AnvilUtil {
 
     private static boolean canRepair(@NotNull ItemStack toRepair, @NotNull ItemStack consumed,
             @NotNull BooleanSupplier materialComparison) {
-        // Material must not match - matching materials are combination repairs.
-        if (toRepair.getType() == consumed.getType()) {
-            return false;
-        }
         ItemMeta itemMeta = Objects.requireNonNull(toRepair.getItemMeta());
         // Ensure item is damageable.
         if (toRepair.getType().getMaxDurability() == 0 || itemMeta.isUnbreakable()) {
             return false;
         }
-        // Run extra comparison.
+        // Run material comparison.
         if (!materialComparison.getAsBoolean()) {
             return false;
         }
