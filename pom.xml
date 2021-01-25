@@ -68,9 +68,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.seeseemelk</groupId>
+      <groupId>com.github.jikoo</groupId>
       <artifactId>MockBukkit</artifactId>
-      <version>v1.16-SNAPSHOT</version>
+      <version>fix~itemmeta-clone-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

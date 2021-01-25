@@ -85,7 +85,8 @@ class AnvilTest {
         @DisplayName("Items should be repaired by combination")
         @Test
         void testCombineRepair() {
-            AnvilResult result = AnvilOperation.VANILLA.apply(getDamagedStack(), getDamagedStack());
+            ItemStack damagedStack = getDamagedStack();
+            AnvilResult result = AnvilOperation.VANILLA.apply(damagedStack.clone(), damagedStack.clone());
 
             ItemStack resultItem = result.getResult();
             ItemMeta resultMeta = resultItem.getItemMeta();
@@ -96,7 +97,6 @@ class AnvilTest {
 
             int damage = ((Damageable) resultMeta).getDamage();
 
-            ItemStack damagedStack = getDamagedStack();
             ItemMeta damagedMeta = damagedStack.getItemMeta();
             assert damagedMeta != null;
 
@@ -106,8 +106,7 @@ class AnvilTest {
             int bonusDurability = maxDurability * 12 / 100;
             int expectedDurability = 2 * remainingDurability + bonusDurability;
             expectedDamage = maxDurability - expectedDurability;
-            // TODO: Mocking error
-            // assertThat("Items' durability should be added with a bonus of 12% of max durability", damage, is(expectedDamage));
+            assertThat("Items' durability should be added with a bonus of 12% of max durability", damage, is(expectedDamage));
             assertThat("Number of items to consume should not be specified", result.getRepairCount(), is(0));
         }
 

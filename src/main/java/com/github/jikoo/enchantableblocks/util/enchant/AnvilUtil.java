@@ -43,7 +43,7 @@ public final class AnvilUtil {
             result = repairWithMaterial(base, addition);
         }
 
-        if (!operation.isCombineEnchants() || operation.getMaterialCombines().test(base, addition)) {
+        if (!operation.isCombineEnchants() || !operation.getMaterialCombines().test(base, addition)) {
             return result == null ? EMPTY : result;
         }
 
@@ -159,7 +159,7 @@ public final class AnvilUtil {
         }
 
         if (!affected) {
-            return EMPTY;
+            return oldResult.getCost() == 0 ? EMPTY : oldResult;
         }
 
         ItemMeta meta = base.getItemMeta();
