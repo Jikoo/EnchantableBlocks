@@ -1,19 +1,13 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.util.Pair;
 import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import org.bukkit.Material;
-import org.bukkit.Tag;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -23,32 +17,16 @@ import org.jetbrains.annotations.NotNull;
 public final class AnvilUtil {
 
     private static final AnvilResult EMPTY = new AnvilResult();
-    private static final Map<Material, RecipeChoice> MATERIALS_TO_REPAIRABLE = new EnumMap<>(Material.class);
 
-    static {
-        String[] armor = new String[] { "_HELMET", "_CHESTPLATE", "_LEGGINGS", "_BOOTS" };
-        String[] tools = new String[] { "_AXE", "_SHOVEL", "_PICKAXE", "_HOE" };
-        String[] armortools = new String[armor.length + tools.length];
-        System.arraycopy(armor, 0, armortools, 0, armor.length);
-        System.arraycopy(tools, 0, armortools, armor.length, tools.length);
-
-        addGear("LEATHER", armor, Material.LEATHER);
-        RecipeChoice choiceIronIngot = exactChoice(Material.IRON_INGOT);
-        addGear("CHAINMAIL", armor, choiceIronIngot);
-        addGear("IRON", armortools, choiceIronIngot);
-        MATERIALS_TO_REPAIRABLE.put(Material.SHEARS, choiceIronIngot);
-        addGear("GOLDEN", armortools, Material.GOLD_INGOT);
-        addGear("DIAMOND", armortools, Material.DIAMOND);
-        MATERIALS_TO_REPAIRABLE.put(Material.TURTLE_HELMET, exactChoice(Material.SCUTE));
-        addGear("NETHERITE", armortools, Material.NETHERITE_INGOT);
-        addGear("WOODEN", tools, new RecipeChoice.MaterialChoice(Tag.PLANKS));
-        addGear("STONE", tools, new RecipeChoice.MaterialChoice(Tag.ITEMS_STONE_TOOL_MATERIALS));
+    public static void setRepairCount(AnvilInventory inventory, int repairCount) throws ReflectiveOperationException {
+        Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
+        Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("h");
+        fieldRepairCount.setAccessible(true);
+        fieldRepairCount.set(containerAnvil, repairCount);
     }
 
-    public static @NotNull AnvilResult combine(@NotNull ItemStack base, @NotNull ItemStack addition,
-            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
-            @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat,
-            boolean doMaterialRepair) {
+    static @NotNull AnvilResult combine(
+            @NotNull ItemStack base, @NotNull ItemStack addition, @NotNull AnvilOperation operation) {
         ItemMeta baseMeta = base.getItemMeta();
         ItemMeta additionMeta = addition.getItemMeta();
 
@@ -57,18 +35,23 @@ public final class AnvilUtil {
             return EMPTY;
         }
 
-        if (doMaterialRepair && canRepairMaterial(base, addition)) {
-            return repairMaterial(base, addition);
+        AnvilResult result = null;
+
+        if (operation.isMergeRepairs() && canRepairWithMerge(base, addition)) {
+            result = repairWithMerge(base, addition);
+        } else if (canRepairWithMaterial(base, addition, operation)) {
+            result = repairWithMaterial(base, addition);
         }
 
-        AnvilResult result;
-        if (canRepairCombine(base, addition)) {
-            result = repairCombine(base, addition);
-        } else {
+        if (!operation.isCombineEnchants() || operation.getMaterialCombines().test(base, addition)) {
+            return result == null ? EMPTY : result;
+        }
+
+        if (result == null) {
             result = new AnvilResult(base.clone(), 0);
         }
 
-        return combineEnchantments(result, addition, itemCompat, enchantCompat);
+        return combineEnchantments(result, addition, operation);
     }
 
     private static int getBaseCost(@NotNull ItemStack base, @NotNull ItemStack addition) {
@@ -84,44 +67,15 @@ public final class AnvilUtil {
         return cost;
     }
 
-    private static boolean canRepairMaterial(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
-        return canRepair(toRepair, consumed, () -> isRepairMaterial(toRepair.getType(), consumed));
+    private static boolean canRepairWithMaterial(@NotNull ItemStack toRepair, @NotNull ItemStack consumed, @NotNull AnvilOperation operation) {
+        return canRepair(toRepair, () -> operation.getMaterialRepairs().test(toRepair, consumed));
     }
 
-    private static boolean isRepairMaterial(Material material, ItemStack repairMat) {
-        RecipeChoice choice = MATERIALS_TO_REPAIRABLE.get(material);
-        return choice != null && choice.test(repairMat);
+    private static boolean canRepairWithMerge(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
+        return canRepair(toRepair, () -> toRepair.getType() == consumed.getType());
     }
 
-    private static void addGear(String type, String[] gearType, RecipeChoice repairChoice) {
-        for (String toolType : gearType) {
-            Material material = Material.getMaterial(type + toolType);
-            if (material != null) {
-                MATERIALS_TO_REPAIRABLE.put(material, repairChoice);
-            }
-        }
-    }
-
-    private static void addGear(String type, String[] gearType, Material repairMaterial) {
-        addGear(type, gearType, exactChoice(repairMaterial));
-    }
-
-    private static RecipeChoice exactChoice(Material material) {
-        // RecipeChoice.ExactChoice is draft API, just use singleton list instead.
-        return new RecipeChoice.MaterialChoice(Collections.singletonList(material));
-    }
-
-    private static boolean canRepairCombine(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
-        return canRepair(toRepair, consumed, () -> {
-            if (toRepair.getType() != consumed.getType()) {
-                return false;
-            }
-            return !Objects.requireNonNull(consumed.getItemMeta()).isUnbreakable();
-        });
-    }
-
-    private static boolean canRepair(@NotNull ItemStack toRepair, @NotNull ItemStack consumed,
-            @NotNull BooleanSupplier materialComparison) {
+    private static boolean canRepair(@NotNull ItemStack toRepair, @NotNull BooleanSupplier materialComparison) {
         ItemMeta itemMeta = Objects.requireNonNull(toRepair.getItemMeta());
         // Ensure item is damageable.
         if (toRepair.getType().getMaxDurability() == 0 || itemMeta.isUnbreakable()) {
@@ -135,7 +89,7 @@ public final class AnvilUtil {
         return itemMeta instanceof Damageable && ((Damageable) itemMeta).hasDamage();
     }
 
-    private static AnvilResult repairMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
+    private static AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
         // Safe - ItemMeta is always a Damageable Repairable by this point.
         Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta()).clone();
         int repaired = Math.min(damageable.getDamage(), base.getType().getMaxDurability() / 4);
@@ -160,7 +114,7 @@ public final class AnvilUtil {
         return new AnvilResult(result, baseCost + repairs, repairs);
     }
 
-    private static AnvilResult repairCombine(@NotNull ItemStack base, @NotNull ItemStack addition) {
+    private static AnvilResult repairWithMerge(@NotNull ItemStack base, @NotNull ItemStack addition) {
         Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta());
         Damageable addedDurability = (Damageable) Objects.requireNonNull(addition.getItemMeta());
 
@@ -175,9 +129,10 @@ public final class AnvilUtil {
         return new AnvilResult(base, 2);
     }
 
-    private static AnvilResult combineEnchantments(@NotNull AnvilResult oldResult, @NotNull ItemStack addition,
-            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
-            @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat) {
+    private static AnvilResult combineEnchantments(
+            @NotNull AnvilResult oldResult,
+            @NotNull ItemStack addition,
+            @NotNull AnvilOperation operation) {
         ItemStack base = oldResult.getResult();
 
         Map<Enchantment, Integer> baseEnchants = getEnchants(Objects.requireNonNull(base.getItemMeta()));
@@ -189,8 +144,9 @@ public final class AnvilUtil {
             int newValue = added.getValue();
             int oldValue = baseEnchants.getOrDefault(added.getKey(), 0);
             newValue = oldValue == newValue ? oldValue + 1 : Math.max(oldValue, newValue);
+            newValue = Math.min(newValue, operation.getEnchantMaxLevel().applyAsInt(added.getKey()));
 
-            if (enchantNotCompatible(base, new Pair<>(added.getKey(), newValue), itemCompat, enchantCompat)) {
+            if (enchantIncompatible(base, added.getKey(), operation)) {
                 continue;
             }
 
@@ -223,13 +179,12 @@ public final class AnvilUtil {
         return meta.getEnchants();
     }
 
-    private static boolean enchantNotCompatible(@NotNull ItemStack base,
-            @NotNull Pair<Enchantment, Integer> newEnchant,
-            @NotNull BiPredicate<ItemStack, Pair<Enchantment, Integer>> itemCompat,
-            @NotNull BiPredicate<Enchantment, Enchantment> enchantCompat) {
-        return !base.getEnchantments().keySet().stream()
-                .allMatch(enchantment -> enchantCompat.test(enchantment, newEnchant.getLeft()))
-                || !itemCompat.test(base, newEnchant);
+    private static boolean enchantIncompatible(@NotNull ItemStack base,
+            @NotNull Enchantment newEnchant,
+            @NotNull AnvilOperation operation) {
+        return !operation.getEnchantApplies().test(newEnchant, base)
+                || base.getEnchantments().keySet().stream().anyMatch(enchantment ->
+                        operation.getEnchantConflicts().test(enchantment, newEnchant));
     }
 
     private static int getMultiplier(@NotNull Enchantment enchantment, boolean notBook) {
@@ -240,13 +195,6 @@ public final class AnvilUtil {
         }
 
         return value / 2;
-    }
-
-    public static void setRepairCount(AnvilInventory inventory, int repairCount) throws ReflectiveOperationException {
-        Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
-        Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("h");
-        fieldRepairCount.setAccessible(true);
-        fieldRepairCount.set(containerAnvil, repairCount);
     }
 
     private AnvilUtil() {}

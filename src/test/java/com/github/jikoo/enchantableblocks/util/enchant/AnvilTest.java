@@ -27,13 +27,13 @@ import static org.hamcrest.Matchers.greaterThan;
  * <br><b>Given</b> I am a user
  * <br><b>When</b> I attempt to combine two items
  * <br><b>Then</b> the items should be combined in a vanilla fashion
- * <br><b>And</b> the combinations should ignore vanilla limitations
+ * <br><b>And</b> the combinations should ignore vanilla limitations where specified
  *
  * @author Jikoo
  */
 @DisplayName("Feature: Calculate item combinations")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class AnvilTest {
+class AnvilTest {
 
     @BeforeAll
     void beforeAll() {
@@ -67,8 +67,7 @@ public class AnvilTest {
         @DisplayName("Items should be repaired using repair material")
         @Test
         void testRepair() {
-            AnvilResult result = AnvilUtil.combine(getDamagedStack(), getRepairMaterial(),
-                    (a, b) -> true, (a, b) -> true, true);
+            AnvilResult result = AnvilOperation.VANILLA.apply(getDamagedStack(), getRepairMaterial());
 
             ItemStack resultItem = result.getResult();
             ItemMeta resultMeta = resultItem.getItemMeta();
@@ -86,8 +85,7 @@ public class AnvilTest {
         @DisplayName("Items should be repaired by combination")
         @Test
         void testCombineRepair() {
-            AnvilResult result = AnvilUtil.combine(getDamagedStack(), getDamagedStack(),
-                    (a, b) -> true, (a, b) -> true, false);
+            AnvilResult result = AnvilOperation.VANILLA.apply(getDamagedStack(), getDamagedStack());
 
             ItemStack resultItem = result.getResult();
             ItemMeta resultMeta = resultItem.getItemMeta();
@@ -123,7 +121,7 @@ public class AnvilTest {
         //  Enchantments from books should be applied
         //  Enchantments from similar items should be applied
         //  Enchantments from dissimilar items should be applied
-        //  Enchantments should not be affected by vanilla limitations
+        //  Enchantments should use the specified limitations
         //  Enchantments should be combined during combination repair operations
         //  Decide what to do with enchantments from repair materials - currently ignored
 

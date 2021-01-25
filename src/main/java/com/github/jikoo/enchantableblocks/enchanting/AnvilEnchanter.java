@@ -2,8 +2,8 @@ package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.util.enchant.AnvilOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.AnvilResult;
-import com.github.jikoo.enchantableblocks.util.enchant.AnvilUtil;
 import java.util.Objects;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -26,9 +26,15 @@ import org.jetbrains.annotations.NotNull;
 public class AnvilEnchanter implements Listener {
 
 	private final EnchantableBlocksPlugin plugin;
+	private final AnvilOperation operation;
 
 	public AnvilEnchanter(final @NotNull EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
+		this.operation = new AnvilOperation();
+		operation.setEnchantConflicts(plugin::areEnchantmentsIncompatible);
+		operation.setEnchantApplies((enchantment, itemStack) -> plugin.getEnchantments().contains(enchantment));
+		operation.setMaterialRepairs((a, b) -> false);
+		operation.setMergeRepairs(false);
 	}
 
 	@EventHandler
@@ -51,12 +57,7 @@ public class AnvilEnchanter implements Listener {
 			return;
 		}
 
-		AnvilResult anvilResult = AnvilUtil.combine(base, addition,
-				(itemStack, enchantment) ->
-						!plugin.getEnchantments().contains(enchantment.getLeft())
-								&& enchantment.getLeft().getMaxLevel() >= enchantment.getRight(),
-				(enchant1, enchant2) -> !plugin.areEnchantmentsIncompatible(enchant1, enchant2),
-				false);
+		AnvilResult anvilResult = operation.apply(base, addition);
 
 		ItemStack result;
 		if (anvilResult.getCost() == 0) {
