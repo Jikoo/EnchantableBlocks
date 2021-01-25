@@ -2,7 +2,7 @@ package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
-import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperationData;
+import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantingTableUtil;
 import java.util.Map;
@@ -76,14 +76,14 @@ public class TableEnchanter implements Listener {
 		}
 
 		// Assemble enchantment calculation details.
-		EnchantOperationData data = new EnchantOperationData(plugin.getEnchantments())
-				.setIncompatibility(plugin::areEnchantmentsIncompatible)
-				.setEnchantability(Enchantability.STONE)
-				.setButtonLevel(enchantLevel)
-				.setSeed(getEnchantmentSeed(player) + buttonNumber);
+		EnchantOperation operation = new EnchantOperation(plugin.getEnchantments());
+		operation.setIncompatibility(plugin::areEnchantmentsIncompatible);
+		operation.setEnchantability(Enchantability.STONE);
+		operation.setButtonLevel(enchantLevel);
+		operation.setSeed(getEnchantmentSeed(player) + buttonNumber);
 
 		// Calculate enchantments offered for levels offered.
-		Map<Enchantment, Integer> enchantments = EnchantingTableUtil.calculateEnchantments(data);
+		Map<Enchantment, Integer> enchantments = operation.apply();
 
 		// No enchantments available, no offer.
 		if (enchantments.isEmpty()) {
@@ -105,14 +105,14 @@ public class TableEnchanter implements Listener {
 		}
 
 		// Assemble enchantment calculation details.
-		EnchantOperationData data = new EnchantOperationData(plugin.getEnchantments())
-				.setIncompatibility(plugin::areEnchantmentsIncompatible)
-				.setEnchantability(Enchantability.STONE)
-				.setButtonLevel(event.getExpLevelCost())
-				.setSeed(getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
+		EnchantOperation operation = new EnchantOperation(plugin.getEnchantments());
+		operation.setIncompatibility(plugin::areEnchantmentsIncompatible);
+		operation.setEnchantability(Enchantability.STONE);
+		operation.setButtonLevel(event.getExpLevelCost());
+		operation.setSeed(getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
 
 		// Calculate enchantments offered for levels offered.
-		Map<Enchantment, Integer> enchantments = EnchantingTableUtil.calculateEnchantments(data);
+		Map<Enchantment, Integer> enchantments = operation.apply();
 
 		event.getEnchantsToAdd().putAll(enchantments);
 	}

@@ -1,13 +1,14 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.BiPredicate;
 import org.bukkit.enchantments.Enchantment;
 
 /**
  * A container for data required to calculate enchantments.
  */
-public class EnchantOperationData {
+public class EnchantOperation {
 
     private static final BiPredicate<Enchantment, Enchantment> DEFAULT_INCOMPATIBILITY = (enchantment, enchantment2) -> {
         if (enchantment.equals(enchantment2)) {
@@ -23,11 +24,11 @@ public class EnchantOperationData {
     Enchantability enchantability = Enchantability.BOOK;
 
     /**
-     * Constructor for a new EnchantOperationData.
+     * Constructor for a new EnchantOperation.
      *
      * @param enchantments the enchantments that may be applied
      */
-    public EnchantOperationData(Collection<Enchantment> enchantments) {
+    public EnchantOperation(Collection<Enchantment> enchantments) {
         this.enchantments = enchantments;
     }
 
@@ -44,11 +45,9 @@ public class EnchantOperationData {
      * Set the level of the button used for enchanting.
      *
      * @param buttonLevel the button level
-     * @return this enchantment operation data
      */
-    public EnchantOperationData setButtonLevel(int buttonLevel) {
+    public void setButtonLevel(int buttonLevel) {
         this.buttonLevel = buttonLevel;
-        return this;
     }
 
     /**
@@ -64,11 +63,9 @@ public class EnchantOperationData {
      * Set the seed used by the {@link java.util.Random Random} to ensure consistent results for consistent inputs.
      *
      * @param seed the enchanting seed
-     * @return this enchantment operation data
      */
-    public EnchantOperationData setSeed(long seed) {
+    public void setSeed(long seed) {
         this.seed = seed;
-        return this;
     }
 
     /**
@@ -84,11 +81,9 @@ public class EnchantOperationData {
      * Set the {@link Enchantability} of the operation.
      *
      * @param enchantability the enchantability of the operation
-     * @return this enchantment operation data
      */
-    public EnchantOperationData setEnchantability(Enchantability enchantability) {
+    public void setEnchantability(Enchantability enchantability) {
         this.enchantability = enchantability;
-        return this;
     }
 
     /**
@@ -104,11 +99,9 @@ public class EnchantOperationData {
      * Set the method determining if two enchantments are incompatible.
      *
      * @param incompatibility the method determining enchantments incompatible
-     * @return this enchantment operation data
      */
-    public EnchantOperationData setIncompatibility(BiPredicate<Enchantment, Enchantment> incompatibility) {
+    public void setIncompatibility(BiPredicate<Enchantment, Enchantment> incompatibility) {
         this.incompatibility = incompatibility;
-        return this;
     }
 
     /**
@@ -118,6 +111,15 @@ public class EnchantOperationData {
      */
     public BiPredicate<Enchantment, Enchantment> getIncompatibility() {
         return this.incompatibility;
+    }
+
+    /**
+     * Get the enchantments resulting from the enchanting operation.
+     *
+     * @return the enchantments resulting from the enchanting operation
+     */
+    public Map<Enchantment, Integer> apply() {
+        return EnchantingTableUtil.calculateEnchantments(this);
     }
 
 }

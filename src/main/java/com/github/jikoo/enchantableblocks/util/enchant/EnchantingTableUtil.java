@@ -67,40 +67,85 @@ public final class EnchantingTableUtil {
     }
 
     /**
+     * Update enchantment table buttons for a player after a tick has passed.
+     * This fixes desync problems that prevent the client from enchanting ordinarily un-enchantable objects.
+     *
+     * @param player the player enchanting
+     * @param offers the enchantment offers
+     */
+    public static void updateButtons(@NotNull Plugin plugin, @NotNull Player player,
+            EnchantmentOffer @NotNull [] offers) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (int i = 1; i <= 3; ++i) {
+                EnchantmentOffer offer = offers[i - 1];
+                if (offer != null) {
+                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_BUTTON" + i), offer.getCost());
+                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_LEVEL" + i), offer.getEnchantmentLevel());
+                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_ID" + i), getEnchantmentId(offer.getEnchantment()));
+                }
+            }
+        }, 1L);
+    }
+
+    /**
+     * Get the magic enchantment ID for use in packets.
+     *
+     * @param enchantment the enchantment
+     * @return the magic value or 0 if the value cannot be obtained
+     */
+    private static int getEnchantmentId(Enchantment enchantment) {
+        String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
+        String nmsVersion = split[split.length - 1];
+
+        try {
+            Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
+            Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
+            Method methodIRegistryA = clazzIRegistry.getDeclaredMethod("a", Object.class);
+
+            Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
+            Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
+
+            return (int) methodIRegistryA.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            return 0;
+        }
+    }
+
+    /**
      * Generate a set of levelled enchantments in a similar fashion to vanilla.
      * Follows provided rules for enchantment incompatibility.
      *
-     * @param data the enchantment data to calculate using
+     * @param operation the data used to calculate the results of the operation
      * @return the selected enchantments mapped to their corresponding levels
      */
-    public static Map<Enchantment, Integer> calculateEnchantments(EnchantOperationData data) {
+    static Map<Enchantment, Integer> calculateEnchantments(EnchantOperation operation) {
 
         // Ensure enchantments present.
-        if (data.getEnchantments().isEmpty()) {
+        if (operation.getEnchantments().isEmpty()) {
             return Collections.emptyMap();
         }
 
         // Seed random as specified.
-        RANDOM.setSeed(data.getSeed());
+        RANDOM.setSeed(operation.getSeed());
 
         // Determine effective level.
-        int enchantQuality = getEnchantQuality(data.getEnchantability(), data.getButtonLevel());
+        int enchantQuality = getEnchantQuality(operation.getEnchantability(), operation.getButtonLevel());
         final int firstEffective = enchantQuality;
 
         // Determine available enchantments.
-        Collection<EnchantData> enchantData = data.getEnchantments().stream().map(EnchantData::of)
+        Collection<EnchantData> available = operation.getEnchantments().stream().map(EnchantData::of)
                 .filter(enchData -> getEnchantmentLevel(enchData, firstEffective) > 0).collect(Collectors.toSet());
 
         // Ensure enchantments are available.
-        if (enchantData.isEmpty()) {
+        if (available.isEmpty()) {
             return Collections.emptyMap();
         }
 
         Map<Enchantment, Integer> selected = new HashMap<>();
-        addEnchant(selected, enchantData, enchantQuality, data.getIncompatibility());
+        addEnchant(selected, available, enchantQuality, operation.getIncompatibility());
 
-        while (!enchantData.isEmpty() && RANDOM.nextInt(50) < enchantQuality) {
-            addEnchant(selected, enchantData, enchantQuality, data.getIncompatibility());
+        while (!available.isEmpty() && RANDOM.nextInt(50) < enchantQuality) {
+            addEnchant(selected, available, enchantQuality, operation.getIncompatibility());
             enchantQuality /= 2;
         }
 
@@ -178,51 +223,6 @@ public final class EnchantingTableUtil {
             }
         }
         return 0;
-    }
-
-    /**
-     * Update enchantment table buttons for a player after a tick has passed.
-     * This fixes desync problems that prevent the client from enchanting ordinarily un-enchantable objects.
-     *
-     * @param player the player enchanting
-     * @param offers the enchantment offers
-     */
-    public static void updateButtons(@NotNull Plugin plugin, @NotNull Player player,
-            EnchantmentOffer @NotNull [] offers) {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            for (int i = 1; i <= 3; ++i) {
-                EnchantmentOffer offer = offers[i - 1];
-                if (offer != null) {
-                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_BUTTON" + i), offer.getCost());
-                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_LEVEL" + i), offer.getEnchantmentLevel());
-                    player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_ID" + i), getEnchantmentId(offer.getEnchantment()));
-                }
-            }
-        }, 1L);
-    }
-
-    /**
-     * Get the magic enchantment ID for use in packets.
-     *
-     * @param enchantment the enchantment
-     * @return the magic value or 0 if the value cannot be obtained
-     */
-    private static int getEnchantmentId(Enchantment enchantment) {
-        String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
-        String nmsVersion = split[split.length - 1];
-
-        try {
-            Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
-            Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
-            Method methodIRegistryA = clazzIRegistry.getDeclaredMethod("a", Object.class);
-
-            Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
-            Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
-
-            return (int) methodIRegistryA.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
-        } catch (ReflectiveOperationException | ClassCastException e) {
-            return 0;
-        }
     }
 
     private EnchantingTableUtil() {}

@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.is;
  */
 @DisplayName("When enchantments are not supported")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EnchantmentReflectionTest {
+class EnchantmentReflectionTest {
 
     @BeforeAll
     void beforeAll() throws NoSuchFieldException, IllegalAccessException {

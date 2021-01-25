@@ -95,22 +95,23 @@ class EnchantingTableTest {
 
         @BeforeEach
         void beforeEach() {
-            EnchantOperationData data = new EnchantOperationData(TOOL_ENCHANTS)
-                    .setIncompatibility(this::conflicts)
-                    .setEnchantability(Enchantability.STONE)
-                    .setButtonLevel(ThreadLocalRandom.current().nextInt(1, 31))
-                    .setSeed(System.currentTimeMillis());
-            selected = EnchantingTableUtil.calculateEnchantments(data);
+            EnchantOperation operation = new EnchantOperation(TOOL_ENCHANTS);
+            operation.setIncompatibility(this::conflicts);
+            operation.setEnchantability(Enchantability.STONE);
+            operation.setButtonLevel(ThreadLocalRandom.current().nextInt(1, 31));
+            operation.setSeed(System.currentTimeMillis());
+            selected = operation.apply();
         }
 
         @DisplayName("One or more enchantments should be selected")
         @Test
         void checkSize() {
-            selected = EnchantingTableUtil.calculateEnchantments(new EnchantOperationData(TOOL_ENCHANTS)
-                    .setIncompatibility(this::conflicts)
-                    .setEnchantability(Enchantability.STONE)
-                    .setButtonLevel(30)
-                    .setSeed(System.currentTimeMillis()));
+            EnchantOperation operation = new EnchantOperation(TOOL_ENCHANTS);
+            operation.setIncompatibility(this::conflicts);
+            operation.setEnchantability(Enchantability.STONE);
+            operation.setButtonLevel(30);
+            operation.setSeed(System.currentTimeMillis());
+            selected =  operation.apply();
             assertThat("One or more enchantments must be selected", false, is(selected.isEmpty()));
         }
 
