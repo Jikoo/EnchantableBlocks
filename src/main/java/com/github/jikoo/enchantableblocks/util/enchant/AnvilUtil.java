@@ -1,6 +1,7 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -51,12 +52,15 @@ public final class AnvilUtil {
         boolean appliedBaseCost = false;
 
         if (operation.isMergeRepairs() && canRepairWithMerge(base, addition)) {
+            // Do repairs via merge of identical materials.
             result = repairWithMerge(base, addition);
         } else if (canRepairWithMaterial(base, addition, operation)) {
+            // Do repairs via supported material, i.e. diamonds are used to repair a diamond shovel.
             result = repairWithMaterial(base, addition);
             appliedBaseCost = result != null;
         }
 
+        // If the operation is supposed to support enchantment merges, material combination must work.
         if (!operation.isCombineEnchants() || !operation.getMaterialCombines().test(base, addition)) {
             return result == null ? EMPTY : result;
         }
@@ -67,7 +71,12 @@ public final class AnvilUtil {
             result = new AnvilResult(result.getResult(), getBaseCost(base, addition) + result.getCost(), result.getRepairCount());
         }
 
-        return combineEnchantments(result, addition, operation);
+        AnvilResult combineResult = combineEnchantments(result, addition, operation);
+
+        if (combineResult != EMPTY && combineResult.getResult().isSimilar(base)) {
+            return EMPTY;
+        }
+        return combineResult;
     }
 
     private static int getBaseCost(@NotNull ItemStack base, @NotNull ItemStack addition) {
@@ -155,7 +164,7 @@ public final class AnvilUtil {
             return EMPTY;
         }
 
-        Map<Enchantment, Integer> baseEnchants = getEnchants(Objects.requireNonNull(base.getItemMeta()));
+        Map<Enchantment, Integer> baseEnchants = new HashMap<>(getEnchants(Objects.requireNonNull(base.getItemMeta())));
         Map<Enchantment, Integer> addedEnchants = getEnchants(Objects.requireNonNull(addition.getItemMeta()));
 
         int cost = oldResult.getCost();
