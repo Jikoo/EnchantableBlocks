@@ -13,11 +13,23 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+/**
+ * Utility for anvil-related functions.
+ */
 public final class AnvilUtil {
 
     private static final AnvilResult EMPTY = new AnvilResult();
 
+    /**
+     * Set the repair count of an anvil inventory. The repair count is the number of
+     * items that will be consumed from the second slot when the result is removed.
+     *
+     * @param inventory the anvil inventory
+     * @param repairCount the repair count
+     * @throws ReflectiveOperationException if the repair count field has changed
+     */
     public static void setRepairCount(AnvilInventory inventory, int repairCount) throws ReflectiveOperationException {
         Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
         Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("h");
@@ -36,11 +48,13 @@ public final class AnvilUtil {
         }
 
         AnvilResult result = null;
+        boolean appliedBaseCost = false;
 
         if (operation.isMergeRepairs() && canRepairWithMerge(base, addition)) {
             result = repairWithMerge(base, addition);
         } else if (canRepairWithMaterial(base, addition, operation)) {
             result = repairWithMaterial(base, addition);
+            appliedBaseCost = result != null;
         }
 
         if (!operation.isCombineEnchants() || !operation.getMaterialCombines().test(base, addition)) {
@@ -48,7 +62,9 @@ public final class AnvilUtil {
         }
 
         if (result == null) {
-            result = new AnvilResult(base.clone(), 0);
+            result = new AnvilResult(base.clone(), getBaseCost(base, addition));
+        } else if (!appliedBaseCost) {
+            result = new AnvilResult(result.getResult(), getBaseCost(base, addition) + result.getCost(), result.getRepairCount());
         }
 
         return combineEnchantments(result, addition, operation);
@@ -89,13 +105,13 @@ public final class AnvilUtil {
         return itemMeta instanceof Damageable && ((Damageable) itemMeta).hasDamage();
     }
 
-    private static AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
+    private static @Nullable AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
         // Safe - ItemMeta is always a Damageable Repairable by this point.
         Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta()).clone();
         int repaired = Math.min(damageable.getDamage(), base.getType().getMaxDurability() / 4);
 
         if (repaired <= 0) {
-            return new AnvilResult();
+            return null;
         }
 
         int repairs = 0;
@@ -135,10 +151,14 @@ public final class AnvilUtil {
             @NotNull AnvilOperation operation) {
         ItemStack base = oldResult.getResult();
 
+        if (base.getType().isAir()) {
+            return EMPTY;
+        }
+
         Map<Enchantment, Integer> baseEnchants = getEnchants(Objects.requireNonNull(base.getItemMeta()));
         Map<Enchantment, Integer> addedEnchants = getEnchants(Objects.requireNonNull(addition.getItemMeta()));
 
-        int cost = getBaseCost(base, addition) + oldResult.getCost();
+        int cost = oldResult.getCost();
         boolean affected = false;
         for (Map.Entry<Enchantment, Integer> added : addedEnchants.entrySet()) {
             int newValue = added.getValue();
@@ -169,7 +189,7 @@ public final class AnvilUtil {
         base = base.clone();
         base.setItemMeta((ItemMeta) repairable);
 
-        return new AnvilResult(base, cost);
+        return new AnvilResult(base, cost, oldResult.getRepairCount());
     }
 
     private static Map<Enchantment, Integer> getEnchants(ItemMeta meta) {
