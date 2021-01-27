@@ -18,22 +18,34 @@ public class AnvilOperation {
     public static final AnvilOperation VANILLA = new AnvilOperation() {
 
         @Override
-        public void setCombineEnchants(boolean combineEnchants) {}
+        public void setCombineEnchants(boolean combineEnchants) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
-        public void setEnchantApplies(@NotNull BiPredicate<Enchantment, ItemStack> enchantApplies) {}
+        public void setEnchantApplies(@NotNull BiPredicate<Enchantment, ItemStack> enchantApplies) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
-        public void setEnchantConflicts(@NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {}
+        public void setEnchantConflicts(@NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
-        public void setEnchantMaxLevel(@NotNull ToIntFunction<Enchantment> enchantMaxLevel) {}
+        public void setEnchantMaxLevel(@NotNull ToIntFunction<Enchantment> enchantMaxLevel) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
-        public void setMaterialCombines(@NotNull BiPredicate<ItemStack, ItemStack> materialCombines) {}
+        public void setMaterialCombines(@NotNull BiPredicate<ItemStack, ItemStack> materialCombines) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
-        public void setMaterialRepairs(@NotNull BiPredicate<ItemStack, ItemStack> materialRepairs) {}
+        public void setMaterialRepairs(@NotNull BiPredicate<ItemStack, ItemStack> materialRepairs) {
+            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+        }
 
         @Override
         public void setMergeRepairs(boolean mergeRepairs) {}
@@ -173,7 +185,7 @@ public class AnvilOperation {
      * Matching materials' combination should be controlled via {@link #setMergeRepairs}.
      * A material repair restores 25% of the durability of an item per material consumed.
      *
-     * @return the method determining whether an item is repaired by another item
+     * @param materialRepairs the method determining whether an item is repaired by another item
      */
     public void setMaterialRepairs(
             @NotNull BiPredicate<ItemStack, ItemStack> materialRepairs) {
