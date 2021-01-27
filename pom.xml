@@ -70,7 +70,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>MockBukkit</artifactId>
-      <version>fix~itemmeta-clone-SNAPSHOT</version>
+      <version>fix~itemmeta-missed-fields-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

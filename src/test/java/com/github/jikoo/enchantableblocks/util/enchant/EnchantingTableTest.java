@@ -1,13 +1,11 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.enchantments.EnchantmentMock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
-import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,21 +49,7 @@ class EnchantingTableTest {
     @BeforeAll
     void beforeAll() {
         MockBukkit.mock();
-        fixToolEnchants();
-    }
-
-    static void fixToolEnchants() {
-        fixEnchant("efficiency", 5);
-        fixEnchant("unbreaking", 3);
-        fixEnchant("fortune", 3);
-        fixEnchant("silk_touch", 1);
-    }
-
-    private static void fixEnchant(String id, int levelMax) {
-        EnchantmentMock mock = (EnchantmentMock) Enchantment.getByKey(NamespacedKey.minecraft(id));
-        assert mock != null;
-        mock.setMaxLevel(levelMax);
-        mock.setStartLevel(1);
+        EnchantmentHelper.setupToolEnchants();
     }
 
     @DisplayName("Enchantments should be explicitly supported")

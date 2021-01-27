@@ -1,14 +1,8 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,13 +33,10 @@ import static org.hamcrest.Matchers.is;
 class EnchantmentReflectionTest {
 
     @BeforeAll
-    void beforeAll() throws NoSuchFieldException, IllegalAccessException {
+    void beforeAll() {
         MockBukkit.mock();
 
-        Field byKey = Enchantment.class.getDeclaredField("byKey");
-        byKey.setAccessible(true);
-        @SuppressWarnings("unchecked") Map<NamespacedKey, Enchantment> byKeyMap = (Map<NamespacedKey, Enchantment>) byKey.get(null);
-        List<Enchantment> newEnchants = enchantmentStream().map(enchantment -> {
+        EnchantmentHelper.getRegisteredEnchantments().stream().map(enchantment -> {
             // Keep mending default to check fallthrough.
             if (enchantment.equals(Enchantment.MENDING)) {
                 return enchantment;
@@ -53,15 +44,12 @@ class EnchantmentReflectionTest {
             EnchantData data = EnchantData.of(enchantment);
             return new FakeNmsEnchant(enchantment, data.getWeight(),
                     data::getMinEffectiveLevel, data::getMaxEffectiveLevel);
-        }).collect(Collectors.toList());
-        for (Enchantment newEnchant : newEnchants) {
-            byKeyMap.put(newEnchant.getKey(), newEnchant);
-        }
-        EnchantingTableTest.fixToolEnchants();
+        }).forEach(enchantment -> EnchantmentHelper.putEnchant(enchantment.getKey(), enchantment));
+        EnchantmentHelper.setupToolEnchants();
     }
 
     static Stream<Enchantment> enchantmentStream() {
-        return Arrays.stream(Enchantment.values());
+        return EnchantmentHelper.getRegisteredEnchantments().stream();
     }
 
     private int getRandomLevel(Enchantment enchantment) {
