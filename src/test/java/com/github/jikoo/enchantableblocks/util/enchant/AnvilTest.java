@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 class AnvilTest {
 
     private static final Material BASE_MAT = Material.DIAMOND_SHOVEL;
+    private static final int MAX_DAMAGE = BASE_MAT.getMaxDurability() - 1;
     private static final Material REPAIR_MAT = Material.DIAMOND;
 
     @BeforeAll
@@ -63,7 +64,7 @@ class AnvilTest {
     }
 
     private static ItemStack maxDamageItem() {
-        return prepareItem(new ItemStack(BASE_MAT), Material.DIAMOND_SHOVEL.getMaxDurability() - 1, 0);
+        return prepareItem(new ItemStack(BASE_MAT), MAX_DAMAGE, 0);
     }
 
     private static ItemStack prepareItem(ItemStack itemStack, int damage, int repairCost) {
@@ -128,9 +129,10 @@ class AnvilTest {
             ItemStack resultItem = result.getResult();
             int damage = requireDamageable(resultItem.getItemMeta()).getDamage();
 
-            assertThat("Item should be fully repaired.", damage, is(0));
             assertThat("Number of items to consume should be specified",
                     result.getRepairCount(), greaterThan(0));
+            assertThat("Item should be repaired.",
+                    damage, is(Math.max(0, MAX_DAMAGE - result.getRepairCount() * (BASE_MAT.getMaxDurability() / 4))));
             assertThat("Number of items to consume should not exceed number of available items",
                     result.getRepairCount(), lessThanOrEqualTo(repairMats));
         }
