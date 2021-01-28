@@ -3,7 +3,9 @@ package com.github.jikoo.enchantableblocks.util.enchant;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -20,6 +22,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.CoreMatchers.both;
@@ -55,6 +59,7 @@ class AnvilTest {
     private static final Material BASE_MAT = Material.DIAMOND_SHOVEL;
     private static final int MAX_DAMAGE = BASE_MAT.getMaxDurability() - 1;
     private static final Material REPAIR_MAT = Material.DIAMOND;
+    private static final Material INCOMPATIBLE_MAT = Material.STONE;
 
     @BeforeAll
     void beforeAll() {
@@ -157,34 +162,102 @@ class AnvilTest {
 
     }
 
-    @DisplayName("Enchantments on items should be combined")
-    @Nested
-    class CombineTest {
+    @DisplayName("Enchantments on items should be combined in various scenarios")
+    @ParameterizedTest
+    @MethodSource("getCombineScenarios")
+    void testCombine(int baseRepairCost, int addedRepairCost, Material addedMat, AnvilOperation operation) {
 
-        @DisplayName("Enchantments from books should be applied")
-        @Test
-        void testCombineWithBook() {
-            Map<Enchantment, Integer> enchantments = new HashMap<>();
-            enchantments.put(Enchantment.DIG_SPEED, 5);
-            enchantments.put(Enchantment.SILK_TOUCH, 1);
+        Map<Enchantment, Integer> enchantments = new HashMap<>();
+        enchantments.put(Enchantment.DIG_SPEED, 4);
+        enchantments.put(Enchantment.SILK_TOUCH, 1);
 
-            ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
-            applyEnchantments(book, enchantments);
+        ItemStack base = new ItemStack(BASE_MAT);
+        applyEnchantments(base, enchantments);
+        prepareItem(base, 0, baseRepairCost);
 
-            AnvilResult result = AnvilOperation.VANILLA.apply(new ItemStack(BASE_MAT), book);
+        ItemStack added = new ItemStack(addedMat);
+        applyEnchantments(added, enchantments);
+        prepareItem(added, 0, addedRepairCost);
 
-            assertThat("Result must be of original type", result.getResult().getType(), equalTo(BASE_MAT));
-            assertThat("Enchantments must be added to result", result.getResult().getEnchantments().entrySet(),
-                    both(everyItem(is(in(enchantments.entrySet())))).and(containsInAnyOrder(enchantments.entrySet().toArray())));
-            assertThat("Number of items to consume should not be specified", result.getRepairCount(), is(0));
-            // TODO: verify values to ensure calculations are correct
-            assertThat("Operation cost is correct", result.getCost(), is(9));
+        AnvilResult result = operation.apply(base, added);
+
+        if (!operation.getMaterialCombines().test(base, added)) {
+            assertThat("Result must be empty", result.getResult().getType(), is(Material.AIR));
+            return;
         }
-        // TODO:
-        //  Enchantments from similar items should be applied
-        //  Enchantments from dissimilar items should be applied
-        //  Enchantments should use the specified limitations
 
+        assertThat("Result must be of original type", result.getResult().getType(), equalTo(BASE_MAT));
+
+        enchantments = new HashMap<>();
+        enchantments.put(Enchantment.DIG_SPEED, 5);
+        boolean isVanilla = operation == AnvilOperation.VANILLA;
+        enchantments.put(Enchantment.SILK_TOUCH, isVanilla ? 1 : 2);
+
+        assertThat("Enchantments must be merged with result", result.getResult().getEnchantments().entrySet(),
+                both(everyItem(is(in(enchantments.entrySet())))).and(containsInAnyOrder(enchantments.entrySet().toArray())));
+        assertThat("Number of items to consume should not be specified", result.getRepairCount(), is(0));
+        // TODO: verify values to ensure calculations are correct, clean up mess
+        int cost = (addedMat == Material.ENCHANTED_BOOK ? isVanilla ? 9 : 13 : isVanilla ? 13 : 21) + baseRepairCost + addedRepairCost;
+        assertThat("Operation cost is correct", result.getCost(), is(cost));
+    }
+
+    private Stream<Arguments> getCombineScenarios() {
+        AtomicInteger scenarioIndex = new AtomicInteger();
+        return Stream.generate(() -> {
+            int index = scenarioIndex.getAndIncrement();
+            return Arguments.of(scenarioBaseCost(index), scenarioAddedCost(index), scenarioMat(index), scenarioOp(index));
+        }).limit(30);
+    }
+
+    private static int scenarioBaseCost(int scenario) {
+        switch (scenario % 5) {
+            case 0:
+            case 2:
+                return 0;
+            case 1:
+                return 2;
+            case 3:
+                return 1;
+            default:
+                return 5;
+        }
+    }
+
+    private static int scenarioAddedCost(int scenario) {
+        switch (scenario % 5) {
+            case 0:
+            case 1:
+                return 0;
+            case 2:
+                return 10;
+            case 3:
+            default:
+                return 1;
+        }
+    }
+
+    private static Material scenarioMat(int scenario) {
+        switch ((scenario % 15) / 5) {
+            case 0:
+                return Material.ENCHANTED_BOOK;
+            case 1:
+                return BASE_MAT;
+            default:
+                return INCOMPATIBLE_MAT;
+        }
+    }
+
+    private static AnvilOperation scenarioOp(int scenario) {
+        if (scenario % 30 < 15) {
+            return AnvilOperation.VANILLA;
+        }
+
+        AnvilOperation operation = new AnvilOperation();
+        operation.setEnchantConflicts((a, b) -> false);
+        operation.setEnchantMaxLevel(a -> Short.MAX_VALUE);
+        operation.setMaterialCombines((a, b) -> true);
+
+        return operation;
     }
 
     @DisplayName("Enchanted repair materials should be handled appropriately")
