@@ -17,38 +17,42 @@ public class AnvilOperation {
      */
     public static final AnvilOperation VANILLA = new AnvilOperation() {
 
+        private final String message = "AnvilOperation for vanilla behavior is not manipulable.";
+
         @Override
         public void setCombineEnchants(boolean combineEnchants) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
         public void setEnchantApplies(@NotNull BiPredicate<Enchantment, ItemStack> enchantApplies) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
         public void setEnchantConflicts(@NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
         public void setEnchantMaxLevel(@NotNull ToIntFunction<Enchantment> enchantMaxLevel) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
         public void setMaterialCombines(@NotNull BiPredicate<ItemStack, ItemStack> materialCombines) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
         public void setMaterialRepairs(@NotNull BiPredicate<ItemStack, ItemStack> materialRepairs) {
-            throw new UnsupportedOperationException("AnvilOperation for vanilla behavior is not manipulable.");
+            throw new UnsupportedOperationException(message);
         }
 
         @Override
-        public void setMergeRepairs(boolean mergeRepairs) {}
+        public void setMergeRepairs(boolean mergeRepairs) {
+            throw new UnsupportedOperationException(message);
+        }
 
     };
 
