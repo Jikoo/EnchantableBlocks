@@ -10,7 +10,6 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +48,6 @@ public final class AnvilUtil {
         }
 
         AnvilResult result = null;
-        boolean appliedBaseCost = false;
 
         if (operation.isMergeRepairs() && canRepairWithMerge(base, addition)) {
             // Do repairs via merge of identical materials.
@@ -57,18 +55,15 @@ public final class AnvilUtil {
         } else if (canRepairWithMaterial(base, addition, operation)) {
             // Do repairs via supported material, i.e. diamonds are used to repair a diamond shovel.
             result = repairWithMaterial(base, addition);
-            appliedBaseCost = result != null;
         }
 
         // If the operation is supposed to support enchantment merges, material combination must work.
         if (!operation.isCombineEnchants() || !operation.getMaterialCombines().test(base, addition)) {
-            return result == null ? EMPTY : result;
+            return result == null || result.getResult().isSimilar(base) ? EMPTY : result;
         }
 
         if (result == null) {
-            result = new AnvilResult(base.clone(), getBaseCost(base, addition));
-        } else if (!appliedBaseCost) {
-            result = new AnvilResult(result.getResult(), getBaseCost(base, addition) + result.getCost(), result.getRepairCount());
+            result = new AnvilResult(base, getBaseCost(base, addition));
         }
 
         AnvilResult combineResult = combineEnchantments(result, addition, operation);
@@ -116,8 +111,9 @@ public final class AnvilUtil {
 
     private static @Nullable AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
         // Safe - ItemMeta is always a Damageable Repairable by this point.
-        Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta()).clone();
-        int repaired = Math.min(damageable.getDamage(), base.getType().getMaxDurability() / 4);
+        int damage = ((Damageable) Objects.requireNonNull(base.getItemMeta())).getDamage();
+        short maxDurability = base.getType().getMaxDurability();
+        int repaired = Math.min(damage, maxDurability / 4);
 
         if (repaired <= 0) {
             return null;
@@ -125,18 +121,17 @@ public final class AnvilUtil {
 
         int repairs = 0;
         while (repaired > 0 && repairs < added.getAmount()) {
-            damageable.setDamage(damageable.getDamage() - repaired);
+            damage -= repaired;
             ++repairs;
-            repaired = Math.min(damageable.getDamage(), base.getType().getMaxDurability() / 4);
+            repaired = Math.min(damage, maxDurability / 4);
         }
 
-        ItemStack result = base.clone();
-        Repairable repairable = (Repairable) damageable;
-        int baseCost = getBaseCost(base, added);
-        repairable.setRepairCost(baseCost + repairs);
-        result.setItemMeta((ItemMeta) damageable);
+        AnvilResult result = new AnvilResult(base, getBaseCost(base, added) + repairs, repairs);
+        ItemMeta resultMeta = Objects.requireNonNull(result.getResult().getItemMeta());
+        ((Damageable) resultMeta).setDamage(damage);
+        result.getResult().setItemMeta(resultMeta);
 
-        return new AnvilResult(result, baseCost + repairs, repairs);
+        return result;
     }
 
     private static AnvilResult repairWithMerge(@NotNull ItemStack base, @NotNull ItemStack addition) {
@@ -147,11 +142,13 @@ public final class AnvilUtil {
         finalDamage -= addition.getType().getMaxDurability() - addedDurability.getDamage();
         finalDamage -= addition.getType().getMaxDurability() * 12 / 100;
         finalDamage = Math.max(finalDamage, 0);
-        damageable.setDamage(finalDamage);
 
-        base = base.clone();
-        base.setItemMeta((ItemMeta) damageable);
-        return new AnvilResult(base, 2);
+        AnvilResult result = new AnvilResult(base, getBaseCost(base, addition) + 2);
+        ItemMeta itemMeta = Objects.requireNonNull(result.getResult().getItemMeta());
+        ((Damageable) itemMeta).setDamage(finalDamage);
+        result.getResult().setItemMeta(itemMeta);
+
+        return result;
     }
 
     private static AnvilResult combineEnchantments(
@@ -164,8 +161,8 @@ public final class AnvilUtil {
             return EMPTY;
         }
 
-        Map<Enchantment, Integer> baseEnchants = new HashMap<>(getEnchants(Objects.requireNonNull(base.getItemMeta())));
-        Map<Enchantment, Integer> addedEnchants = getEnchants(Objects.requireNonNull(addition.getItemMeta()));
+        Map<Enchantment, Integer> baseEnchants = new HashMap<>(EnchantmentUtil.getEnchants(Objects.requireNonNull(base.getItemMeta())));
+        Map<Enchantment, Integer> addedEnchants = EnchantmentUtil.getEnchants(Objects.requireNonNull(addition.getItemMeta()));
 
         int cost = oldResult.getCost();
         boolean affected = false;
@@ -191,21 +188,13 @@ public final class AnvilUtil {
             return oldResult.getCost() == 0 ? EMPTY : oldResult;
         }
 
-        ItemMeta meta = base.getItemMeta();
-        baseEnchants.forEach((enchant, level) -> meta.addEnchant(enchant, level, true));
-        Repairable repairable = (Repairable) meta;
-        repairable.setRepairCost(cost);
-        base = base.clone();
-        base.setItemMeta((ItemMeta) repairable);
+        AnvilResult result = new AnvilResult(base, cost, oldResult.getRepairCount());
 
-        return new AnvilResult(base, cost, oldResult.getRepairCount());
-    }
+        ItemMeta meta = result.getResult().getItemMeta();
+        baseEnchants.forEach(((enchant, level) -> EnchantmentUtil.applyEnchant(meta, enchant, level)));
+        result.getResult().setItemMeta(meta);
 
-    private static Map<Enchantment, Integer> getEnchants(ItemMeta meta) {
-        if (meta instanceof EnchantmentStorageMeta) {
-            return ((EnchantmentStorageMeta) meta).getStoredEnchants();
-        }
-        return meta.getEnchants();
+        return result;
     }
 
     private static boolean enchantIncompatible(@NotNull ItemStack base,

@@ -2,6 +2,8 @@ package com.github.jikoo.enchantableblocks.util.enchant;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Repairable;
 
 /**
  * A representation of a result from an anvil operation.
@@ -23,8 +25,17 @@ public class AnvilResult {
     }
 
     AnvilResult(ItemStack result, int cost, int repairCount) {
-        this.result = result;
+        this.result = result.clone();
         this.cost = cost;
+
+        if (cost > 0) {
+            ItemMeta meta = result.getItemMeta();
+            if (meta instanceof Repairable) {
+                ((Repairable) meta).setRepairCost(cost);
+                this.result.setItemMeta(meta);
+            }
+        }
+
         this.repairCount = repairCount;
     }
 

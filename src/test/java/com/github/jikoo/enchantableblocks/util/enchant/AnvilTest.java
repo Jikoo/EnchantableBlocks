@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for item combination.
@@ -165,19 +166,14 @@ class AnvilTest {
     @DisplayName("Enchantments on items should be combined in various scenarios")
     @ParameterizedTest
     @MethodSource("getCombineScenarios")
-    void testCombine(int baseRepairCost, int addedRepairCost, Material addedMat, AnvilOperation operation) {
+    void testCombine(ItemStack base, ItemStack added, AnvilOperation operation) {
 
         Map<Enchantment, Integer> enchantments = new HashMap<>();
         enchantments.put(Enchantment.DIG_SPEED, 4);
         enchantments.put(Enchantment.SILK_TOUCH, 1);
 
-        ItemStack base = new ItemStack(BASE_MAT);
         applyEnchantments(base, enchantments);
-        prepareItem(base, 0, baseRepairCost);
-
-        ItemStack added = new ItemStack(addedMat);
         applyEnchantments(added, enchantments);
-        prepareItem(added, 0, addedRepairCost);
 
         AnvilResult result = operation.apply(base, added);
 
@@ -196,8 +192,10 @@ class AnvilTest {
         assertThat("Enchantments must be merged with result", result.getResult().getEnchantments().entrySet(),
                 both(everyItem(is(in(enchantments.entrySet())))).and(containsInAnyOrder(enchantments.entrySet().toArray())));
         assertThat("Number of items to consume should not be specified", result.getRepairCount(), is(0));
+
+        int repairCost = requireRepairable(base.getItemMeta()).getRepairCost() + requireRepairable(added.getItemMeta()).getRepairCost();
         // TODO: verify values to ensure calculations are correct, clean up mess
-        int cost = (addedMat == Material.ENCHANTED_BOOK ? isVanilla ? 9 : 13 : isVanilla ? 13 : 21) + baseRepairCost + addedRepairCost;
+        int cost = (added.getType() == Material.ENCHANTED_BOOK ? isVanilla ? 9 : 13 : isVanilla ? 13 : 21) + repairCost;
         assertThat("Operation cost is correct", result.getCost(), is(cost));
     }
 
@@ -205,50 +203,77 @@ class AnvilTest {
         AtomicInteger scenarioIndex = new AtomicInteger();
         return Stream.generate(() -> {
             int index = scenarioIndex.getAndIncrement();
-            return Arguments.of(scenarioBaseCost(index), scenarioAddedCost(index), scenarioMat(index), scenarioOp(index));
-        }).limit(30);
+            return Arguments.of(scenarioBase(index), scenarioAdded(index), scenarioOp(index));
+        }).limit(40);
     }
 
-    private static int scenarioBaseCost(int scenario) {
+    private static ItemStack scenarioBase(int scenario) {
+        ItemStack base = new ItemStack(BASE_MAT);
+
+        int baseCost;
+
         switch (scenario % 5) {
             case 0:
             case 2:
-                return 0;
+                baseCost = 0;
+                break;
             case 1:
-                return 2;
+                baseCost = 2;
+                break;
             case 3:
-                return 1;
+                baseCost = 1;
+                break;
             default:
-                return 5;
+                baseCost = 5;
+                break;
         }
+
+        prepareItem(base, 0, baseCost);
+
+        return base;
     }
 
-    private static int scenarioAddedCost(int scenario) {
+    private static ItemStack scenarioAdded(int scenario) {
+        ItemStack added;
+
+        switch ((scenario % 20) / 5) {
+            case 0:
+                added = new ItemStack(Material.ENCHANTED_BOOK);
+                break;
+            case 1:
+                added = new ItemStack(BASE_MAT);
+            break;
+            case 2:
+                added = new ItemStack(REPAIR_MAT);
+            break;
+            default:
+                added = new ItemStack(INCOMPATIBLE_MAT);
+            break;
+        }
+
+        int addedCost;
+
         switch (scenario % 5) {
             case 0:
             case 1:
-                return 0;
+                addedCost = 0;
+                break;
             case 2:
-                return 10;
+                addedCost = 10;
+                break;
             case 3:
             default:
-                return 1;
+                addedCost = 1;
+                break;
         }
-    }
 
-    private static Material scenarioMat(int scenario) {
-        switch ((scenario % 15) / 5) {
-            case 0:
-                return Material.ENCHANTED_BOOK;
-            case 1:
-                return BASE_MAT;
-            default:
-                return INCOMPATIBLE_MAT;
-        }
+        prepareItem(added, 0, addedCost);
+
+        return added;
     }
 
     private static AnvilOperation scenarioOp(int scenario) {
-        if (scenario % 30 < 15) {
+        if (scenario % 40 < 20) {
             return AnvilOperation.VANILLA;
         }
 
@@ -256,18 +281,22 @@ class AnvilTest {
         operation.setEnchantConflicts((a, b) -> false);
         operation.setEnchantMaxLevel(a -> Short.MAX_VALUE);
         operation.setMaterialCombines((a, b) -> true);
+        operation.setMergeRepairs(true);
+        operation.setMaterialRepairs(AnvilRepairMaterial::repairs);
 
         return operation;
     }
 
-    @DisplayName("Enchanted repair materials should be handled appropriately")
-    @Nested
-    class RepairAndCombineTest {
-
-        // TODO:
-        //  Enchantments should be combined during merge repair operations
-        //  Enchantments from repair materials should be combined only if allowed to do so
-
+    @DisplayName("Vanilla AnvilOperation constant should not be manipulable")
+    @Test
+    void AnvilOperationConstantTest() {
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setCombineEnchants(false));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setEnchantApplies((a, b) -> false));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setEnchantConflicts((a, b) -> false));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setEnchantMaxLevel((a) -> 0));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setMaterialCombines((a, b) -> false));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setMaterialRepairs((a, b) -> false));
+        assertThrows(UnsupportedOperationException.class, () -> AnvilOperation.VANILLA.setMergeRepairs(false));
     }
 
     @AfterAll
