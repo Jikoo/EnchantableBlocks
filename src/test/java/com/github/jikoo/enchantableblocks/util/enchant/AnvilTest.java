@@ -210,23 +210,8 @@ class AnvilTest {
     private static ItemStack scenarioBase(int scenario) {
         ItemStack base = new ItemStack(BASE_MAT);
 
-        int baseCost;
-
-        switch (scenario % 5) {
-            case 0:
-            case 2:
-                baseCost = 0;
-                break;
-            case 1:
-                baseCost = 2;
-                break;
-            case 3:
-                baseCost = 1;
-                break;
-            default:
-                baseCost = 5;
-                break;
-        }
+        int[] baseCosts = new int[] { 0, 2, 0, 1, 5};
+        int baseCost = baseCosts[scenario % 5];
 
         prepareItem(base, 0, baseCost);
 
@@ -234,38 +219,11 @@ class AnvilTest {
     }
 
     private static ItemStack scenarioAdded(int scenario) {
-        ItemStack added;
+        Material[] addedMats = new Material[] { Material.ENCHANTED_BOOK, BASE_MAT, REPAIR_MAT, INCOMPATIBLE_MAT };
+        ItemStack added = new ItemStack(addedMats[(scenario % 20) / 5]);
 
-        switch ((scenario % 20) / 5) {
-            case 0:
-                added = new ItemStack(Material.ENCHANTED_BOOK);
-                break;
-            case 1:
-                added = new ItemStack(BASE_MAT);
-            break;
-            case 2:
-                added = new ItemStack(REPAIR_MAT);
-            break;
-            default:
-                added = new ItemStack(INCOMPATIBLE_MAT);
-            break;
-        }
-
-        int addedCost;
-
-        switch (scenario % 5) {
-            case 0:
-            case 1:
-                addedCost = 0;
-                break;
-            case 2:
-                addedCost = 10;
-                break;
-            case 3:
-            default:
-                addedCost = 1;
-                break;
-        }
+        int[] addedCosts = new int[] { 0, 0, 10, 1, 1};
+        int addedCost = addedCosts[scenario % 5];
 
         prepareItem(added, 0, addedCost);
 
@@ -278,6 +236,8 @@ class AnvilTest {
         }
 
         AnvilOperation operation = new AnvilOperation();
+        operation.setCombineEnchants(true);
+        operation.setEnchantApplies(Enchantment::canEnchantItem);
         operation.setEnchantConflicts((a, b) -> false);
         operation.setEnchantMaxLevel(a -> Short.MAX_VALUE);
         operation.setMaterialCombines((a, b) -> true);
