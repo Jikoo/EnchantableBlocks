@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Jikoo
  */
-public class WeightedRandom {
+public final class WeightedRandom {
 
     /**
      * Choose an element from a collection of choices.
@@ -45,5 +45,7 @@ public class WeightedRandom {
     public interface Choice {
         int getWeight();
     }
+
+    private WeightedRandom() {}
 
 }

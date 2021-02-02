@@ -18,31 +18,33 @@ class WeightedRandomTest {
     @DisplayName("A minimum of 1 element must be available.")
     @Test
     void testEmpty() {
-        assertThrows(IllegalArgumentException.class,
-                () -> WeightedRandom.choose(ThreadLocalRandom.current(), Collections.emptyList()));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Collection<WeightedRandom.Choice> choices = Collections.emptyList();
+
+        assertThrows(IllegalArgumentException.class, () -> WeightedRandom.choose(random, choices));
     }
 
     @DisplayName("A minimum of 1 available element must have weight.")
     @Test
     void testNoWeight() {
-        assertThrows(IllegalArgumentException.class,
-                () -> WeightedRandom.choose(ThreadLocalRandom.current(), inferredTypeHelper(() -> 0, () -> 0)));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        Collection<WeightedRandom.Choice> choices = Arrays.asList(() -> 0, () -> 0);
+
+        assertThrows(IllegalArgumentException.class, () -> WeightedRandom.choose(random, choices));
     }
 
-    @DisplayName("Bad random behavior should fail hard.")
+    @DisplayName("Invalid random behavior should generate an exception.")
     @Test
     void testBadRandom() {
-        assertThrows(IllegalStateException.class,
-                () -> WeightedRandom.choose(new Random() {
-                    @Override
-                    public int nextInt(int bound) {
-                        return bound + 1;
-                    }
-                }, inferredTypeHelper(() -> 1, () -> 2, () -> 3)));
-    }
+        Random random = new Random() {
+            @Override
+            public int nextInt(int bound) {
+                return bound + 1;
+            }
+        };
+        Collection<WeightedRandom.Choice> choices = Arrays.asList(() -> 1, () -> 2, () -> 3);
 
-    private static Collection<WeightedRandom.Choice> inferredTypeHelper(WeightedRandom.Choice... choices) {
-        return Arrays.asList(choices);
+        assertThrows(IllegalStateException.class, () -> WeightedRandom.choose(random, choices));
     }
 
 }
