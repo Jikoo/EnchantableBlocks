@@ -41,7 +41,7 @@ public class Pair<L, R> {
 		if (this == obj) {
 			return true;
 		}
-		if (!getClass().isInstance(obj)) {
+		if (!(obj instanceof Pair)) {
 			return false;
 		}
 		Pair<?, ?> other = (Pair<?, ?>) obj;

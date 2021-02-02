@@ -66,6 +66,7 @@ class TupleTest {
                 pairB.getRight());
 
         return Arrays.stream(new Arguments[] {
+                Arguments.of(pairA, pairA),
                 Arguments.of(pairA, pairB),
                 Arguments.of(pairB, pairA),
                 Arguments.of(tripleA, tripleB),
@@ -85,15 +86,19 @@ class TupleTest {
     private static Stream<Arguments> getInequals() {
         Pair<String, String> pairA = new Pair<>("left", "right");
         Pair<String, String> pairB = new Pair<>("port", "starboard");
+        Pair<String, String> pairC = new Pair<>("left", "east");
         Triple<String, String, String> tripleA = new Triple<>(pairA.getLeft(), "middle", pairA.getRight());
         Triple<String, String, String> tripleB = new Triple<>(pairB.getLeft(), "amidships", pairB.getRight());
+        Triple<String, String, String> tripleC = new Triple<>(pairA.getLeft(), "muddle", pairA.getRight());
 
         return Arrays.stream(new Arguments[] {
                 Arguments.of(pairA, pairB),
                 Arguments.of(pairB, pairA),
+                Arguments.of(pairA, pairC),
                 Arguments.of(tripleA, tripleB),
                 Arguments.of(tripleB, tripleA),
-                Arguments.of(tripleA, pairA)
+                Arguments.of(tripleA, pairA),
+                Arguments.of(tripleA, tripleC)
         });
     }
 

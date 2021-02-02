@@ -26,7 +26,9 @@ public class Triple<L, M, R> extends Pair<L, R> {
 
 	@Override
 	public boolean equals(Object obj) {
-		return super.equals(obj) && middle.equals(((Triple<?, ?, ?>) obj).middle);
+		return super.equals(obj)
+				&& obj instanceof Triple
+				&& middle.equals(((Triple<?, ?, ?>) obj).middle);
 	}
 
 }
