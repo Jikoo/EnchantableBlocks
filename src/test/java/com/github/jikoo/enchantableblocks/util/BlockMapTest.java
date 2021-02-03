@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 @DisplayName("Feature: Map objects to blocks")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class BlockMapTest {
+class BlockMapTest {
 
     World world;
     BlockMap<Object> blockMap;

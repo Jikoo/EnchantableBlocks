@@ -1,6 +1,7 @@
 package com.github.jikoo.enchantableblocks.util;
 
 import com.google.common.collect.TreeMultimap;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -21,11 +23,17 @@ import org.jetbrains.annotations.Nullable;
 public class Cache<K, V> {
 
 	public static class CacheBuilder<K, V> {
+		private Clock clock = Clock.systemUTC();
 		private long retention = 300_000L;
 		private long lazyFrequency = 10_000L;
 		private BiFunction<K, Boolean, V> load;
 		private BiPredicate<K, V> inUseCheck;
 		private BiConsumer<K, V> postRemoval;
+
+		CacheBuilder<K, V> withClock(@NotNull Clock clock) {
+			this.clock = clock;
+			return this;
+		}
 
 		public CacheBuilder<K, V> withLoadFunction(final BiFunction<K, Boolean, V> load) {
 			this.load = load;
@@ -56,10 +64,11 @@ public class Cache<K, V> {
 		}
 
 		public Cache<K, V> build() {
-			return new Cache<>(this.retention, this.lazyFrequency, this.load, this.inUseCheck, this.postRemoval);
+			return new Cache<>(this.clock, this.retention, this.lazyFrequency, this.load, this.inUseCheck, this.postRemoval);
 		}
 	}
 
+	private final Clock clock;
 	private final Map<K, V> internal;
 	private final TreeMultimap<Long, K> expiry;
 	private final long retention;
@@ -77,9 +86,10 @@ public class Cache<K, V> {
 	 * @param inUseCheck Function used to check if a key is considered in use
 	 * @param postRemoval Function used to perform any operations required when a key is invalidated
 	 */
-	private Cache(final long retention, long lazyFrequency, final BiFunction<K, Boolean, V> load,
+	private Cache(@NotNull Clock clock, final long retention, long lazyFrequency, final BiFunction<K, Boolean, V> load,
 			final BiPredicate<K, V> inUseCheck, final BiConsumer<K, V> postRemoval) {
 		this.internal = new HashMap<>();
+		this.clock = clock;
 
 		this.expiry = TreeMultimap.create(Comparator.naturalOrder(), (k1, k2) -> k1 == k2 || k1.equals(k2) ? 0 : 1);
 
@@ -108,7 +118,7 @@ public class Cache<K, V> {
 
 		synchronized (this.internal) {
 			this.internal.put(key, value);
-			this.expiry.put(System.currentTimeMillis() + this.retention, key);
+			this.expiry.put(clock.millis() + this.retention, key);
 		}
 	}
 
@@ -152,7 +162,7 @@ public class Cache<K, V> {
 			}
 
 			if (value != null) {
-				this.expiry.put(System.currentTimeMillis() + this.retention, key);
+				this.expiry.put(clock.millis() + this.retention, key);
 			}
 
 			return value;
@@ -217,7 +227,7 @@ public class Cache<K, V> {
 	 * considered in use by the provided Function, its expiration time is reset.
 	 */
 	private void lazyCheck() {
-		long now = System.currentTimeMillis();
+		long now = clock.millis();
 
 		if (lastLazyCheck.get() > now - lazyFrequency) {
 			return;
