@@ -14,6 +14,7 @@ import com.github.jikoo.enchantableblocks.util.Pair;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.enchantableblocks.util.Triple;
 import com.google.common.collect.HashMultimap;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.java.JavaPluginLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +53,14 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	private ArrayList<String> fortuneList;
 	private boolean isBlacklist;
 	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
+
+	public EnchantableBlocksPlugin() {
+		super();
+	}
+
+	public EnchantableBlocksPlugin(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
+		super(loader, description, dataFolder, file);
+	}
 
 	@Override
 	public void onEnable() {
