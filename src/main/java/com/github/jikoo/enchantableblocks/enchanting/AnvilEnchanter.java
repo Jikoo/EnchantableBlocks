@@ -1,12 +1,17 @@
 package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.util.enchant.AnvilOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.AnvilResult;
+import com.google.common.collect.Multimap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import org.bukkit.GameMode;
-import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -26,15 +31,9 @@ import org.jetbrains.annotations.NotNull;
 public class AnvilEnchanter implements Listener {
 
 	private final EnchantableBlocksPlugin plugin;
-	private final AnvilOperation operation;
 
 	public AnvilEnchanter(final @NotNull EnchantableBlocksPlugin plugin) {
 		this.plugin = plugin;
-		this.operation = new AnvilOperation();
-		operation.setEnchantConflicts(plugin::areEnchantmentsIncompatible);
-		operation.setEnchantApplies((enchantment, itemStack) -> plugin.getEnchantments().contains(enchantment));
-		operation.setMaterialRepairs((a, b) -> false);
-		operation.setMergeRepairs(false);
 	}
 
 	@EventHandler
@@ -42,6 +41,7 @@ public class AnvilEnchanter implements Listener {
 		if (!(event.getView().getPlayer() instanceof Player)) {
 			return;
 		}
+
 		Player clicker = (Player) event.getView().getPlayer();
 		if (!clicker.hasPermission("enchantableblocks.enchant.anvil")
 				|| clicker.getGameMode() == GameMode.CREATIVE) {
@@ -51,11 +51,34 @@ public class AnvilEnchanter implements Listener {
 		AnvilInventory inventory = event.getInventory();
 		ItemStack base = inventory.getItem(0);
 		ItemStack addition = inventory.getItem(1);
-		if (base == null || addition == null || !EnchantableFurnace.isApplicableMaterial(base.getType())
-				|| base.getAmount() > 1 || addition.getAmount() > 1
-				|| addition.getType() != Material.ENCHANTED_BOOK && base.getType() != addition.getType()) {
+
+		if (base == null || addition == null || base.getAmount() > 1 || addition.getAmount() > 1) {
 			return;
 		}
+
+		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(base.getType());
+
+		if (blockClass == null) {
+			return;
+		}
+
+		AnvilOperation operation = new AnvilOperation();
+		operation.setMaterialRepairs((a, b) -> false);
+		operation.setMergeRepairs(false);
+
+		Collection<Enchantment> enchantments = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
+		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
+		String world = clicker.getWorld().getName();
+		Set<Enchantment> disabledEnchants = config.anvilDisabledEnchants.get(world);
+		enchantments.removeAll(disabledEnchants);
+		operation.setEnchantApplies(((enchantment, itemStack) -> enchantments.contains(enchantment)));
+
+		Multimap<Enchantment, Enchantment> enchantConflicts = config.anvilEnchantmentConflicts.get(world);
+		operation.setEnchantConflicts((enchantment, enchantment2) ->
+				enchantConflicts.get(enchantment).contains(enchantment2)
+						|| enchantConflicts.get(enchantment2).contains(enchantment));
+
+		// TODO move renameText to cost application
 
 		AnvilResult anvilResult = operation.apply(base, addition);
 

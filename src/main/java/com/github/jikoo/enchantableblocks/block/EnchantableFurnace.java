@@ -1,6 +1,10 @@
 package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.config.EnchantableFurnaceConfig;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,10 +38,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public class EnchantableFurnace extends EnchantableBlock {
 
-	private static final Set<Material> MATERIALS = EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
+	public static final Set<Material> MATERIALS = Collections.unmodifiableSet(EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
+	public static final Collection<Enchantment> ENCHANTMENTS = Collections.unmodifiableList(Arrays.asList(Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH));
 	private static final Map<Integer, CookingRecipe<?>> BLASTING_RECIPES = new HashMap<>();
 	private static final Map<Integer, CookingRecipe<?>> SMOKING_RECIPES = new HashMap<>();
 	private static final Map<Integer, CookingRecipe<?>> FURNACE_RECIPES = new HashMap<>();
+
+	private static @Nullable EnchantableFurnaceConfig config;
 
 	private final boolean canPause;
 	private boolean updating = false;
@@ -325,6 +332,14 @@ public class EnchantableFurnace extends EnchantableBlock {
 		BLASTING_RECIPES.clear();
 		SMOKING_RECIPES.clear();
 		FURNACE_RECIPES.clear();
+		config = null;
+	}
+
+	public static @NotNull EnchantableFurnaceConfig getConfig() {
+		if (config == null) {
+			config = new EnchantableFurnaceConfig(EnchantableBlocksPlugin.getPlugin(EnchantableBlocksPlugin.class).getConfig());
+		}
+		return config;
 	}
 
 }

@@ -10,7 +10,7 @@ import org.bukkit.enchantments.Enchantment;
  */
 public class EnchantOperation {
 
-    private static final BiPredicate<Enchantment, Enchantment> DEFAULT_INCOMPATIBILITY = (enchantment, enchantment2) -> {
+    public static final BiPredicate<Enchantment, Enchantment> DEFAULT_INCOMPATIBILITY = (enchantment, enchantment2) -> {
         if (enchantment.equals(enchantment2)) {
             return true;
         }

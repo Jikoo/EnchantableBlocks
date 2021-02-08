@@ -9,6 +9,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Base for an enchantable block.
  *
+ * <p>Note that subclasses must also implement a static method
+ * {@code getConfig(String, Bifunction)} for fetching world configuration values.
+ *
  * @author Jikoo
  */
 public abstract class EnchantableBlock {
@@ -108,7 +111,7 @@ public abstract class EnchantableBlock {
 
 	@Override
 	public String toString() {
-		return getClass().getName() + "{itemStack=" + itemStack.toString() + "}";
+		return getClass().getName() + "[itemStack=" + itemStack.toString() + "]";
 	}
 
 }

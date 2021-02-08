@@ -18,7 +18,7 @@ import static org.hamcrest.Matchers.is;
 
 @DisplayName("Feature: Store data in YAML files by region")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class RegionStorageTest {
+class RegionStorageTest {
 
     private JavaPlugin plugin;
     private World world;
@@ -32,8 +32,12 @@ public class RegionStorageTest {
     }
 
     @Test
-    void testSave() throws IOException {
+    void testSave() throws IOException, InvalidConfigurationException {
         RegionStorage storage = new RegionStorage(plugin, world, 0, 0);
+        if (storage.getDataFile().exists()) {
+            Files.delete(storage.getDataFile().toPath());
+        }
+        storage.load();
         storage.set("test.path", "sample text");
         storage.save();
         assertThat("Region storage must be written.", storage.getDataFile().exists(), is(true));

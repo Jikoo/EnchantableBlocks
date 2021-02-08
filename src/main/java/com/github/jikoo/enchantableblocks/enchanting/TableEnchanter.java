@@ -1,11 +1,15 @@
 package com.github.jikoo.enchantableblocks.enchanting;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperation;
-import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantingTableUtil;
+import com.google.common.collect.Multimap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
@@ -40,22 +44,43 @@ public class TableEnchanter implements Listener {
 	public void onPrepareItemEnchant(final @NotNull PrepareItemEnchantEvent event) {
 
 		if (event.getItem().getEnchantments().size() > 0
-				|| !EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
 				|| event.getItem().getAmount() != 1
-				|| this.plugin.getEnchantments().isEmpty()
-				// TODO: rework permissions
 				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
+			return;
+		}
+
+		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(event.getItem().getType());
+		if (blockClass == null) {
+			return;
+		}
+
+		String world = event.getEnchanter().getWorld().getName();
+		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
+		Collection<Enchantment> enchants = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
+		Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
+		enchants.removeAll(blacklist);
+
+		if (enchants.isEmpty()) {
 			return;
 		}
 
 		// Not normally enchantable, event must be un-cancelled.
 		event.setCancelled(false);
 
+		// Assemble enchantment calculation details.
+		EnchantOperation operation = new EnchantOperation(enchants);
+
+		Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
+		operation.setIncompatibility((enchantment, enchantment2) ->
+				enchantConflicts.get(enchantment).contains(enchantment2)
+						|| enchantConflicts.get(enchantment2).contains(enchantment));
+		operation.setEnchantability(config.tableEnchantability.get(world));
+
 		// Calculate levels offered for bookshelf count.
 		int[] buttonLevels = EnchantingTableUtil.getButtonLevels(event.getEnchantmentBonus(),
 				getEnchantmentSeed(event.getEnchanter()));
 		for (int buttonNumber = 0; buttonNumber < 3; ++buttonNumber) {
-			event.getOffers()[buttonNumber] = getOffer(event.getEnchanter(), buttonNumber, buttonLevels[buttonNumber]);
+			event.getOffers()[buttonNumber] = getOffer(operation, event.getEnchanter(), buttonNumber, buttonLevels[buttonNumber]);
 		}
 
 		// Force button refresh.
@@ -65,20 +90,22 @@ public class TableEnchanter implements Listener {
 	/**
 	 * Get an offer of the first enchantment that will be rolled at the specified level for the player.
 	 *
+	 * @param operation the enchantment operation
 	 * @param player the player enchanting
 	 * @param enchantLevel the level of the enchantment
 	 * @return the offer or null if no enchantments will be available
 	 */
-	private @Nullable EnchantmentOffer getOffer(@NotNull Player player, int buttonNumber, int enchantLevel) {
+	private @Nullable EnchantmentOffer getOffer(
+			@NotNull EnchantOperation operation,
+			@NotNull Player player,
+			int buttonNumber,
+			int enchantLevel) {
 		// If level is too low, no offer.
 		if (enchantLevel < 1) {
 			return null;
 		}
 
 		// Assemble enchantment calculation details.
-		EnchantOperation operation = new EnchantOperation(plugin.getEnchantments());
-		operation.setIncompatibility(plugin::areEnchantmentsIncompatible);
-		operation.setEnchantability(Enchantability.STONE);
 		operation.setButtonLevel(enchantLevel);
 		operation.setSeed(getEnchantmentSeed(player) + buttonNumber);
 
@@ -98,16 +125,34 @@ public class TableEnchanter implements Listener {
 	@EventHandler
 	public void onEnchantItem(final @NotNull EnchantItemEvent event) {
 
-		if (!EnchantableFurnace.isApplicableMaterial(event.getItem().getType())
-				|| event.getItem().getAmount() != 1
+		if (event.getItem().getAmount() != 1
 				|| !event.getEnchanter().hasPermission("enchantableblocks.enchant.table")) {
 			return;
 		}
 
+		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(event.getItem().getType());
+		if (blockClass == null) {
+			return;
+		}
+
+		String world = event.getEnchanter().getWorld().getName();
+		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
+		Collection<Enchantment> enchants = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
+		Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
+		enchants.removeAll(blacklist);
+
+		if (enchants.isEmpty()) {
+			return;
+		}
+
 		// Assemble enchantment calculation details.
-		EnchantOperation operation = new EnchantOperation(plugin.getEnchantments());
-		operation.setIncompatibility(plugin::areEnchantmentsIncompatible);
-		operation.setEnchantability(Enchantability.STONE);
+		EnchantOperation operation = new EnchantOperation(enchants);
+
+		Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
+		operation.setIncompatibility((enchantment, enchantment2) ->
+				enchantConflicts.get(enchantment).contains(enchantment2)
+						|| enchantConflicts.get(enchantment2).contains(enchantment));
+		operation.setEnchantability(config.tableEnchantability.get(world));
 		operation.setButtonLevel(event.getExpLevelCost());
 		operation.setSeed(getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
 

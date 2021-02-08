@@ -10,19 +10,15 @@ import com.github.jikoo.enchantableblocks.util.BlockMap;
 import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
 import com.github.jikoo.enchantableblocks.util.CoordinateConversions;
+import com.github.jikoo.enchantableblocks.util.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.Pair;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.enchantableblocks.util.Triple;
-import com.google.common.collect.HashMultimap;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -46,13 +42,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class EnchantableBlocksPlugin extends JavaPlugin {
 
+	private final EnchantableBlockRegistry blockRegistry = new EnchantableBlockRegistry();
 	private final BlockMap<EnchantableBlock> blockMap = new BlockMap<>();
-	private final Set<Enchantment> enchantments = new HashSet<>();
 	private Cache<Triple<World, Integer, Integer>, Pair<RegionStorage, Boolean>> saveFileCache;
-
-	private ArrayList<String> fortuneList;
-	private boolean isBlacklist;
-	private HashMultimap<Enchantment, Enchantment> incompatibleEnchants;
 
 	public EnchantableBlocksPlugin() {
 		super();
@@ -133,64 +125,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 					return new Pair<>(storage, false);
 				}).build();
 
-		this.updateConfig();
-
-		ArrayList<String> disabledWorlds = new ArrayList<>();
-		for (String worldName : this.getConfig().getStringList("disabled_worlds")) {
-			if (!disabledWorlds.contains(worldName.toLowerCase())) {
-				disabledWorlds.add(worldName.toLowerCase());
-			}
-		}
-
-		String fortuneMode = this.getConfig().getString("fortune_list_mode", "blacklist");
-		this.isBlacklist = fortuneMode == null || fortuneMode.matches(".*[Bb][Ll][Aa][Cc][Kk].*");
-
-		this.fortuneList = new ArrayList<>();
-		for (String next : this.getConfig().getStringList("fortune_list")) {
-			next = next.toUpperCase();
-			if (this.fortuneList.contains(next)) {
-				continue;
-			}
-			Material m = Material.getMaterial(next);
-			if (m == null) {
-				this.getLogger().warning("No material by the name of \"" + next + "\" could be found!");
-				this.getLogger().info("Please use material names listed in https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html");
-			} else {
-				this.fortuneList.add(m.name());
-			}
-		}
-
-		HashSet<String> allowedEnchantments = new HashSet<>();
-		allowedEnchantments.add("DIG_SPEED");
-		allowedEnchantments.add("DURABILITY");
-		allowedEnchantments.add("LOOT_BONUS_BLOCKS");
-		allowedEnchantments.add("SILK_TOUCH");
-		for (String enchantment : this.getConfig().getStringList("disabled_furnace_enchantments")) {
-			allowedEnchantments.remove(enchantment);
-		}
-		// TODO swap to enchantment keys
-		for (String enchantment : allowedEnchantments) {
-			this.enchantments.add(Enchantment.getByName(enchantment));
-		}
-
-		this.incompatibleEnchants = HashMultimap.create();
-		if (this.getConfig().isConfigurationSection("enchantment_incompatibilities")) {
-			for (String enchantment : this.getConfig().getConfigurationSection("enchantment_incompatibilities").getKeys(false)) {
-				Enchantment key = Enchantment.getByName(enchantment);
-				String enchantmentValue = this.getConfig().getString("enchantment_incompatibilities." + enchantment);
-				Enchantment value = Enchantment.getByName(enchantmentValue);
-				if (key == null || value == null) {
-					this.getLogger().warning("Removing invalid incompatible enchantment mapping: " + enchantment + ": " + enchantmentValue);
-					this.getConfig().set("enchantment_incompatibilities." + enchantment, null);
-				}
-				if (this.incompatibleEnchants.containsEntry(key, value)) {
-					// User probably included reverse mapping
-					continue;
-				}
-				this.incompatibleEnchants.put(key, value);
-				this.incompatibleEnchants.put(value, key);
-			}
-		}
+		registerEnchantableBlocks();
 
 		this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
 		this.getServer().getPluginManager().registerEvents(new WorldListener(this), this);
@@ -201,11 +136,19 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	}
 
+	private void registerEnchantableBlocks() {
+		getRegistry().register(
+				EnchantableFurnace.MATERIALS,
+				EnchantableFurnace.class,
+				EnchantableFurnace.ENCHANTMENTS,
+				EnchantableFurnace::getConfig,
+				EnchantableFurnace::clearCache);
+	}
+
 	@Override
 	public void onDisable() {
 		this.getServer().getScheduler().cancelTasks(this);
 		this.saveFileCache.expireAll();
-		this.enchantments.clear();
 	}
 
 	@Override
@@ -215,40 +158,16 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return false;
 		}
 
-		EnchantableFurnace.clearCache();
 		reloadConfig();
+		getRegistry().reload();
 		sender.sendMessage("[EnchantableBlocks v" + getDescription().getVersion() + "] Reloaded config and recipe cache.");
 		return true;
-	}
-
-	public Set<Enchantment> getEnchantments() {
-		return new HashSet<>(enchantments);
-	}
-
-	public boolean isBlacklist() {
-		return this.isBlacklist;
-	}
-
-	public List<String> getFortuneList() {
-		return this.fortuneList;
-	}
-
-	public int getFurnaceEnchantability() {
-		return this.getConfig().getInt("furnace_enchantability");
-	}
-
-	public boolean areEnchantmentsIncompatible(final Enchantment ench1, final Enchantment ench2) {
-		return ench1.equals(ench2) || this.incompatibleEnchants.containsEntry(ench1, ench2);
 	}
 
 	@SuppressWarnings("UnusedReturnValue")
 	public @Nullable EnchantableBlock createEnchantableBlock(@NotNull final Block block, @NotNull final ItemStack itemStack) {
 
 		if (itemStack.getType() == Material.AIR || itemStack.getEnchantments().isEmpty()) {
-			return null;
-		}
-
-		if (this.getConfig().getStringList("disabled_worlds").contains(block.getWorld().getName().toLowerCase())) {
 			return null;
 		}
 
@@ -426,6 +345,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 		return null;
 	}
 
+	public EnchantableBlockRegistry getRegistry() {
+		return this.blockRegistry;
+	}
+
 	public void unloadChunkEnchantableBlocks(@NotNull final Chunk chunk) {
 		// Clear out and clean up loaded EnchantableBlocks.
 		this.blockMap.remove(chunk);
@@ -473,29 +396,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	private Triple<World, Integer, Integer> getRegionIdentifier(World world, int regionX, int regionZ) {
 		return new Triple<>(world, regionX, regionZ);
-	}
-
-	private void updateConfig() {
-		this.saveDefaultConfig();
-		Set<String> options = Objects.requireNonNull(this.getConfig().getDefaults()).getKeys(false);
-		Set<String> current = this.getConfig().getKeys(false);
-
-		for (String s : options) {
-			if (s.equals("enchantment_incompatibilities")) {
-				continue;
-			}
-			if (!current.contains(s)) {
-				this.getConfig().set(s, this.getConfig().getDefaults().get(s));
-			}
-		}
-
-		for (String s : current) {
-			if (!options.contains(s)) {
-				this.getConfig().set(s, null);
-			}
-		}
-
-		this.getConfig().options().copyHeader(true);
 	}
 
 }

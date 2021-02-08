@@ -95,8 +95,9 @@ public class FurnaceListener implements Listener {
 		}
 
 		if (enchantableFurnace.getFortune() > 0) {
-			boolean listContains = this.plugin.getFortuneList().contains(event.getSource().getType().name());
-			if (this.plugin.isBlacklist() != listContains) {
+			String world = furnace.getWorld().getName();
+			boolean listContains = EnchantableFurnace.getConfig().fortuneList.get(world).contains(event.getSource().getType());
+			if (EnchantableFurnace.getConfig().fortuneListIsBlacklist.get(world) != listContains) {
 				this.applyFortune(event, enchantableFurnace);
 			}
 		}
