@@ -10,7 +10,6 @@ import com.github.jikoo.enchantableblocks.util.BlockMap;
 import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
 import com.github.jikoo.enchantableblocks.util.CoordinateConversions;
-import com.github.jikoo.enchantableblocks.util.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.Pair;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.enchantableblocks.util.Triple;
@@ -241,11 +240,14 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @return the EnchantableBlock, or null the Block is not an enchanted block
 	 */
 	public @Nullable EnchantableBlock getEnchantableBlockByBlock(@NotNull final Block block) {
-		if (this.getConfig().getStringList("disabled_worlds").contains(block.getWorld().getName().toLowerCase())) {
-			return null;
+
+		EnchantableBlock enchantableBlock = this.blockMap.get(block);
+		if (enchantableBlock != null
+				&& getRegistry().getConfig(enchantableBlock.getClass()).enabled.get(block.getWorld().getName())) {
+			return enchantableBlock;
 		}
 
-		return this.blockMap.get(block);
+		return null;
 
 	}
 
@@ -255,10 +257,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	 * @param chunk the Chunk
 	 */
 	public void loadChunkEnchantableBlocks(@NotNull final Chunk chunk) {
-		String worldName = chunk.getWorld().getName();
-		if (this.getConfig().getStringList("disabled_worlds").contains(worldName.toLowerCase())) {
-			return;
-		}
 
 		Pair<RegionStorage, Boolean> saveData = this.saveFileCache.get(this.getRegionIdentifier(chunk.getWorld(),
 				CoordinateConversions.chunkToRegion(chunk.getX()), CoordinateConversions.chunkToRegion(chunk.getZ())), false);
@@ -320,7 +318,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 		EnchantableBlock enchantableBlock = this.getEnchantableBlock(block, itemStack);
 
-		if (enchantableBlock != null && !enchantableBlock.isCorrectBlockType()) {
+		if (enchantableBlock == null || !enchantableBlock.isCorrectBlockType()
+				|| !getRegistry().getConfig(enchantableBlock.getClass()).enabled.get(block.getWorld().getName())) {
 			return null;
 		}
 
@@ -358,9 +357,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 		// Load all EnchantableBlocks for loaded chunks. This isn't too bad due to how the cache works.
 		for (World world : this.getServer().getWorlds()) {
-			if (this.getConfig().getStringList("disabled_worlds").contains(world.getName().toLowerCase())) {
-				continue;
-			}
 			for (Chunk chunk : world.getLoadedChunks()) {
 				this.loadChunkEnchantableBlocks(chunk);
 			}

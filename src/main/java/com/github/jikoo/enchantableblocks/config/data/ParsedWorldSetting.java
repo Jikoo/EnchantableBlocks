@@ -21,7 +21,7 @@ public abstract class ParsedWorldSetting<T> extends WorldSetting<T> {
     private final BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester;
     private final BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable T> converter;
 
-    public ParsedWorldSetting(@NotNull ConfigurationSection section,
+    protected ParsedWorldSetting(@NotNull ConfigurationSection section,
             @NotNull String key,
             @NotNull BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester,
             @NotNull BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable T> converter,

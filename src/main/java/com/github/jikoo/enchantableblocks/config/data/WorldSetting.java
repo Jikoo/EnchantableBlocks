@@ -17,7 +17,7 @@ public abstract class WorldSetting<T> {
     protected final String path;
     protected final T defaultValue;
 
-    public WorldSetting(
+    protected WorldSetting(
             @NotNull ConfigurationSection section,
             @NotNull String path,
             @NotNull T defaultValue) {

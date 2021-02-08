@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class ParsedComplexWorldSetting<T> extends ParsedWorldSetting<T> {
 
-    public ParsedComplexWorldSetting(
+    protected ParsedComplexWorldSetting(
             @NotNull ConfigurationSection section,
             @NotNull String key,
             @NotNull Function<@Nullable ConfigurationSection, @Nullable T> converter,

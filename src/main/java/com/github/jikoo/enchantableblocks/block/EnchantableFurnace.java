@@ -25,9 +25,11 @@ import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -299,33 +301,27 @@ public class EnchantableFurnace extends EnchantableBlock {
 		while (iterator.hasNext()) {
 			Recipe next = iterator.next();
 
-			if (!(next instanceof CookingRecipe)) {
-				continue;
-			}
-			if (inventory.getHolder() instanceof BlastFurnace) {
-				if (!(next instanceof BlastingRecipe)) {
-					continue;
-				}
-			} else if (inventory.getHolder() instanceof Smoker) {
-				if (!(next instanceof SmokingRecipe)) {
-					continue;
-				}
-			} else if (!(next instanceof FurnaceRecipe)) {
+			if (isIneligibleRecipe(inventory.getHolder(), next)) {
 				continue;
 			}
 
 			CookingRecipe<?> recipe = (CookingRecipe<?>) next;
 
-			if (!recipe.getInputChoice().test(inventory.getSmelting())) {
-				continue;
+			if (recipe.getInputChoice().test(inventory.getSmelting())) {
+				recipes.put(cacheID, recipe);
+				return recipe;
 			}
-
-			recipes.put(cacheID, recipe);
-			return recipe;
 		}
 
 		recipes.put(cacheID, null);
 		return null;
+	}
+
+	private static boolean isIneligibleRecipe(@Nullable InventoryHolder holder, @NotNull Recipe recipe) {
+		return !(recipe instanceof CookingRecipe)
+				|| holder instanceof BlastFurnace && !(recipe instanceof BlastingRecipe)
+				|| holder instanceof Smoker && !(recipe instanceof SmokingRecipe)
+				|| holder instanceof Furnace && !(recipe instanceof FurnaceRecipe);
 	}
 
 	public static void clearCache() {
@@ -337,7 +333,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	public static @NotNull EnchantableFurnaceConfig getConfig() {
 		if (config == null) {
-			config = new EnchantableFurnaceConfig(EnchantableBlocksPlugin.getPlugin(EnchantableBlocksPlugin.class).getConfig());
+			config = new EnchantableFurnaceConfig(JavaPlugin.getPlugin(EnchantableBlocksPlugin.class).getConfig());
 		}
 		return config;
 	}

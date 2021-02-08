@@ -1,8 +1,9 @@
-package com.github.jikoo.enchantableblocks.util;
+package com.github.jikoo.enchantableblocks;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,12 +15,17 @@ import org.jetbrains.annotations.Nullable;
 
 public final class EnchantableBlockRegistry {
 
-    private final Map<Material, Class<? extends EnchantableBlock>> materialRegistry = new HashMap<>();
-    private final Map<Class<? extends EnchantableBlock>, Collection<Enchantment>> enchantmentRegistry = new HashMap<>();
-    private final Map<Class<? extends EnchantableBlock>, Supplier<? extends EnchantableBlockConfig>> configRegistry = new HashMap<>();
-    private final Collection<Runnable> reloads = new HashSet<>();
+    private final EnumMap<Material, Class<? extends EnchantableBlock>> materialRegistry;
+    private final Map<Class<? extends EnchantableBlock>, Collection<Enchantment>> enchantmentRegistry;
+    private final Map<Class<? extends EnchantableBlock>, Supplier<? extends EnchantableBlockConfig>> configRegistry;
+    private final Collection<Runnable> reloads;
 
-    public EnchantableBlockRegistry() {}
+    EnchantableBlockRegistry() {
+        materialRegistry = new EnumMap<>(Material.class);
+        enchantmentRegistry = new HashMap<>();
+        configRegistry = new HashMap<>();
+        reloads = new HashSet<>();
+    }
 
     public void register(
             @NotNull Collection<Material> materials,

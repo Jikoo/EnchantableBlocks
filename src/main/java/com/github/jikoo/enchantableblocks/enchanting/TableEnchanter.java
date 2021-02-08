@@ -20,6 +20,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,32 +50,11 @@ public class TableEnchanter implements Listener {
 			return;
 		}
 
-		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(event.getItem().getType());
-		if (blockClass == null) {
+		EnchantOperation operation = getOperation(event.getItem(), event.getEnchanter());
+
+		if (operation == null) {
 			return;
 		}
-
-		String world = event.getEnchanter().getWorld().getName();
-		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
-		Collection<Enchantment> enchants = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
-		Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
-		enchants.removeAll(blacklist);
-
-		if (enchants.isEmpty()) {
-			return;
-		}
-
-		// Not normally enchantable, event must be un-cancelled.
-		event.setCancelled(false);
-
-		// Assemble enchantment calculation details.
-		EnchantOperation operation = new EnchantOperation(enchants);
-
-		Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
-		operation.setIncompatibility((enchantment, enchantment2) ->
-				enchantConflicts.get(enchantment).contains(enchantment2)
-						|| enchantConflicts.get(enchantment2).contains(enchantment));
-		operation.setEnchantability(config.tableEnchantability.get(world));
 
 		// Calculate levels offered for bookshelf count.
 		int[] buttonLevels = EnchantingTableUtil.getButtonLevels(event.getEnchantmentBonus(),
@@ -130,29 +110,14 @@ public class TableEnchanter implements Listener {
 			return;
 		}
 
-		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(event.getItem().getType());
-		if (blockClass == null) {
+		EnchantOperation operation = getOperation(
+				event.getItem(),
+				event.getEnchanter());
+
+		if (operation == null) {
 			return;
 		}
 
-		String world = event.getEnchanter().getWorld().getName();
-		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
-		Collection<Enchantment> enchants = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
-		Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
-		enchants.removeAll(blacklist);
-
-		if (enchants.isEmpty()) {
-			return;
-		}
-
-		// Assemble enchantment calculation details.
-		EnchantOperation operation = new EnchantOperation(enchants);
-
-		Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
-		operation.setIncompatibility((enchantment, enchantment2) ->
-				enchantConflicts.get(enchantment).contains(enchantment2)
-						|| enchantConflicts.get(enchantment2).contains(enchantment));
-		operation.setEnchantability(config.tableEnchantability.get(world));
 		operation.setButtonLevel(event.getExpLevelCost());
 		operation.setSeed(getEnchantmentSeed(event.getEnchanter()) + event.whichButton());
 
@@ -160,6 +125,33 @@ public class TableEnchanter implements Listener {
 		Map<Enchantment, Integer> enchantments = operation.apply();
 
 		event.getEnchantsToAdd().putAll(enchantments);
+	}
+
+	private @Nullable EnchantOperation getOperation( @NotNull ItemStack itemStack, @NotNull Player enchanter) {
+		Class<? extends EnchantableBlock> blockClass = plugin.getRegistry().get(itemStack.getType());
+		if (blockClass == null) {
+			return null;
+		}
+
+		String world = enchanter.getWorld().getName();
+		EnchantableBlockConfig config = plugin.getRegistry().getConfig(blockClass);
+		Collection<Enchantment> enchants = new ArrayList<>(plugin.getRegistry().getEnchants(blockClass));
+		Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
+		enchants.removeAll(blacklist);
+
+		if (enchants.isEmpty()) {
+			return null;
+		}
+
+		EnchantOperation operation = new EnchantOperation(enchants);
+
+		Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
+		operation.setIncompatibility((enchantment, enchantment2) ->
+				enchantConflicts.get(enchantment).contains(enchantment2)
+						|| enchantConflicts.get(enchantment2).contains(enchantment));
+		operation.setEnchantability(config.tableEnchantability.get(world));
+
+		return operation;
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)

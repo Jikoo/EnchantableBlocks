@@ -11,7 +11,7 @@ public abstract class WorldMapping<K, V> {
     protected final String path;
     protected final Function<@NotNull K, @NotNull V> defaultValue;
 
-    public WorldMapping(
+    protected WorldMapping(
             @NotNull ConfigurationSection section,
             @NotNull String path,
             @NotNull Function<@NotNull K, @NotNull V> defaultValue) {

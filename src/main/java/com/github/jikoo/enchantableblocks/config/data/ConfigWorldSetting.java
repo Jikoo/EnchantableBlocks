@@ -16,7 +16,7 @@ public abstract class ConfigWorldSetting<T> extends WorldSetting<T> {
     private final BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester;
     private final BiFunction<@NotNull ConfigurationSection, @NotNull String, T> getter;
 
-    public ConfigWorldSetting(@NotNull ConfigurationSection section,
+    protected ConfigWorldSetting(@NotNull ConfigurationSection section,
             @NotNull String key,
             @NotNull BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester,
             @NotNull BiFunction<@NotNull ConfigurationSection, @NotNull String, T> getter,

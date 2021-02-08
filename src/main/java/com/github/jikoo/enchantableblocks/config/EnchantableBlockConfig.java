@@ -31,12 +31,12 @@ public class EnchantableBlockConfig {
 
     public EnchantableBlockConfig(FileConfiguration configuration, Class<? extends EnchantableBlock> clazz) {
         String path = "blocks." + clazz.getSimpleName();
-        ConfigurationSection section = configuration.getConfigurationSection(path);
-        if (section == null) {
-            section = configuration.createSection(path);
+        ConfigurationSection configurationSection = configuration.getConfigurationSection(path);
+        if (configurationSection == null) {
+            configurationSection = configuration.createSection(path);
         }
 
-        this.section = section;
+        this.section = configurationSection;
 
         this.enabled = new BooleanWorldSetting(section, "enabled", true);
         this.tableEnchantability = new EnumWorldSetting<>(section, "tableEnchantability", Enchantability.STONE);
