@@ -95,6 +95,7 @@ class TupleTest {
                 Arguments.of(pairA, pairB),
                 Arguments.of(pairB, pairA),
                 Arguments.of(pairA, pairC),
+                Arguments.of(pairA, new Object()),
                 Arguments.of(tripleA, tripleB),
                 Arguments.of(tripleB, tripleA),
                 Arguments.of(tripleA, pairA),

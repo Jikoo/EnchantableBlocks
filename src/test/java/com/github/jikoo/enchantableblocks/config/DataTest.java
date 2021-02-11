@@ -2,9 +2,15 @@ package com.github.jikoo.enchantableblocks.config;
 
 import com.github.jikoo.enchantableblocks.config.data.BooleanWorldSetting;
 import com.github.jikoo.enchantableblocks.config.data.EnumWorldSetting;
+import com.github.jikoo.enchantableblocks.config.data.ParsedWorldMapping;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -12,10 +18,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Feature: Elements used for simple configuration parsing")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DataTest {
+class DataTest {
 
     @DisplayName("Boolean world setting should be retrievable as expected")
     @ParameterizedTest
@@ -39,6 +46,23 @@ public class DataTest {
         EnumWorldSetting<Material> key = new EnumWorldSetting<>(config, "key", defaultVal);
         assertThat("World override must be used", key.get(worldName), is(value));
         assertThat("Invalid world must fall through", key.get("%not-a-world%"), is(defaultVal));
+    }
+
+    @DisplayName("Data holders should not allow using world override path as a key.")
+    @Test
+    void testBlockedKey() {
+        String worldOverrides = "world_overrides";
+        YamlConfiguration config = new YamlConfiguration();
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new EnumWorldSetting<>(config, worldOverrides, Material.AIR));
+
+        Function<String, String> keyConverter = Function.identity();
+        BiPredicate<ConfigurationSection, String> valueTester = ConfigurationSection::isString;
+        BiFunction<ConfigurationSection, String, String> valueConverter = ConfigurationSection::getString;
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new ParsedWorldMapping<>(config, worldOverrides, keyConverter, valueTester, valueConverter, keyConverter));
     }
 
 }
