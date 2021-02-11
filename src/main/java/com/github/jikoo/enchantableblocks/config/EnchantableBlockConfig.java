@@ -18,7 +18,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 
-public class EnchantableBlockConfig {
+public abstract class EnchantableBlockConfig {
 
     protected final ConfigurationSection section;
     public final WorldSetting<Boolean> enabled;
@@ -29,7 +29,7 @@ public class EnchantableBlockConfig {
     public final WorldSetting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts;
     public final WorldMapping<Enchantment, Integer> anvilEnchantmentMax;
 
-    public EnchantableBlockConfig(FileConfiguration configuration, Class<? extends EnchantableBlock> clazz) {
+    protected EnchantableBlockConfig(FileConfiguration configuration, Class<? extends EnchantableBlock> clazz) {
         String path = "blocks." + clazz.getSimpleName();
         ConfigurationSection configurationSection = configuration.getConfigurationSection(path);
         if (configurationSection == null) {

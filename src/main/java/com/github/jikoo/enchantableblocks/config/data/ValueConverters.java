@@ -2,13 +2,18 @@ package com.github.jikoo.enchantableblocks.config.data;
 
 import java.util.Locale;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import org.bukkit.Keyed;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class ValueConverters {
+
+    private static final Pattern VALID_NAMESPACE = Pattern.compile("([a-z0-9._-]+:)?[a-z0-9/._-]+");
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static <T extends Enum> @Nullable T toEnum(
@@ -33,6 +38,10 @@ public final class ValueConverters {
         }
         key = key.toLowerCase(Locale.ROOT);
 
+        if (!VALID_NAMESPACE.matcher(key).matches()) {
+            return null;
+        }
+
         NamespacedKey namespacedKey;
         if (key.indexOf(':') < 0) {
             namespacedKey = NamespacedKey.minecraft(key);
@@ -50,7 +59,19 @@ public final class ValueConverters {
         return toKeyed(Enchantment::getByKey, key);
     }
 
-    // TODO material: combo keyed, enum, and material methods
+    public static @Nullable Material toMaterial(@Nullable String key) {
+        if (key == null) {
+            return null;
+        }
+
+        Material value = toKeyed(Registry.MATERIAL::get, key);
+
+        if (value != null) {
+            return value;
+        }
+
+        return Material.matchMaterial(key);
+    }
 
     private ValueConverters() {}
 

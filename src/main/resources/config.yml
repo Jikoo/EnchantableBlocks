@@ -7,8 +7,8 @@ blocks:
     enabled: true
     fortuneListIsBlacklist: true
     fortuneList:
-    - WET_SPONGE
-    - STONE_BRICKS
+    - wet_sponge
+    - stone_bricks
     tableEnchantability: STONE
     tableDisabledEnchantments: []
     tableEnchantmentConflicts:

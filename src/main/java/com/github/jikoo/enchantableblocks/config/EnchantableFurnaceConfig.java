@@ -21,7 +21,7 @@ public class EnchantableFurnaceConfig extends EnchantableBlockConfig {
         fortuneList = new SimpleSetWorldSetting<>(
                 section,
                 "fortuneList",
-                name -> ValueConverters.toEnum(Material.AIR, name),
+                ValueConverters::toMaterial,
                 EnumSet.of(Material.WET_SPONGE, Material.STONE_BRICKS));
     }
 
