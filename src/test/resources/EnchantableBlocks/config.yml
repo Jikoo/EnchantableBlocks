@@ -16,13 +16,12 @@ blocks:
       silk_touch:
         - fortune
     anvilEnchantmentMax:
-      efficiency: 5
-      unbreaking: 3
-      fortune: 3
-      silk_touch: 1
+      efficiency: 4
     world_overrides:
       "lame_vanilla_world":
         enabled: false
+        anvilEnchantmentMax:
+          invalid_enchantment: 0
       "mining_dimension":
         fortuneListIsBlacklist: false
         fortuneList:
@@ -34,11 +33,17 @@ blocks:
           - LAPIS_ORE
           - NETHER_QUARTZ_ORE
           - NETHER_GOLD_ORE
+          - INVALID_MATERIAL
       "busted_endgame_bullhonkey_world":
         tableEnchantability: GOLD_ARMOR
-        tableEnchantmentConflicts:
+        tableEnchantmentConflicts: []
         anvilEnchantmentConflicts:
+          invalid_enchantment:
+            - fortune
+          fortune: "This isn't a list."
+          silk_touch:
+            - invalid_enchantment
         anvilEnchantmentMax:
           efficiency: 10
-          unbreaking: 10
-          fortune: 10
+          fortune: "Ten!"
+          invalid_enchantment: 5

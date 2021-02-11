@@ -56,7 +56,7 @@ public abstract class EnchantableBlockConfig {
         this.anvilDisabledEnchants = new SimpleSetWorldSetting<>(
                 section,
                 "anvilDisabledEnchants",
-                key -> ValueConverters.toKeyed(Enchantment::getByKey, key),
+                ValueConverters::toEnchant,
                 Collections.emptySet());
         this.anvilEnchantmentConflicts = new SimpleMultimapWorldSetting<>(
                 section,

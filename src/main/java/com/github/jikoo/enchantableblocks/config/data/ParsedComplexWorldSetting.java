@@ -19,7 +19,7 @@ public abstract class ParsedComplexWorldSetting<T> extends ParsedWorldSetting<T>
             @NotNull T defaultValue) {
         super(section,
                 key,
-                ConfigurationSection::isConfigurationSection,
+                ConfigurationSection::contains,
                 ((section1, path) -> converter.apply(section1.getConfigurationSection(path))),
                 defaultValue);
     }

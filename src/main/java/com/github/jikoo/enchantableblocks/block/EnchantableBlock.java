@@ -21,7 +21,10 @@ public abstract class EnchantableBlock {
 	private final ConfigurationSection storage;
 	private boolean dirty = false;
 
-	EnchantableBlock(@NotNull final Block block, @NotNull final ItemStack itemStack, @NotNull ConfigurationSection storage) {
+	protected EnchantableBlock(
+			@NotNull final Block block,
+			@NotNull final ItemStack itemStack,
+			@NotNull ConfigurationSection storage) {
 		this.block = block;
 		this.itemStack = itemStack;
 		if (itemStack.getAmount() > 1) {

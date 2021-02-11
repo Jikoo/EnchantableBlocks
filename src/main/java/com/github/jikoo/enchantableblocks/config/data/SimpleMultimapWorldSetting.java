@@ -22,10 +22,13 @@ public class SimpleMultimapWorldSetting<K, V> extends ParsedComplexWorldSetting<
             @NotNull Function<@Nullable String, @Nullable V> valueConverter,
             @NotNull Multimap<K, V> defaultValue) {
         super(section, key, section1 -> {
-            if (section1 == null) {
-                return null;
-            }
             Multimap<K, V> multimap = HashMultimap.create();
+
+            // Section is set, just isn't a parseable ConfigurationSection.
+            if (section1 == null) {
+                return multimap;
+            }
+
             for (String section1Key : section1.getKeys(true)) {
                 K convertedKey = keyConverter.apply(section1Key);
                 if (convertedKey == null || !section1.isList(section1Key)) {

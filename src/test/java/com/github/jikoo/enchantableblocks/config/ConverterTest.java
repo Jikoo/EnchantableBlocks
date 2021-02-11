@@ -15,7 +15,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-@DisplayName("Feature: Value converters should provide values for strings")
+@DisplayName("Feature: Value converters should provide values for strings.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConverterTest {
 
@@ -54,10 +54,6 @@ class ConverterTest {
         assertThat("Value must be null.", ValueConverters.toEnchant("bad key:good_value"), nullValue());
         assertThat("Value must be null.", ValueConverters.toEnchant("good_key:bad value"), nullValue());
         assertThat("Value must be null.", ValueConverters.toEnchant("bad value"), nullValue());
-    }
-
-    @Test
-    void testKeyedNotPresent() {
         assertThat("Value must be null.", ValueConverters.toEnchant("not_an_enchantment"), nullValue());
     }
 
@@ -83,9 +79,9 @@ class ConverterTest {
     @Test
     void testMaterialPresent() {
         Material material = Material.GOLD_ORE;
-        assertThat("Value must be obtained from namespaced key",
+        assertThat("Value must be obtained from namespaced key.",
                 ValueConverters.toMaterial(material.getKey().toString()), is(material));
-        assertThat("Value must be obtained from un-namespaced key",
+        assertThat("Value must be obtained from un-namespaced key.",
                 ValueConverters.toMaterial(material.getKey().getKey()), is(material));
         assertThat("Value must be obtained from raw name.",
                 ValueConverters.toMaterial(material.name()), is(material));
