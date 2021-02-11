@@ -1,0 +1,44 @@
+autosave: 10
+blocks:
+  EnchantableFurnace:
+    enabled: true
+    fortuneListIsBlacklist: true
+    fortuneList:
+      - WET_SPONGE
+      - STONE_BRICKS
+    tableEnchantability: STONE
+    tableDisabledEnchantments: []
+    tableEnchantmentConflicts:
+      silk_touch:
+        - fortune
+    anvilDisabledEnchantments: []
+    anvilEnchantmentConflicts:
+      silk_touch:
+        - fortune
+    anvilEnchantmentMax:
+      efficiency: 5
+      unbreaking: 3
+      fortune: 3
+      silk_touch: 1
+    world_overrides:
+      "lame_vanilla_world":
+        enabled: false
+      "mining_dimension":
+        fortuneListIsBlacklist: false
+        fortuneList:
+          - COAL_ORE
+          - IRON_ORE
+          - GOLD_ORE
+          - DIAMOND_ORE
+          - REDSTONE_ORE
+          - LAPIS_ORE
+          - NETHER_QUARTZ_ORE
+          - NETHER_GOLD_ORE
+      "busted_endgame_bullhonkey_world":
+        tableEnchantability: GOLD_ARMOR
+        tableEnchantmentConflicts:
+        anvilEnchantmentConflicts:
+        anvilEnchantmentMax:
+          efficiency: 10
+          unbreaking: 10
+          fortune: 10
