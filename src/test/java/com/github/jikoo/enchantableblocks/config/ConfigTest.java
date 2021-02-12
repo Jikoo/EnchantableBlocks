@@ -18,12 +18,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.MockedStatic;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.everyItem;
@@ -42,11 +44,13 @@ class ConfigTest {
     private static final String VANILLA_WORLD = "lame_vanilla_world";
     private static final String POWER_WORLD = "busted_endgame_bullhonkey_world";
 
+    private MockedStatic<JavaPlugin> javaPluginMockedStatic;
 
     @BeforeAll
     void beforeAll() throws NoSuchFieldException, IllegalAccessException {
         MockBukkit.mock();
         EnchantableBlocksPlugin plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
+        javaPluginMockedStatic = PluginHelper.fixInstance(plugin);
         PluginHelper.setDataDir(plugin);
         plugin.getRegistry().reload();
     }
@@ -155,6 +159,7 @@ class ConfigTest {
     @AfterAll
     void afterAll() {
         MockBukkit.unmock();
+        javaPluginMockedStatic.close();
     }
 
 }

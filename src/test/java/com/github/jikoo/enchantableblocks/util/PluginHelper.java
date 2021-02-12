@@ -3,6 +3,8 @@ package com.github.jikoo.enchantableblocks.util;
 import java.io.File;
 import java.lang.reflect.Field;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 public class PluginHelper {
 
@@ -19,6 +21,15 @@ public class PluginHelper {
         plugin.reloadConfig();
     }
 
-    private PluginHelper() {}
+    public static <T extends JavaPlugin> MockedStatic<JavaPlugin> fixInstance(T t) {
+        MockedStatic<JavaPlugin> javaPluginMockedStatic = Mockito.mockStatic(JavaPlugin.class);
+        fixInstance(t, javaPluginMockedStatic);
+        return javaPluginMockedStatic;
+    }
 
+    public static <T extends JavaPlugin> void fixInstance(T t, MockedStatic<JavaPlugin> javaPluginMockedStatic) {
+        javaPluginMockedStatic.when(() -> JavaPlugin.getPlugin(t.getClass())).thenReturn(t);
+    }
+
+    private PluginHelper() {}
 }
