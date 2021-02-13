@@ -2,30 +2,19 @@ package com.github.jikoo.enchantableblocks.config.data;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ParsedWorldMapping<K, V> extends WorldMapping<K, V> {
+public abstract class ParsedMapping<K, V> extends Mapping<K, V> {
 
     private final Map<String, Map<K, V>> cache = new HashMap<>();
-    private final Function<@NotNull String, @Nullable K> keyConverter;
-    private final BiPredicate<@NotNull ConfigurationSection, @NotNull String> valueTester;
-    private final BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable V> valueConverter;
 
-    public ParsedWorldMapping(@NotNull ConfigurationSection section,
+    protected ParsedMapping(@NotNull ConfigurationSection section,
             @NotNull String path,
-            @NotNull Function<@NotNull String, @Nullable K> keyConverter,
-            @NotNull BiPredicate<@NotNull ConfigurationSection, @NotNull String> valueTester,
-            @NotNull BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable V> valueConverter,
             @NotNull Function<@NotNull K, @NotNull V> defaultValue) {
         super(section, path, defaultValue);
-        this.keyConverter = keyConverter;
-        this.valueTester = valueTester;
-        this.valueConverter = valueConverter;
     }
 
     @Override
@@ -48,13 +37,13 @@ public class ParsedWorldMapping<K, V> extends WorldMapping<K, V> {
 
         Map<K, V> mappings = new HashMap<>();
         for (String rawKey : localSection.getKeys(true)) {
-            K parsedKey = keyConverter.apply(rawKey);
+            K parsedKey = convertKey(rawKey);
 
-            if (parsedKey == null || !valueTester.test(localSection, rawKey)) {
+            if (parsedKey == null || !testValue(localSection, rawKey)) {
                 continue;
             }
 
-            V parsedValue = valueConverter.apply(localSection, rawKey);
+            V parsedValue = convertValue(localSection, rawKey);
             if (parsedValue != null) {
                 mappings.put(parsedKey, parsedValue);
             }
@@ -64,5 +53,11 @@ public class ParsedWorldMapping<K, V> extends WorldMapping<K, V> {
 
         return mappings.get(key);
     }
+
+    protected abstract @Nullable K convertKey(@NotNull String key);
+
+    protected abstract boolean testValue(@NotNull ConfigurationSection localSection, @NotNull String path);
+
+    protected abstract @Nullable V convertValue(@NotNull ConfigurationSection localSection, @NotNull String path);
 
 }

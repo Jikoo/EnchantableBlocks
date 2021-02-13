@@ -22,6 +22,8 @@ blocks:
         enabled: false
         anvilEnchantmentMax:
           invalid_enchantment: 0
+        tableDisabledEnchantments:
+          - unbreaking
       "mining_dimension":
         fortuneListIsBlacklist: false
         fortuneList:

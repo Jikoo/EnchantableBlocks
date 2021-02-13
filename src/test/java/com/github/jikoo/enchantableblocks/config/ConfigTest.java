@@ -4,13 +4,14 @@ import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
-import com.github.jikoo.enchantableblocks.config.data.WorldMapping;
-import com.github.jikoo.enchantableblocks.config.data.WorldSetting;
+import com.github.jikoo.enchantableblocks.config.data.Mapping;
+import com.github.jikoo.enchantableblocks.config.data.Setting;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.google.common.collect.Multimap;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -75,7 +76,7 @@ class ConfigTest {
     @DisplayName("Blocks should be able to be disabled per-world.")
     @Test
     void testFurnaceEnabled() {
-        WorldSetting<Boolean> enabled = EnchantableFurnace.getConfig().enabled;
+        Setting<Boolean> enabled = EnchantableFurnace.getConfig().enabled;
 
         assertThat("Furnaces should be enabled in default settings",
                 enabled.get(INVALID_WORLD));
@@ -88,7 +89,7 @@ class ConfigTest {
     @DisplayName("Fortune list should be customizable per-world.")
     @Test
     void testFortuneList() {
-        WorldSetting<Set<Material>> fortuneList = EnchantableFurnace.getConfig().fortuneList;
+        Setting<Set<Material>> fortuneList = EnchantableFurnace.getConfig().fortuneList;
         Collection<Material> value = Arrays.asList(Material.WET_SPONGE, Material.STONE_BRICKS);
         assertThat("Materials should be set in default settings", fortuneList.get(INVALID_WORLD),
                 both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
@@ -105,7 +106,7 @@ class ConfigTest {
     @DisplayName("Block enchantablity should be customizable per-world.")
     @Test
     void testFurnaceEnchantability() {
-        WorldSetting<Enchantability> enchantability = EnchantableFurnace.getConfig().tableEnchantability;
+        Setting<Enchantability> enchantability = EnchantableFurnace.getConfig().tableEnchantability;
 
         assertThat("Enchantability should be STONE by default",
                 enchantability.get(INVALID_WORLD), is(Enchantability.STONE));
@@ -113,11 +114,22 @@ class ConfigTest {
                 enchantability.get(POWER_WORLD), is(Enchantability.GOLD_ARMOR));
     }
 
+    @DisplayName("Block disabled enchantments should be customizable per-world.")
+    @Test
+    void testDisabledEnchants() {
+        Setting<Set<Enchantment>> disabledEnchants = EnchantableFurnace.getConfig().tableDisabledEnchants;
+
+        assertThat("Conflicts should default to empty set", disabledEnchants.get(INVALID_WORLD).isEmpty());
+        Collection<Enchantment> value = Collections.singleton(Enchantment.DURABILITY);
+        assertThat("Conflicts should be overridden properly", disabledEnchants.get(VANILLA_WORLD),
+                both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
+    }
+
     @DisplayName("Block enchantment conflicts should be customizable per-world.")
     @Test
     void testEnchantConflicts() {
         EnchantableFurnaceConfig furnaceConfig = EnchantableFurnace.getConfig();
-        WorldSetting<Multimap<Enchantment, Enchantment>> conflicts = furnaceConfig.tableEnchantmentConflicts;
+        Setting<Multimap<Enchantment, Enchantment>> conflicts = furnaceConfig.tableEnchantmentConflicts;
 
         Multimap<Enchantment, Enchantment> defaultConflicts = conflicts.get(INVALID_WORLD);
         assertThat("Conflicts should default to a single entry", defaultConflicts.size(), is(1));
@@ -133,7 +145,7 @@ class ConfigTest {
     @DisplayName("Maximum level enchantments combine to should be customizable per-world.")
     @Test
     void testEnchantMax() {
-        WorldMapping<Enchantment, Integer> enchantmentMax = EnchantableFurnace.getConfig().anvilEnchantmentMax;
+        Mapping<Enchantment, Integer> enchantmentMax = EnchantableFurnace.getConfig().anvilEnchantmentMax;
 
         Enchantment enchantment = Enchantment.SILK_TOUCH;
         int actual = enchantmentMax.get(INVALID_WORLD, enchantment);

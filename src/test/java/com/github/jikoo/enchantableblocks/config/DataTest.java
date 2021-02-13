@@ -1,14 +1,14 @@
 package com.github.jikoo.enchantableblocks.config;
 
-import com.github.jikoo.enchantableblocks.config.data.BooleanWorldSetting;
-import com.github.jikoo.enchantableblocks.config.data.EnumWorldSetting;
-import com.github.jikoo.enchantableblocks.config.data.ParsedWorldMapping;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
+import com.github.jikoo.enchantableblocks.config.data.impl.BooleanSetting;
+import com.github.jikoo.enchantableblocks.config.data.impl.EnumSetting;
+import com.github.jikoo.enchantableblocks.config.data.ParsedMapping;
 import java.util.function.Function;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -31,7 +31,7 @@ class DataTest {
         YamlConfiguration config = new YamlConfiguration();
         config.set("world_overrides." + worldName + ".key", value);
 
-        BooleanWorldSetting key = new BooleanWorldSetting(config, "key", !value);
+        BooleanSetting key = new BooleanSetting(config, "key", !value);
         assertThat("World override must be used", key.get(worldName), is(value));
         assertThat("Invalid world must fall through", key.get("%not-a-world%"), is(not(value)));
     }
@@ -43,7 +43,7 @@ class DataTest {
         YamlConfiguration config = new YamlConfiguration();
         config.set("world_overrides." + worldName + ".key", value.name());
 
-        EnumWorldSetting<Material> key = new EnumWorldSetting<>(config, "key", defaultVal);
+        EnumSetting<Material> key = new EnumSetting<>(config, "key", defaultVal);
         assertThat("World override must be used", key.get(worldName), is(value));
         assertThat("Invalid world must fall through", key.get("%not-a-world%"), is(defaultVal));
     }
@@ -55,14 +55,27 @@ class DataTest {
         YamlConfiguration config = new YamlConfiguration();
 
         assertThrows(IllegalArgumentException.class, () ->
-                new EnumWorldSetting<>(config, worldOverrides, Material.AIR));
+                new EnumSetting<>(config, worldOverrides, Material.AIR));
 
         Function<String, String> keyConverter = Function.identity();
-        BiPredicate<ConfigurationSection, String> valueTester = ConfigurationSection::isString;
-        BiFunction<ConfigurationSection, String, String> valueConverter = ConfigurationSection::getString;
 
         assertThrows(IllegalArgumentException.class, () ->
-                new ParsedWorldMapping<>(config, worldOverrides, keyConverter, valueTester, valueConverter, keyConverter));
+                new ParsedMapping<String, String>(config, worldOverrides, keyConverter) {
+                    @Override
+                    protected @NotNull String convertKey(@NotNull String key) {
+                        return key;
+                    }
+
+                    @Override
+                    protected boolean testValue(@NotNull ConfigurationSection localSection, @NotNull String path) {
+                        return localSection.isString(path);
+                    }
+
+                    @Override
+                    protected @Nullable String convertValue(@NotNull ConfigurationSection localSection, @NotNull String path) {
+                        return localSection.getString(path);
+                    }
+                });
     }
 
 }

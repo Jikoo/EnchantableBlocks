@@ -2,8 +2,6 @@ package com.github.jikoo.enchantableblocks.config.data;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,21 +13,14 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> the type of value stored
  */
-public abstract class ParsedWorldSetting<T> extends WorldSetting<T> {
+public abstract class ParsedSetting<T> extends Setting<T> {
 
     private final Map<String, T> cache = new HashMap<>();
-    private final BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester;
-    private final BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable T> converter;
 
-    protected ParsedWorldSetting(@NotNull ConfigurationSection section,
+    protected ParsedSetting(@NotNull ConfigurationSection section,
             @NotNull String key,
-            @NotNull BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester,
-            @NotNull BiFunction<@NotNull ConfigurationSection, @NotNull String, @Nullable T> converter,
             @NotNull T defaultValue) {
         super(section, key, defaultValue);
-
-        this.tester = tester;
-        this.converter = converter;
     }
 
     @Override
@@ -39,12 +30,12 @@ public abstract class ParsedWorldSetting<T> extends WorldSetting<T> {
         }
 
         T value = null;
-        if (tester.test(section, path)) {
-            value = converter.apply(section, path);
+        if (test(path)) {
+            value = convert(path);
         }
 
-        if (value == null && tester.test(section, this.path)) {
-            value = converter.apply(section, this.path);
+        if (value == null && test(this.path)) {
+            value = convert(this.path);
         }
 
         if (value == null) {
@@ -54,5 +45,9 @@ public abstract class ParsedWorldSetting<T> extends WorldSetting<T> {
         cache.put(path, value);
         return value;
     }
+
+    protected abstract boolean test(@NotNull String path);
+
+    protected abstract @Nullable T convert(@NotNull String path);
 
 }

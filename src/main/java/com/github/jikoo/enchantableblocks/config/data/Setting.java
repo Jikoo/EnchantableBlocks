@@ -1,20 +1,26 @@
 package com.github.jikoo.enchantableblocks.config.data;
 
-import java.util.function.Function;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class WorldMapping<K, V> {
+/**
+ * A generic framework for handling a setting that may be configured per-world.
+ *
+ * @param <T> the type of value stored
+ */
+public abstract class Setting<T> {
+
+    static final String WORLD_PATH_FORMAT = "world_overrides.%s.%s";
 
     protected final ConfigurationSection section;
     protected final String path;
-    protected final Function<@NotNull K, @NotNull V> defaultValue;
+    protected final T defaultValue;
 
-    protected WorldMapping(
+    protected Setting(
             @NotNull ConfigurationSection section,
             @NotNull String path,
-            @NotNull Function<@NotNull K, @NotNull V> defaultValue) {
+            @NotNull T defaultValue) {
         if ("world_overrides".equals(path)) {
             throw new IllegalArgumentException("Key \"world_overrides\" is reserved for per-world settings!");
         }
@@ -23,15 +29,15 @@ public abstract class WorldMapping<K, V> {
         this.defaultValue = defaultValue;
     }
 
-    public @NotNull V get(@NotNull String world, @NotNull K key) {
-        V value = getPathSetting(String.format(WorldSetting.WORLD_PATH_FORMAT, world, path), key);
-        if (value != null) {
-            return value;
+    public @NotNull T get(@NotNull String world) {
+        T t = getPathSetting(String.format(WORLD_PATH_FORMAT, world, path));
+        if (t != null) {
+            return t;
         }
-        value = getPathSetting(path, key);
-        return value != null ? value : defaultValue.apply(key);
+        t = getPathSetting(path);
+        return t != null ? t : defaultValue;
     }
 
-    protected abstract @Nullable V getPathSetting(@NotNull String path, @NotNull K key);
+    protected abstract @Nullable T getPathSetting(@NotNull String path);
 
 }

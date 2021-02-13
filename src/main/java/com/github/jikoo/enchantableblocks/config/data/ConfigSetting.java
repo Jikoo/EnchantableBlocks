@@ -11,12 +11,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> the type of value stored
  */
-public abstract class ConfigWorldSetting<T> extends WorldSetting<T> {
+public abstract class ConfigSetting<T> extends Setting<T> {
 
     private final BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester;
     private final BiFunction<@NotNull ConfigurationSection, @NotNull String, T> getter;
 
-    protected ConfigWorldSetting(@NotNull ConfigurationSection section,
+    protected ConfigSetting(@NotNull ConfigurationSection section,
             @NotNull String key,
             @NotNull BiPredicate<@NotNull ConfigurationSection, @NotNull String> tester,
             @NotNull BiFunction<@NotNull ConfigurationSection, @NotNull String, T> getter,
