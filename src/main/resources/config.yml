@@ -23,7 +23,7 @@ blocks:
       unbreaking: 3
       fortune: 3
       silk_touch: 1
-    world_overrides:
+    overrides:
       "lame_vanilla_world":
         enabled: false
       "lame_vanilla_world_nether":

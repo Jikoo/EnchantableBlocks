@@ -1,10 +1,10 @@
 package com.github.jikoo.enchantableblocks.config;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
-import com.github.jikoo.enchantableblocks.config.data.Setting;
-import com.github.jikoo.enchantableblocks.config.data.SimpleSetSetting;
-import com.github.jikoo.enchantableblocks.config.data.ValueConverters;
-import com.github.jikoo.enchantableblocks.config.data.impl.BooleanSetting;
+import com.github.jikoo.planarwrappers.config.Setting;
+import com.github.jikoo.planarwrappers.config.SimpleSetSetting;
+import com.github.jikoo.planarwrappers.config.impl.BooleanSetting;
+import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.EnumSet;
 import java.util.Set;
 import org.bukkit.Material;
@@ -27,7 +27,7 @@ public class EnchantableFurnaceConfig extends EnchantableBlockConfig {
 
             @Override
             protected @Nullable Material convertValue(@NotNull String value) {
-                return ValueConverters.toMaterial(value);
+                return StringConverters.toMaterial(value);
             }
         };
     }

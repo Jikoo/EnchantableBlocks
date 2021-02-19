@@ -1,15 +1,15 @@
 package com.github.jikoo.enchantableblocks.config;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import com.github.jikoo.enchantableblocks.config.data.Mapping;
-import com.github.jikoo.enchantableblocks.config.data.ParsedMapping;
-import com.github.jikoo.enchantableblocks.config.data.Setting;
-import com.github.jikoo.enchantableblocks.config.data.ValueConverters;
-import com.github.jikoo.enchantableblocks.config.data.impl.BooleanSetting;
-import com.github.jikoo.enchantableblocks.config.data.impl.EnumSetting;
-import com.github.jikoo.enchantableblocks.config.data.impl.MultimapEnchantEnchantSetting;
-import com.github.jikoo.enchantableblocks.config.data.impl.SetEnchantSetting;
+import com.github.jikoo.enchantableblocks.config.data.MultimapEnchantEnchantSetting;
+import com.github.jikoo.enchantableblocks.config.data.SetEnchantSetting;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
+import com.github.jikoo.planarwrappers.config.Mapping;
+import com.github.jikoo.planarwrappers.config.ParsedMapping;
+import com.github.jikoo.planarwrappers.config.Setting;
+import com.github.jikoo.planarwrappers.config.impl.BooleanSetting;
+import com.github.jikoo.planarwrappers.config.impl.EnumSetting;
+import com.github.jikoo.planarwrappers.util.StringConverters;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Collections;
@@ -67,7 +67,7 @@ public abstract class EnchantableBlockConfig {
 
             @Override
             protected @Nullable Enchantment convertKey(@NotNull String key) {
-                return ValueConverters.toEnchant(key);
+                return StringConverters.toEnchant(key);
             }
 
             @Override

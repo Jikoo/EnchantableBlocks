@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.util.function.ReflectiveFunction;
+import com.github.jikoo.planarwrappers.util.function.ThrowingFunction;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.IntUnaryOperator;
@@ -101,7 +101,7 @@ final class EnchantDataReflection {
      * @return the internal value or default value if the internal value is not available
      */
     private static <T> T nmsHandler(@NotNull Enchantment enchantment,
-            @NotNull ReflectiveFunction<Object, T> function, @NotNull T defaultValue) {
+            @NotNull ThrowingFunction<Object, T, ReflectiveOperationException> function, @NotNull T defaultValue) {
         try {
             Enchantment craftEnchant = Enchantment.getByKey(enchantment.getKey());
 

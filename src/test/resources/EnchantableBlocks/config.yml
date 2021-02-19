@@ -17,7 +17,7 @@ blocks:
         - fortune
     anvilEnchantmentMax:
       efficiency: 4
-    world_overrides:
+    overrides:
       "lame_vanilla_world":
         enabled: false
         anvilEnchantmentMax:

@@ -1,7 +1,7 @@
-package com.github.jikoo.enchantableblocks.config.data.impl;
+package com.github.jikoo.enchantableblocks.config.data;
 
-import com.github.jikoo.enchantableblocks.config.data.SimpleSetSetting;
-import com.github.jikoo.enchantableblocks.config.data.ValueConverters;
+import com.github.jikoo.planarwrappers.config.SimpleSetSetting;
+import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
@@ -22,7 +22,7 @@ public class SetEnchantSetting extends SimpleSetSetting<Enchantment> {
 
     @Override
     protected @Nullable Enchantment convertValue(@NotNull String value) {
-        return ValueConverters.toEnchant(value);
+        return StringConverters.toEnchant(value);
     }
 
 }

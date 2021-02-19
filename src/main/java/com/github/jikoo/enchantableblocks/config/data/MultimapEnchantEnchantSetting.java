@@ -1,7 +1,7 @@
-package com.github.jikoo.enchantableblocks.config.data.impl;
+package com.github.jikoo.enchantableblocks.config.data;
 
-import com.github.jikoo.enchantableblocks.config.data.SimpleMultimapSetting;
-import com.github.jikoo.enchantableblocks.config.data.ValueConverters;
+import com.github.jikoo.planarwrappers.config.SimpleMultimapSetting;
+import com.github.jikoo.planarwrappers.util.StringConverters;
 import com.google.common.collect.Multimap;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
@@ -22,12 +22,12 @@ public class MultimapEnchantEnchantSetting extends SimpleMultimapSetting<Enchant
 
     @Override
     protected @Nullable Enchantment convertKey(@NotNull String key) {
-        return ValueConverters.toEnchant(key);
+        return StringConverters.toEnchant(key);
     }
 
     @Override
     protected @Nullable Enchantment convertValue(@NotNull String value) {
-        return ValueConverters.toEnchant(value);
+        return StringConverters.toEnchant(value);
     }
 
 }
