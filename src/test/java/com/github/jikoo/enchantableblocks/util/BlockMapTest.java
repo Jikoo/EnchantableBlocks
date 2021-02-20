@@ -3,6 +3,7 @@ package com.github.jikoo.enchantableblocks.util;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.WorldMock;
 import be.seeseemelk.mockbukkit.block.BlockMock;
+import com.github.jikoo.planarwrappers.util.Coords;
 import java.util.Arrays;
 import java.util.Collection;
 import org.bukkit.Chunk;
@@ -39,11 +40,11 @@ class BlockMapTest {
         WorldMock world = new WorldMock() {
             @Override
             public Chunk getChunkAt(Block block) {
-                return getChunkAt(CoordinateConversions.blockToChunk(block.getX()), CoordinateConversions.blockToChunk(block.getZ()));
+                return getChunkAt(Coords.blockToChunk(block.getX()), Coords.blockToChunk(block.getZ()));
             }
             @Override
             public Chunk getChunkAt(Location location) {
-                return getChunkAt(CoordinateConversions.blockToChunk(location.getBlockX()), CoordinateConversions.blockToChunk(location.getBlockZ()));
+                return getChunkAt(Coords.blockToChunk(location.getBlockX()), Coords.blockToChunk(location.getBlockZ()));
             }
         };
 

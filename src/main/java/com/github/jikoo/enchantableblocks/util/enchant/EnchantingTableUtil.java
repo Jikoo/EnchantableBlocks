@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.util.WeightedRandom;
+import com.github.jikoo.planarwrappers.util.WeightedRandom;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;

@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.util.WeightedRandom;
+import com.github.jikoo.planarwrappers.util.WeightedRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;

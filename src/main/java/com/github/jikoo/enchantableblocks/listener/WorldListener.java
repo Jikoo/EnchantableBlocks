@@ -1,7 +1,7 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.util.Pair;
+import com.github.jikoo.planarwrappers.tuple.Pair;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

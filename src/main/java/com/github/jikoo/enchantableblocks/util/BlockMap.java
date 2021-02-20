@@ -1,5 +1,6 @@
 package com.github.jikoo.enchantableblocks.util;
 
+import com.github.jikoo.planarwrappers.util.Coords;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,14 +87,14 @@ public class BlockMap<V> {
 			return Collections.emptyList();
 		}
 
-		int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
+		int blockXMin = Coords.chunkToBlock(chunkX);
 		SortedMap<Integer, TreeMap<Integer, Map<Integer, V>>> chunkXSubMap = worldMap.subMap(blockXMin, blockXMin + 16);
 		if (chunkXSubMap.isEmpty()) {
 			return Collections.emptyList();
 		}
 
 		List<V> values = new ArrayList<>();
-		int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
+		int blockZMin = Coords.chunkToBlock(chunkZ);
 		for (Map.Entry<Integer, TreeMap<Integer, Map<Integer, V>>> blockXEntry : chunkXSubMap.entrySet()) {
 			SortedMap<Integer, Map<Integer, V>> chunkZSubMap = blockXEntry.getValue().subMap(blockZMin, blockZMin + 16);
 
@@ -115,14 +116,14 @@ public class BlockMap<V> {
 			return Collections.emptyList();
 		}
 
-		int blockXMin = CoordinateConversions.chunkToBlock(chunkX);
+		int blockXMin = Coords.chunkToBlock(chunkX);
 		SortedMap<Integer, TreeMap<Integer, Map<Integer, V>>> chunkXSubMap = worldMap.subMap(blockXMin, blockXMin + 16);
 		if (chunkXSubMap.isEmpty()) {
 			return Collections.emptyList();
 		}
 
 		List<V> values = new ArrayList<>();
-		int blockZMin = CoordinateConversions.chunkToBlock(chunkZ);
+		int blockZMin = Coords.chunkToBlock(chunkZ);
 
 		for (Iterator<TreeMap<Integer, Map<Integer, V>>> blockXIterator = chunkXSubMap.values().iterator(); blockXIterator.hasNext(); ) {
 			TreeMap<Integer, Map<Integer, V>> blockXValue = blockXIterator.next();

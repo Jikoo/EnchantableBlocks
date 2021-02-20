@@ -83,8 +83,8 @@
     </dependency>
     <dependency>
       <groupId>com.github.jikoo</groupId>
-      <artifactId>planarwrappers</artifactId>
-      <version>8080632595</version>
+      <artifactId>PlanarWrappers</artifactId>
+      <version>1.0.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

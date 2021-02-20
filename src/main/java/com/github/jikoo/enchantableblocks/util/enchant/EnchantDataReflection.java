@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.planarwrappers.util.function.ThrowingFunction;
+import com.github.jikoo.planarwrappers.function.ThrowingFunction;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.IntUnaryOperator;

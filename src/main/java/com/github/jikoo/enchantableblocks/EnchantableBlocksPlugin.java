@@ -9,10 +9,10 @@ import com.github.jikoo.enchantableblocks.listener.WorldListener;
 import com.github.jikoo.enchantableblocks.util.BlockMap;
 import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
-import com.github.jikoo.enchantableblocks.util.CoordinateConversions;
-import com.github.jikoo.enchantableblocks.util.Pair;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
-import com.github.jikoo.enchantableblocks.util.Triple;
+import com.github.jikoo.planarwrappers.tuple.Pair;
+import com.github.jikoo.planarwrappers.tuple.Triple;
+import com.github.jikoo.planarwrappers.util.Coords;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -63,8 +63,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 					}
 
 					RegionStorage storage = value.getLeft();
-					int minChunkX = CoordinateConversions.regionToChunk(storage.getRegionX());
-					int minChunkZ = CoordinateConversions.regionToChunk(storage.getRegionZ());
+					int minChunkX = Coords.regionToChunk(storage.getRegionX());
+					int minChunkZ = Coords.regionToChunk(storage.getRegionZ());
 					boolean loaded = false, dirty = value.getRight();
 
 					// Check if chunks are loaded or dirty
@@ -194,8 +194,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return null;
 		}
 
-		int regionX = CoordinateConversions.blockToRegion(block.getX());
-		int regionZ = CoordinateConversions.blockToRegion(block.getZ());
+		int regionX = Coords.blockToRegion(block.getX());
+		int regionZ = Coords.blockToRegion(block.getZ());
 		Pair<RegionStorage, Boolean> saveData = this.saveFileCache
 				.get(this.getRegionIdentifier(block.getWorld(), regionX, regionZ));
 
@@ -203,8 +203,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 			return null;
 		}
 
-		int chunkX = CoordinateConversions.blockToChunk(block.getX());
-		int chunkZ = CoordinateConversions.blockToChunk(block.getZ());
+		int chunkX = Coords.blockToChunk(block.getX());
+		int chunkZ = Coords.blockToChunk(block.getZ());
 
 		String chunkPath = chunkX + "_" + chunkZ;
 
@@ -259,7 +259,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 	public void loadChunkEnchantableBlocks(@NotNull final Chunk chunk) {
 
 		Pair<RegionStorage, Boolean> saveData = this.saveFileCache.get(this.getRegionIdentifier(chunk.getWorld(),
-				CoordinateConversions.chunkToRegion(chunk.getX()), CoordinateConversions.chunkToRegion(chunk.getZ())), false);
+				Coords.chunkToRegion(chunk.getX()), Coords.chunkToRegion(chunk.getZ())), false);
 
 		if (saveData == null) {
 			return;
@@ -366,7 +366,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	private @NotNull ConfigurationSection getChunkStorage(World world, int chunkX, int chunkZ) {
 		Pair<RegionStorage, Boolean> storagePair = saveFileCache.get(getRegionIdentifier(world,
-				CoordinateConversions.chunkToRegion(chunkX), CoordinateConversions.chunkToRegion(chunkZ)));
+				Coords.chunkToRegion(chunkX), Coords.chunkToRegion(chunkZ)));
 		ConfigurationSection regionStorage = Objects.requireNonNull(storagePair).getLeft();
 		String chunkPath = chunkX + "_" + chunkZ;
 
@@ -379,8 +379,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
 	private @NotNull ConfigurationSection getBlockStorage(Block block) {
 		ConfigurationSection chunkStorage = this.getChunkStorage(block.getWorld(),
-				CoordinateConversions.blockToChunk(block.getX()),
-				CoordinateConversions.blockToChunk(block.getZ()));
+				Coords.blockToChunk(block.getX()),
+				Coords.blockToChunk(block.getZ()));
 		String blockPath = block.getX() + "_" + block.getY() + "_" + block.getZ();
 
 		if (chunkStorage.isConfigurationSection(blockPath)) {
