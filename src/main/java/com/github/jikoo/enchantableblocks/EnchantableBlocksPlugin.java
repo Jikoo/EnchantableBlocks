@@ -9,7 +9,7 @@ import com.github.jikoo.enchantableblocks.listener.WorldListener;
 import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Cache.CacheBuilder;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
-import com.github.jikoo.planarwrappers.container.BlockMap;
+import com.github.jikoo.planarwrappers.collections.BlockMap;
 import com.github.jikoo.planarwrappers.tuple.Pair;
 import com.github.jikoo.planarwrappers.tuple.Triple;
 import com.github.jikoo.planarwrappers.util.Coords;
