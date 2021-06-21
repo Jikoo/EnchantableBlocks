@@ -84,7 +84,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>PlanarWrappers</artifactId>
-      <version>2.1.0</version>
+      <version>2.2.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -104,6 +104,12 @@
       <artifactId>MockBukkit-v1.16</artifactId>
       <version>1.1.0</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>

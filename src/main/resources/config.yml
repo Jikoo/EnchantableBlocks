@@ -8,7 +8,7 @@ blocks:
     fortuneListIsBlacklist: true
     fortuneList:
     - wet_sponge
-    - stone_bricks
+    - '#minecraft:stone_bricks'
     - raw_copper
     - raw_gold
     - raw_iron
