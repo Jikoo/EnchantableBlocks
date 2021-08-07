@@ -98,14 +98,24 @@ public final class EnchantingTableUtil {
         String nmsVersion = split[split.length - 1];
 
         try {
-            Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
-            Object enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
-            Method methodIRegistryA = clazzIRegistry.getDeclaredMethod("a", Object.class);
+            Object enchantmentRegistry;
+            Method methodIRegistryGetId;
+            try {
+                // 1.17+
+                Class<?> clazzIRegistry = Class.forName("net.minecraft.core.IRegistry");
+                enchantmentRegistry = clazzIRegistry.getDeclaredField("X").get(null);
+                methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("getId", Object.class);
+            } catch (ClassNotFoundException e) {
+                // 1.16-
+                Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
+                enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
+                methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("a", Object.class);
+            }
 
             Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
             Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
 
-            return (int) methodIRegistryA.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
+            return (int) methodIRegistryGetId.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
         } catch (ReflectiveOperationException | ClassCastException e) {
             return 0;
         }
