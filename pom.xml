@@ -86,6 +86,8 @@
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
       <version>${versions.fastutil}</version>
+      <!-- Spigot's library loading feature will provide FastUtil. -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.github.jikoo</groupId>

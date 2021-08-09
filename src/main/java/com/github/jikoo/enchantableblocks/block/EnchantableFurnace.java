@@ -2,13 +2,16 @@ package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.config.EnchantableFurnaceConfig;
+import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
+import com.github.jikoo.planarwrappers.util.StringConverters;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -20,6 +23,7 @@ import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
@@ -41,9 +45,11 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	public static final Set<Material> MATERIALS = Collections.unmodifiableSet(EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
 	public static final Collection<Enchantment> ENCHANTMENTS = List.of(Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH);
-	private static final Map<Integer, CookingRecipe<?>> BLASTING_RECIPES = new HashMap<>();
-	private static final Map<Integer, CookingRecipe<?>> SMOKING_RECIPES = new HashMap<>();
-	private static final Map<Integer, CookingRecipe<?>> FURNACE_RECIPES = new HashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> BLASTING_RECIPES = new Int2ObjectOpenHashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> SMOKING_RECIPES = new Int2ObjectOpenHashMap<>();
+	private static final Map<Integer, CookingRecipe<?>> FURNACE_RECIPES = new Int2ObjectOpenHashMap<>();
+	private static final CookingRecipe<?> INVALID_INPUT = new EmptyCookingRecipe(
+			Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:invalid_input")));
 
 	private static @Nullable EnchantableFurnaceConfig config;
 
@@ -82,50 +88,74 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return this.canPause;
 	}
 
+	/**
+	 * @deprecated use {@link #shouldPause(Event)}
+	 */
+	@SuppressWarnings("unused")
+	@Deprecated
 	public boolean shouldPause(final @Nullable Event event, @Nullable CookingRecipe<?> recipe) {
-		if (!this.canPause) {
+		return shouldPause(event);
+	}
+
+	public boolean shouldPause(final @Nullable Event event) {
+		Furnace furnace = getFurnaceTile();
+
+		if (furnace == null) {
+			// Null furnace tile means no handling. Shouldn't happen, but rare edge cases with tile entity differences occur.
 			return false;
 		}
 
-		Furnace furnace = this.getFurnaceTile();
-		if (furnace == null || furnace.getBurnTime() <= 0) {
+		ItemStack input;
+		ItemStack result;
+		if (event instanceof FurnaceSmeltEvent smeltEvent) {
+			// Special case FurnaceSmeltEvent - since smelt has not completed, input and result are slightly different.
+			// Decrease input for post-smelt
+			input = smeltEvent.getSource().clone();
+			input.setAmount(input.getAmount() - 1);
+			// Use post-smelt result
+			result = smeltEvent.getResult();
+		} else {
+			// In all other cases use current contents of furnace.
+			FurnaceInventory inventory = furnace.getInventory();
+			input = inventory.getSmelting();
+			result = inventory.getResult();
+		}
+
+		return shouldPause(furnace, input, result);
+	}
+
+	private boolean shouldPause(
+			final @Nullable Furnace furnace,
+			final @Nullable ItemStack input,
+			final @Nullable ItemStack result) {
+		if (!this.canPause || furnace == null) {
 			return false;
 		}
 
-		// Is there an input?
-		FurnaceInventory furnaceInv = furnace.getInventory();
-		if (furnaceInv.getSmelting() == null) {
+		// Is there no input?
+		if (input == null || input.getAmount() <= 0) {
 			return true;
 		}
 
 		// Is the result slot too full for more product?
-		if (furnaceInv.getResult() != null) {
-			int stack = furnaceInv.getResult().getType().getMaxStackSize();
-			if (event instanceof FurnaceSmeltEvent) {
-				stack -= 1;
-			}
-			if (furnaceInv.getResult().getAmount() >= stack) {
+		if (result != null) {
+			int stack = result.getType().getMaxStackSize();
+			if (result.getAmount() >= stack) {
 				return true;
 			}
 		}
 
-		// Will the input slot be empty once the FurnaceSmeltEvent has completed?
-		if (event instanceof FurnaceSmeltEvent && furnaceInv.getSmelting() != null && furnaceInv.getSmelting().getAmount() == 1) {
-			return true;
-		}
+		CookingRecipe<?> recipe = getFurnaceRecipe(furnace.getInventory());
 
-		if (recipe == null) {
-			recipe = getFurnaceRecipe(furnaceInv);
-		}
-
+		// Does the current smelting item not have a recipe?
 		if (recipe == null) {
 			return true;
 		}
 
 		// Verify that the smelting item cannot produce a result
-		return !recipe.getInputChoice().test(furnaceInv.getSmelting())
-				|| (furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
-				&& !recipe.getResult().isSimilar(furnaceInv.getResult()));
+		return !recipe.getInputChoice().test(input)
+				|| (result != null && result.getType() != Material.AIR
+				&& !recipe.getResult().isSimilar(result));
 
 	}
 
@@ -263,7 +293,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		enchantableFurnace.updating = true;
 
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
-			boolean shouldPause = enchantableFurnace.shouldPause(null, null);
+			boolean shouldPause = enchantableFurnace.shouldPause(inventory.getHolder(), inventory.getSmelting(), inventory.getResult());
 			if (enchantableFurnace.isPaused() == shouldPause) {
 				return;
 			}
@@ -277,13 +307,14 @@ public class EnchantableFurnace extends EnchantableBlock {
 	}
 
 	public static @Nullable CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
-		if (inventory.getSmelting() == null) {
+		ItemStack smelting = inventory.getSmelting();
+		if (smelting == null) {
 			return null;
 		}
 
-		ItemStack cacheData = inventory.getSmelting().clone();
+		ItemStack cacheData = smelting.clone();
 		cacheData.setAmount(1);
-		Integer cacheID = cacheData.hashCode();
+		Integer cacheId = cacheData.hashCode();
 		Map<Integer, CookingRecipe<?>> recipes;
 		if (inventory.getHolder() instanceof BlastFurnace) {
 			recipes = BLASTING_RECIPES;
@@ -293,39 +324,40 @@ public class EnchantableFurnace extends EnchantableBlock {
 			recipes = FURNACE_RECIPES;
 		}
 
-		if (recipes.containsKey(cacheID)) {
-			CookingRecipe<?> recipe = recipes.get(cacheID);
-			if (recipe == null || !recipe.getInputChoice().test(inventory.getSmelting())) {
-				return null;
-			}
-			return recipe;
+		CookingRecipe<?> recipe = recipes.computeIfAbsent(cacheId, key -> locateRecipe(inventory.getHolder(), smelting));
+
+		if (!recipe.getInputChoice().test(smelting)) {
+			return null;
 		}
 
+		return recipe;
+	}
+
+	private static @NotNull CookingRecipe<?> locateRecipe(@Nullable InventoryHolder holder, @NotNull ItemStack smelting) {
 		Iterator<Recipe> iterator = Bukkit.recipeIterator();
 		while (iterator.hasNext()) {
 			Recipe next = iterator.next();
 
-			if (isIneligibleRecipe(inventory.getHolder(), next)) {
+			if (!(next instanceof CookingRecipe nextCooking) || isIneligibleRecipe(holder, next)) {
 				continue;
 			}
 
-			CookingRecipe<?> recipe = (CookingRecipe<?>) next;
-
-			if (recipe.getInputChoice().test(inventory.getSmelting())) {
-				recipes.put(cacheID, recipe);
-				return recipe;
+			if (nextCooking.getInputChoice().test(smelting)) {
+				return nextCooking;
 			}
 		}
 
-		recipes.put(cacheID, null);
-		return null;
+		return INVALID_INPUT;
 	}
 
 	private static boolean isIneligibleRecipe(@Nullable InventoryHolder holder, @NotNull Recipe recipe) {
-		return !(recipe instanceof CookingRecipe)
-				|| holder instanceof BlastFurnace && !(recipe instanceof BlastingRecipe)
-				|| holder instanceof Smoker && !(recipe instanceof SmokingRecipe)
-				|| holder instanceof Furnace && !(recipe instanceof FurnaceRecipe);
+		if (holder instanceof BlastFurnace) {
+			return !(recipe instanceof BlastingRecipe);
+		}
+		if (holder instanceof Smoker) {
+			return !(recipe instanceof SmokingRecipe);
+		}
+		return holder instanceof Furnace && !(recipe instanceof FurnaceRecipe);
 	}
 
 	public static void clearCache() {
