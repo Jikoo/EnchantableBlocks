@@ -98,19 +98,9 @@ public final class EnchantingTableUtil {
         String nmsVersion = split[split.length - 1];
 
         try {
-            Object enchantmentRegistry;
-            Method methodIRegistryGetId;
-            try {
-                // 1.17+
-                Class<?> clazzIRegistry = Class.forName("net.minecraft.core.IRegistry");
-                enchantmentRegistry = clazzIRegistry.getDeclaredField("X").get(null);
-                methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("getId", Object.class);
-            } catch (ClassNotFoundException e) {
-                // 1.16-
-                Class<?> clazzIRegistry = Class.forName("net.minecraft.server." + nmsVersion + ".IRegistry");
-                enchantmentRegistry = clazzIRegistry.getDeclaredField("ENCHANTMENT").get(null);
-                methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("a", Object.class);
-            }
+            Class<?> clazzIRegistry = Class.forName("net.minecraft.core.IRegistry");
+            Object enchantmentRegistry = clazzIRegistry.getDeclaredField("X").get(null);
+            Method methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("getId", Object.class);
 
             Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
             Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);

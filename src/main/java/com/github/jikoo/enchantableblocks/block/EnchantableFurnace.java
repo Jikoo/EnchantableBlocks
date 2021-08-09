@@ -2,12 +2,12 @@ package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.config.EnchantableFurnaceConfig;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.bukkit.Bukkit;
@@ -20,7 +20,6 @@ import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
-import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
@@ -41,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 public class EnchantableFurnace extends EnchantableBlock {
 
 	public static final Set<Material> MATERIALS = Collections.unmodifiableSet(EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
-	public static final Collection<Enchantment> ENCHANTMENTS = Collections.unmodifiableList(Arrays.asList(Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH));
+	public static final Collection<Enchantment> ENCHANTMENTS = List.of(Enchantment.DIG_SPEED, Enchantment.DURABILITY, Enchantment.LOOT_BONUS_BLOCKS, Enchantment.SILK_TOUCH);
 	private static final Map<Integer, CookingRecipe<?>> BLASTING_RECIPES = new HashMap<>();
 	private static final Map<Integer, CookingRecipe<?>> SMOKING_RECIPES = new HashMap<>();
 	private static final Map<Integer, CookingRecipe<?>> FURNACE_RECIPES = new HashMap<>();
@@ -201,6 +200,10 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return MATERIALS.contains(material);
 	}
 
+	/**
+	 * @deprecated {@link #applyCookTimeModifiers(int)}
+	 */
+	@Deprecated
 	public void setCookTimeTotal(@NotNull CookingRecipe<?> recipe) {
 		if (this.getCookModifier() == 0) {
 			return;
@@ -212,8 +215,12 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return;
 		}
 
-		furnace.setCookTimeTotal(getCappedTicks(recipe.getCookingTime(), this.getCookModifier(), 0.5));
+		furnace.setCookTimeTotal(applyCookTimeModifiers(recipe.getCookingTime()));
 		furnace.update();
+	}
+
+	public int applyCookTimeModifiers(int totalCookTime) {
+		return getCappedTicks(totalCookTime, this.getCookModifier(), 0.5);
 	}
 
 	public int applyBurnTimeModifiers(int burnTime) {
@@ -245,27 +252,24 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 		EnchantableBlock enchantableBlock = plugin.getEnchantableBlockByBlock(inventory.getHolder().getBlock());
 
-		if (!(enchantableBlock instanceof EnchantableFurnace)) {
+		if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
 			return;
 		}
 
-		EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
-
-
-		if (enchantableFurnace.updating || enchantableFurnace.getCookModifier() == 0 || !enchantableFurnace.canPause()) {
+		if (enchantableFurnace.updating || !enchantableFurnace.canPause()) {
 			return;
 		}
 
 		enchantableFurnace.updating = true;
 
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
-			CookingRecipe<?> recipe = getFurnaceRecipe(inventory);
-			if (enchantableFurnace.getCookModifier() != 0 && recipe != null) {
-				enchantableFurnace.setCookTimeTotal(recipe);
+			boolean shouldPause = enchantableFurnace.shouldPause(null, null);
+			if (enchantableFurnace.isPaused() == shouldPause) {
+				return;
 			}
 			if (enchantableFurnace.isPaused()) {
 				enchantableFurnace.resume();
-			} else if (enchantableFurnace.shouldPause(null, recipe)) {
+			} else {
 				enchantableFurnace.pause();
 			}
 			enchantableFurnace.updating = false;

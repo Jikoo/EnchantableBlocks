@@ -3,12 +3,14 @@ package com.github.jikoo.enchantableblocks.listener;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.EnchantableFurnace;
+import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.block.Furnace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -16,8 +18,6 @@ import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.concurrent.ThreadLocalRandom;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,27 +37,8 @@ public class FurnaceListener implements Listener {
 	public void onFurnaceConsumeFuel(final @NotNull FurnaceBurnEvent event) {
 		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(event.getBlock());
 
-		if (!(enchantableBlock instanceof EnchantableFurnace)) {
+		if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
 			return;
-		}
-
-		EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
-
-		final int cookModifier = enchantableFurnace.getCookModifier();
-		if (cookModifier != 0) {
-			new BukkitRunnable() {
-				@Override
-				public void run() {
-					Furnace furnace = enchantableFurnace.getFurnaceTile();
-					if (furnace == null) {
-						return;
-					}
-					CookingRecipe<?> recipe = EnchantableFurnace.getFurnaceRecipe(furnace.getInventory());
-					if (recipe != null) {
-						enchantableFurnace.setCookTimeTotal(recipe);
-					}
-				}
-			}.runTask(this.plugin);
 		}
 
 		if (enchantableFurnace.isPaused() && enchantableFurnace.resume()) {
@@ -69,14 +50,24 @@ public class FurnaceListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-	public void onFurnaceSmelt(final @NotNull FurnaceSmeltEvent event) {
+	public void onFurnaceStartSmelt(final @NotNull FurnaceStartSmeltEvent event) {
 		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(event.getBlock());
 
-		if (!(enchantableBlock instanceof EnchantableFurnace)) {
+		if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
 			return;
 		}
 
-		EnchantableFurnace enchantableFurnace = (EnchantableFurnace) enchantableBlock;
+		event.setTotalCookTime(enchantableFurnace.applyCookTimeModifiers(event.getTotalCookTime()));
+	}
+
+	@EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+	public void onFurnaceSmelt(final @NotNull FurnaceSmeltEvent event) {
+		EnchantableBlock enchantableBlock = this.plugin.getEnchantableBlockByBlock(event.getBlock());
+
+		if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
+			return;
+		}
+
 		Furnace furnace = enchantableFurnace.getFurnaceTile();
 
 		if (furnace == null) {
@@ -100,20 +91,6 @@ public class FurnaceListener implements Listener {
 			if (EnchantableFurnace.getConfig().fortuneListIsBlacklist.get(world) != listContains) {
 				this.applyFortune(event, enchantableFurnace);
 			}
-		}
-
-		if (recipe == null) {
-			return;
-		}
-
-		final int cookModifier = enchantableFurnace.getCookModifier();
-		if (cookModifier != 0) {
-			new BukkitRunnable() {
-				@Override
-				public void run() {
-					enchantableFurnace.setCookTimeTotal(recipe);
-				}
-			}.runTask(this.plugin);
 		}
 	}
 
