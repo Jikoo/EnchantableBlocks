@@ -295,6 +295,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 		plugin.getServer().getScheduler().runTask(plugin, () -> {
 			boolean shouldPause = enchantableFurnace.shouldPause(inventory.getHolder(), inventory.getSmelting(), inventory.getResult());
 			if (enchantableFurnace.isPaused() == shouldPause) {
+				enchantableFurnace.updating = false;
 				return;
 			}
 			if (enchantableFurnace.isPaused()) {

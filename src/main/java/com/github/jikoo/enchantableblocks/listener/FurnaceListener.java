@@ -116,24 +116,24 @@ public class FurnaceListener implements Listener {
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	private void onInventoryClick(final @NotNull InventoryClickEvent event) {
-		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
-			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
+		if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
+			EnchantableFurnace.update(plugin, furnaceInventory);
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	private void onInventoryMoveItem(final @NotNull InventoryMoveItemEvent event) {
-		if (event.getDestination() instanceof FurnaceInventory) {
-			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getDestination());
-		} else if (event.getSource() instanceof FurnaceInventory) {
-			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getSource());
+		if (event.getDestination() instanceof FurnaceInventory furnaceInventory) {
+			EnchantableFurnace.update(plugin, furnaceInventory);
+		} else if (event.getSource() instanceof FurnaceInventory furnaceInventory) {
+			EnchantableFurnace.update(plugin, furnaceInventory);
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
 	private void onInventoryDrag(final @NotNull InventoryDragEvent event) {
-		if (event.getView().getTopInventory() instanceof FurnaceInventory) {
-			EnchantableFurnace.update(plugin, (FurnaceInventory) event.getView().getTopInventory());
+		if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
+			EnchantableFurnace.update(plugin, furnaceInventory);
 		}
 	}
 
