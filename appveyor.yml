@@ -12,7 +12,7 @@ init:
 install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
-      if (!(Test-Path -Path "C:\maven\apache-maven-3.6.3" )) {
+      if (!(Test-Path -Path "C:\maven\apache-maven-3.8.1" )) {
         (new-object System.Net.WebClient).DownloadFile('http://downloads.apache.org/maven/maven-3/3.8.1/binaries/apache-maven-3.8.1-bin.zip', 'C:\maven-bin.zip')
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\maven-bin.zip", "C:\maven")
       }

@@ -91,7 +91,7 @@
     </dependency>
     <dependency>
       <groupId>com.github.jikoo</groupId>
-      <artifactId>planarwrappers</artifactId>
+      <artifactId>PlanarWrappers</artifactId>
       <version>2.2.2</version>
       <scope>compile</scope>
     </dependency>
@@ -169,7 +169,7 @@
               <minimizeJar>true</minimizeJar>
               <filters>
                 <filter>
-                  <artifact>com.github.jikoo:planarwrappers</artifact>
+                  <artifact>com.github.jikoo:PlanarWrappers</artifact>
                   <excludes>
                     <exclude>META-INF/MANIFEST.MF</exclude>
                   </excludes>
