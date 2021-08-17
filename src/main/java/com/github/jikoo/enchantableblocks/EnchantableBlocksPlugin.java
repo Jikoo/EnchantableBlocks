@@ -124,7 +124,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 					return new Pair<>(storage, false);
 				}).build();
 
-		registerEnchantableBlocks();
+		this.saveDefaultConfig();
+		this.registerEnchantableBlocks();
 
 		this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
 		this.getServer().getPluginManager().registerEvents(new WorldListener(this), this);
