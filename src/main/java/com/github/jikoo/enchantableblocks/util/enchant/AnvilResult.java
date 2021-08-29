@@ -30,8 +30,8 @@ public class AnvilResult {
 
         if (cost > 0) {
             ItemMeta meta = result.getItemMeta();
-            if (meta instanceof Repairable) {
-                ((Repairable) meta).setRepairCost(cost);
+            if (meta instanceof Repairable repairable) {
+                repairable.setRepairCost(cost);
                 this.result.setItemMeta(meta);
             }
         }

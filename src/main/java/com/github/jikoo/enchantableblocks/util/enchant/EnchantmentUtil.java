@@ -24,8 +24,8 @@ public final class EnchantmentUtil {
             return Collections.emptyMap();
         }
 
-        if (meta instanceof EnchantmentStorageMeta) {
-            return ((EnchantmentStorageMeta) meta).getStoredEnchants();
+        if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
+            return enchantmentStorageMeta.getStoredEnchants();
         }
 
         return meta.getEnchants();
@@ -42,8 +42,8 @@ public final class EnchantmentUtil {
         if (meta == null) {
             return;
         }
-        if (meta instanceof EnchantmentStorageMeta) {
-            ((EnchantmentStorageMeta) meta).addStoredEnchant(enchant, level, true);
+        if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
+            enchantmentStorageMeta.addStoredEnchant(enchant, level, true);
         } else {
             meta.addEnchant(enchant, level, true);
         }

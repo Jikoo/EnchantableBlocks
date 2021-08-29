@@ -106,7 +106,7 @@ public final class AnvilUtil {
             return false;
         }
         // Ensure that damageable tools have damage.
-        return itemMeta instanceof Damageable && ((Damageable) itemMeta).hasDamage();
+        return itemMeta instanceof Damageable damageable && damageable.hasDamage();
     }
 
     private static @Nullable AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {

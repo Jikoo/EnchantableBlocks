@@ -72,7 +72,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 	 */
 	public @Nullable Furnace getFurnaceTile() {
 		BlockState state = this.getBlock().getState();
-		return state instanceof Furnace ? (Furnace) state : null;
+		return state instanceof Furnace furnace ? furnace : null;
 	}
 
 	/**
