@@ -98,6 +98,10 @@ public class EnchantableFurnace extends EnchantableBlock {
 	}
 
 	public boolean shouldPause(final @Nullable Event event) {
+		if (!this.canPause) {
+			return false;
+		}
+
 		Furnace furnace = getFurnaceTile();
 
 		if (furnace == null) {
@@ -132,6 +136,11 @@ public class EnchantableFurnace extends EnchantableBlock {
 			return false;
 		}
 
+		if (this.getFrozenTicks() > 0) {
+			// Don't pause (again) and delete fuel if there was a problem unpausing.
+			return false;
+		}
+
 		// Is there no input?
 		if (input == null || input.getAmount() <= 0) {
 			return true;
@@ -160,7 +169,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 	}
 
 	public void pause() {
-		if (!this.canPause) {
+		if (!this.canPause || this.getFrozenTicks() > 0) {
 			return;
 		}
 
