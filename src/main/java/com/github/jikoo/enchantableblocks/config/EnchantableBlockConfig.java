@@ -12,7 +12,6 @@ import com.github.jikoo.planarwrappers.config.impl.EnumSetting;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.util.Collections;
 import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -42,25 +41,19 @@ public abstract class EnchantableBlockConfig {
 
         this.enabled = new BooleanSetting(section, "enabled", true);
         this.tableEnchantability = new EnumSetting<>(section, "tableEnchantability", Enchantability.STONE);
-        this.tableDisabledEnchants = new SetEnchantSetting(
-                section,
-                "tableDisabledEnchantments",
-                Collections.emptySet());
+        this.tableDisabledEnchants = new SetEnchantSetting(section, "tableDisabledEnchantments", Set.of());
         Multimap<Enchantment, Enchantment> enchantIncompatibilities = HashMultimap.create();
         enchantIncompatibilities.put(Enchantment.SILK_TOUCH, Enchantment.LOOT_BONUS_BLOCKS);
         this.tableEnchantmentConflicts = new MultimapEnchantEnchantSetting(
                 section,
                 "tableEnchantmentConflicts",
                 enchantIncompatibilities);
-        this.anvilDisabledEnchants = new SetEnchantSetting(
-                section,
-                "anvilDisabledEnchantments",
-                Collections.emptySet());
+        this.anvilDisabledEnchants = new SetEnchantSetting(section, "anvilDisabledEnchantments", Set.of());
         this.anvilEnchantmentConflicts = new MultimapEnchantEnchantSetting(
                 section,
                 "anvilEnchantmentConflicts",
                 enchantIncompatibilities);
-        this.anvilEnchantmentMax = new ParsedMapping<Enchantment, Integer>(
+        this.anvilEnchantmentMax = new ParsedMapping<>(
                 section,
                 "anvilEnchantmentMax",
                 Enchantment::getMaxLevel) {

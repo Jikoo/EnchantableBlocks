@@ -10,7 +10,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Feature: Cache and reuse data within a certain time period")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -90,14 +89,6 @@ class CacheTest {
         cache.expireAll();
 
         assertThat("Value must be removed when all keys expire.", cache.containsKey(KEY), is(false));
-    }
-
-    @DisplayName("Retention must be at least 1 minute.")
-    @Test
-    void testRetentionLimit() {
-        Cache.CacheBuilder<Object, Object> cacheBuilder = new Cache.CacheBuilder<>();
-        assertThrows(IllegalArgumentException.class, () -> cacheBuilder.withRetention(MIN_RETENTION - 1));
-        cacheBuilder.withRetention(MIN_RETENTION);
     }
 
     @DisplayName("Cache must retain values for the specified duration.")

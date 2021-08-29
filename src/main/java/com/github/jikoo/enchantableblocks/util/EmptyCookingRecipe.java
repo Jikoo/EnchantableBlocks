@@ -29,7 +29,7 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
                         try {
                             return (RecipeChoice) super.clone();
                         } catch (CloneNotSupportedException e) {
-                            throw new RuntimeException(e);
+                            throw new IllegalStateException(e);
                         }
                     }
 
@@ -54,10 +54,12 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
 
     @Override
     public void setCookingTime(int cookingTime) {
+        // Empty recipe ignores time changes.
     }
 
     @Override
     public void setExperience(float experience) {
+        // Empty recipe ignores experience changes.
     }
 
 }

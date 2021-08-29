@@ -21,8 +21,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Listener for furnace-specific events.
- *
- * @author Jikoo
  */
 public class FurnaceListener implements Listener {
 

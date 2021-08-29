@@ -37,9 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Class for tracking custom furnace properties and applying certain effects.
- *
- * @author Jikoo
+ * Track and manage effects for enchanted furnaces.
  */
 public class EnchantableFurnace extends EnchantableBlock {
 
@@ -67,23 +65,48 @@ public class EnchantableFurnace extends EnchantableBlock {
 		}
 	}
 
+	/**
+	 * Get the {@link Furnace} for this {@code EnchantableFurnace}.
+	 *
+	 * @return the {@link Furnace} or {@code null} if not found
+	 */
 	public @Nullable Furnace getFurnaceTile() {
 		BlockState state = this.getBlock().getState();
 		return state instanceof Furnace ? (Furnace) state : null;
 	}
 
+	/**
+	 * Get the modifier for cooking speed to be used in calculations.
+	 *
+	 * @return the cooking speed modifier
+	 */
 	public int getCookModifier() {
 		return this.getItemStack().getEnchantmentLevel(Enchantment.DIG_SPEED);
 	}
 
+	/**
+	 * Get the modifier for fuel burn rate to be used in calculations.
+	 *
+	 * @return the fuel burn rate modifier
+	 */
 	public int getBurnModifier() {
 		return this.getItemStack().getEnchantmentLevel(Enchantment.DURABILITY);
 	}
 
+	/**
+	 * Get the fortune level for creating extra results.
+	 *
+	 * @return the fortune level
+	 */
 	public int getFortune() {
 		return this.getItemStack().getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS);
 	}
 
+	/**
+	 * Get whether the furnace is allowed to "pause" and preserve existing burn time.
+	 *
+	 * @return true if the furnace can pause
+	 */
 	public boolean canPause() {
 		return this.canPause;
 	}
@@ -92,11 +115,17 @@ public class EnchantableFurnace extends EnchantableBlock {
 	 * @deprecated use {@link #shouldPause(Event)}
 	 */
 	@SuppressWarnings("unused")
-	@Deprecated
+	@Deprecated(since = "3.0.1", forRemoval = true)
 	public boolean shouldPause(final @Nullable Event event, @Nullable CookingRecipe<?> recipe) {
 		return shouldPause(event);
 	}
 
+	/**
+	 * Get whether the furnace should pause after completion of the event occurring.
+	 *
+	 * @param event the event occurring
+	 * @return true if the furnace should pause
+	 */
 	public boolean shouldPause(final @Nullable Event event) {
 		if (!this.canPause) {
 			return false;
@@ -128,6 +157,15 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return shouldPause(furnace, input, result);
 	}
 
+	/**
+	 * Get whether the furnace should pause based on the input and result items. Note that depending on the event
+	 * occurring, the input and result items may not match the current furnace contents.
+	 *
+	 * @param furnace the furnace
+	 * @param input the input item
+	 * @param result the result item
+	 * @return true if the furnace should pause
+	 */
 	private boolean shouldPause(
 			final @Nullable Furnace furnace,
 			final @Nullable ItemStack input,
@@ -168,6 +206,9 @@ public class EnchantableFurnace extends EnchantableBlock {
 
 	}
 
+	/**
+	 * Attempt to pause the furnace.
+	 */
 	public void pause() {
 		if (!this.canPause || this.getFrozenTicks() > 0) {
 			return;
@@ -222,10 +263,20 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return true;
 	}
 
+	/**
+	 * Check if the furnace is paused.
+	 *
+	 * @return true if the furnace is paused
+	 */
 	public boolean isPaused() {
 		return this.canPause && this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0;
 	}
 
+	/**
+	 * Get the number of ticks of fuel remaining when the furnace is unpaused.
+	 *
+	 * @return the number of ticks of fuel
+	 */
 	private short getFrozenTicks() {
 		return (short) this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH);
 	}
@@ -242,7 +293,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 	/**
 	 * @deprecated {@link #applyCookTimeModifiers(int)}
 	 */
-	@Deprecated
+	@Deprecated(since = "3.0.1", forRemoval = true)
 	public void setCookTimeTotal(@NotNull CookingRecipe<?> recipe) {
 		if (this.getCookModifier() == 0) {
 			return;
@@ -258,21 +309,51 @@ public class EnchantableFurnace extends EnchantableBlock {
 		furnace.update();
 	}
 
+	/**
+	 * Apply cook time modifiers to a cook time total. Caps to a value between {@code 0} and {@link Short#MAX_VALUE} to
+	 * not cause issues with furnaces.
+	 *
+	 * @param totalCookTime the original total cook time
+	 * @return the modified cook time
+	 */
 	public int applyCookTimeModifiers(int totalCookTime) {
 		return getCappedTicks(totalCookTime, this.getCookModifier(), 0.5);
 	}
 
+	/**
+	 * Apply burn time modifiers to a burn time total. Caps to a value between {@code 0} and {@link Short#MAX_VALUE} to
+	 * not cause issues with furnaces.
+	 *
+	 * @param burnTime the original burn time
+	 * @return the modified burn time
+	 */
 	public int applyBurnTimeModifiers(int burnTime) {
 		// Unbreaking causes furnace to burn for longer, increase burn time
 		burnTime = getCappedTicks(burnTime, -getBurnModifier(), 0.2);
-		// Efficiency causes furnace to burn at different rates, change burn time to match smelt rate change
-		return getCappedTicks(burnTime, getCookModifier(), 0.5);
+		// Efficiency causes furnace to cook at different rates, change burn time to match cook rate change
+		return applyCookTimeModifiers(burnTime);
 	}
 
+	/**
+	 * Modify and sanitize ticks using a fractional ratio.
+	 *
+	 * @param baseTicks the base number of ticks
+	 * @param baseModifier the base modifier
+	 * @param fractionModifier the fractional increase
+	 * @return the sanitized value
+	 */
 	private static int getCappedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
 		return Math.max(1, Math.min(Short.MAX_VALUE, getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
 	}
 
+	/**
+	 * Modify ticks based on a modifier and a fractional per-level increase.
+	 *
+	 * @param baseTicks the base number of ticks
+	 * @param baseModifier the base modifier
+	 * @param fractionModifier the fractional increase
+	 * @return the modified value
+	 */
 	private static int getModifiedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
 		if (baseModifier == 0) {
 			return baseTicks;
@@ -283,6 +364,12 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return (int) (baseTicks * (1 - baseModifier * fractionModifier));
 	}
 
+	/**
+	 * Update the state of a potential {@code EnchantableFurnace}.
+	 *
+	 * @param plugin the {@link EnchantableBlocksPlugin} instance
+	 * @param inventory the furnace inventory that may need an update
+	 */
 	public static void update(EnchantableBlocksPlugin plugin, FurnaceInventory inventory) {
 
 		if (inventory.getHolder() == null) {
@@ -316,6 +403,12 @@ public class EnchantableFurnace extends EnchantableBlock {
 		});
 	}
 
+	/**
+	 * Get a {@link CookingRecipe} for a {@link FurnaceInventory}'s state.
+	 *
+	 * @param inventory the {@link FurnaceInventory}
+	 * @return the {@link CookingRecipe} or {@code null} if no valid recipe is found
+	 */
 	public static @Nullable CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
 		ItemStack smelting = inventory.getSmelting();
 		if (smelting == null) {
@@ -343,6 +436,14 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return recipe;
 	}
 
+	/**
+	 * Match a {@link CookingRecipe} for a particular {@link ItemStack} in an inventory belonging to a specific
+	 * {@link InventoryHolder}.
+	 *
+	 * @param holder the inventory holder
+	 * @param smelting the recipe input
+	 * @return the {@link CookingRecipe} or a default invalid recipe if no match was found
+	 */
 	private static @NotNull CookingRecipe<?> locateRecipe(@Nullable InventoryHolder holder, @NotNull ItemStack smelting) {
 		Iterator<Recipe> iterator = Bukkit.recipeIterator();
 		while (iterator.hasNext()) {
@@ -360,6 +461,12 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return INVALID_INPUT;
 	}
 
+	/**
+	 * Check if an {@link InventoryHolder} is eligible to use a certain {@link Recipe}.
+	 * @param holder the inventory holder
+	 * @param recipe the recipe
+	 * @return true if the holder is allowed to use the recipe
+	 */
 	private static boolean isIneligibleRecipe(@Nullable InventoryHolder holder, @NotNull Recipe recipe) {
 		if (holder instanceof BlastFurnace) {
 			return !(recipe instanceof BlastingRecipe);
@@ -370,6 +477,9 @@ public class EnchantableFurnace extends EnchantableBlock {
 		return holder instanceof Furnace && !(recipe instanceof FurnaceRecipe);
 	}
 
+	/**
+	 * Clear cached recipes and parsed configuration nodes.
+	 */
 	public static void clearCache() {
 		BLASTING_RECIPES.clear();
 		SMOKING_RECIPES.clear();
@@ -377,6 +487,11 @@ public class EnchantableFurnace extends EnchantableBlock {
 		config = null;
 	}
 
+	/**
+	 * Get the configuration for this block type.
+	 *
+	 * @return the configuration
+	 */
 	public static @NotNull EnchantableFurnaceConfig getConfig() {
 		if (config == null) {
 			config = new EnchantableFurnaceConfig(JavaPlugin.getPlugin(EnchantableBlocksPlugin.class).getConfig());

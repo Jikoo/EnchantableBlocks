@@ -28,7 +28,7 @@ import static org.hamcrest.Matchers.is;
  *
  * @author Jikoo
  */
-@DisplayName("When enchantments are not supported")
+@DisplayName("Feature: Attempt support for unknown enchantments")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantmentReflectionTest {
 

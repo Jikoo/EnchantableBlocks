@@ -1,6 +1,5 @@
 package com.github.jikoo.enchantableblocks.util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.TreeMultimap;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -16,6 +15,7 @@ import java.util.function.BiPredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * A minimal thread-safe time-based cache implementation backed by a HashMap and TreeMultimap.
@@ -32,6 +32,7 @@ public class Cache<K, V> {
 		private @Nullable BiPredicate<K, V> inUseCheck;
 		private @Nullable BiConsumer<K, V> postRemoval;
 
+		@TestOnly
 		CacheBuilder<K, V> withClock(@NotNull Clock clock) {
 			this.clock = clock;
 			return this;
@@ -53,14 +54,11 @@ public class Cache<K, V> {
 		}
 
 		public CacheBuilder<K, V> withRetention(@Range(from = 60_000, to = Long.MAX_VALUE) final long retention) {
-			//noinspection ConstantConditions
-			Preconditions.checkArgument(retention >= 60_000, "Cache retention must be at least 60000ms.");
-			this.retention = retention;
+			this.retention = Math.max(60_000, retention);
 			return this;
 		}
 
-		public CacheBuilder<K, V> withLazyFrequency(@Range(from = 0, to = Integer.MAX_VALUE) final long lazyFrequency) {
-			//noinspection ConstantConditions
+		public CacheBuilder<K, V> withLazyFrequency(@Range(from = 0, to = Long.MAX_VALUE) final long lazyFrequency) {
 			this.lazyFrequency = Math.max(0, lazyFrequency);
 			return this;
 		}

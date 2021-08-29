@@ -11,8 +11,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Note that subclasses must also implement a static method
  * {@code getConfig(String, Bifunction)} for fetching world configuration values.
- *
- * @author Jikoo
  */
 public abstract class EnchantableBlock {
 
@@ -35,7 +33,7 @@ public abstract class EnchantableBlock {
 	}
 
 	/**
-	 * Gets the in-world Block of the EnchantableBlock.
+	 * Get the in-world Block of the EnchantableBlock.
 	 *
 	 * @return the Block
 	 */
@@ -44,7 +42,7 @@ public abstract class EnchantableBlock {
 	}
 
 	/**
-	 * Gets the ItemStack used to create the EnchantableBlock.
+	 * Get the ItemStack used to create the EnchantableBlock.
 	 *
 	 * @return the ItemStack
 	 */
@@ -85,7 +83,7 @@ public abstract class EnchantableBlock {
 	}
 
 	/**
-	 * Sets whether or not the EnchantableBlock needs to be saved.
+	 * Set whether the EnchantableBlock needs to be saved.
 	 *
 	 * @param dirty true if the EnchantableBlock needs to be saved
 	 */
@@ -94,7 +92,7 @@ public abstract class EnchantableBlock {
 	}
 
 	/**
-	 * Updates the ConfigurationSection containing the EnchantableBlock's save data.
+	 * Update the ConfigurationSection containing the EnchantableBlock's save data.
 	 */
 	public void updateStorage() {
 		if (!this.itemStack.equals(getStorage().getItemStack("itemstack"))) {
@@ -104,7 +102,7 @@ public abstract class EnchantableBlock {
 	}
 
 	/**
-	 * Gets the ConfigurationSection containing the EnchantableBlock's save data.
+	 * Get the ConfigurationSection containing the EnchantableBlock's save data.
 	 *
 	 * @return the ConfigurationSection
 	 */

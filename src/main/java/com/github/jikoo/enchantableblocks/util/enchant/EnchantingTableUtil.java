@@ -19,8 +19,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A utility for calculating enchantments in a similar fashion to enchanting tables.
- *
- * @author Jikoo
  */
 public final class EnchantingTableUtil {
 
