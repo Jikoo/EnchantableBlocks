@@ -109,20 +109,8 @@
     </dependency>
     <dependency>
       <groupId>com.github.seeseemelk</groupId>
-      <artifactId>MockBukkit-v1.16</artifactId>
-      <version>1.5.0</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
-      <version>3.12.4</version>
+      <artifactId>MockBukkit-v1.17</artifactId>
+      <version>1.7.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -166,8 +154,36 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <minimizeJar>true</minimizeJar>
+              <!--
+                ~ Unfortunately, the minimizeJar option actually breaks build.
+                ~ As a (hopefully temporary) workaround, explicitly declare classes used.
+                ~ Watch MSHADE-394 for a fix.
+               -->
               <filters>
+                <filter>
+                  <artifact>com.github.jikoo:PlanarWrappers</artifact>
+                  <includes>
+                    <include>com/github/jikoo/planarwrappers/collections/BlockMap.class</include>
+                    <include>com/github/jikoo/planarwrappers/collections/FastMap.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/ConfigSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/KeyedSetSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/Mapping.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/ParsedComplexSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/ParsedMapping.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/ParsedSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/ParsedSimpleSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/Setting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/SimpleMultimapSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/SimpleSetSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/impl/BooleanSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/impl/EnumSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/config/impl/MaterialSetSetting.class</include>
+                    <include>com/github/jikoo/planarwrappers/function/ThrowingFunction.class</include>
+                    <include>com/github/jikoo/planarwrappers/util/Coords.class</include>
+                    <include>com/github/jikoo/planarwrappers/util/StringConverters.class</include>
+                    <include>com/github/jikoo/planarwrappers/util/WeightedRandom.class</include>
+                  </includes>
+                </filter>
                 <filter>
                   <artifact>com.github.jikoo:PlanarWrappers</artifact>
                   <excludes>

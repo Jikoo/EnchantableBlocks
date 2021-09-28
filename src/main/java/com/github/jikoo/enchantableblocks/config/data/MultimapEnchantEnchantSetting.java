@@ -13,21 +13,21 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MultimapEnchantEnchantSetting extends SimpleMultimapSetting<Enchantment, Enchantment> {
 
-    public MultimapEnchantEnchantSetting(
-            @NotNull ConfigurationSection section,
-            @NotNull String key,
-            @NotNull Multimap<Enchantment, Enchantment> defaultValue) {
-        super(section, key, defaultValue);
-    }
+  public MultimapEnchantEnchantSetting(
+      @NotNull ConfigurationSection section,
+      @NotNull String key,
+      @NotNull Multimap<Enchantment, Enchantment> defaultValue) {
+    super(section, key, defaultValue);
+  }
 
-    @Override
-    protected @Nullable Enchantment convertKey(@NotNull String key) {
-        return StringConverters.toEnchant(key);
-    }
+  @Override
+  protected @Nullable Enchantment convertKey(@NotNull String key) {
+    return StringConverters.toEnchant(key);
+  }
 
-    @Override
-    protected @Nullable Enchantment convertValue(@NotNull String value) {
-        return StringConverters.toEnchant(value);
-    }
+  @Override
+  protected @Nullable Enchantment convertValue(@NotNull String value) {
+    return StringConverters.toEnchant(value);
+  }
 
 }

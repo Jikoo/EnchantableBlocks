@@ -13,16 +13,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class SetEnchantSetting extends SimpleSetSetting<Enchantment> {
 
-    public SetEnchantSetting(
-            @NotNull ConfigurationSection section,
-            @NotNull String key,
-            @NotNull Set<Enchantment> defaultValue) {
-        super(section, key, defaultValue);
-    }
+  public SetEnchantSetting(
+      @NotNull ConfigurationSection section,
+      @NotNull String key,
+      @NotNull Set<Enchantment> defaultValue) {
+    super(section, key, defaultValue);
+  }
 
-    @Override
-    protected @Nullable Enchantment convertValue(@NotNull String value) {
-        return StringConverters.toEnchant(value);
-    }
+  @Override
+  protected @Nullable Enchantment convertValue(@NotNull String value) {
+    return StringConverters.toEnchant(value);
+  }
 
 }

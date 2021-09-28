@@ -12,54 +12,62 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
 
-    public EmptyCookingRecipe(@NotNull NamespacedKey key) {
-        super(
-                key,
-                new ItemStack(Material.DIRT),
-                new RecipeChoice() {
-                    @NotNull
-                    @Override
-                    public ItemStack getItemStack() {
-                        return new ItemStack(Material.AIR);
-                    }
+  public EmptyCookingRecipe(@NotNull NamespacedKey key) {
+    super(
+        key,
+        new ItemStack(Material.DIRT),
+        new RecipeChoice() {
+          @NotNull
+          @Override
+          public ItemStack getItemStack() {
+            return new ItemStack(Material.AIR);
+          }
 
-                    @NotNull
-                    @Override
-                    public RecipeChoice clone() {
-                        try {
-                            return (RecipeChoice) super.clone();
-                        } catch (CloneNotSupportedException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    }
+          @NotNull
+          @Override
+          public RecipeChoice clone() {
+            try {
+              return (RecipeChoice) super.clone();
+            } catch (CloneNotSupportedException e) {
+              throw new IllegalStateException(e);
+            }
+          }
 
-                    @Override
-                    public boolean test(@NotNull ItemStack itemStack) {
-                        return false;
-                    }
-                },
-                0,
-                0);
-    }
+          @Override
+          public boolean test(@NotNull ItemStack itemStack) {
+            return false;
+          }
 
-    @Override
-    public @NotNull EmptyCookingRecipe setInput(@NotNull Material input) {
-        return this;
-    }
+          @Override
+          public boolean equals(Object obj) {
+            // Since this is an unmodifiable object, all instances are equal.
+            return obj != null && obj.getClass().equals(this.getClass());
+          }
+        },
+        0,
+        0);
+  }
 
-    @Override
-    public @NotNull EmptyCookingRecipe setInputChoice(@NotNull RecipeChoice input) {
-        return this;
-    }
+  @Override
+  public @NotNull EmptyCookingRecipe setInput(@NotNull Material input) {
+    // Empty recipe ignores input changes.
+    return this;
+  }
 
-    @Override
-    public void setCookingTime(int cookingTime) {
-        // Empty recipe ignores time changes.
-    }
+  @Override
+  public @NotNull EmptyCookingRecipe setInputChoice(@NotNull RecipeChoice input) {
+    // Empty recipe ignores input changes.
+    return this;
+  }
 
-    @Override
-    public void setExperience(float experience) {
-        // Empty recipe ignores experience changes.
-    }
+  @Override
+  public void setCookingTime(int cookingTime) {
+    // Empty recipe ignores time changes.
+  }
+
+  @Override
+  public void setExperience(float experience) {
+    // Empty recipe ignores experience changes.
+  }
 
 }

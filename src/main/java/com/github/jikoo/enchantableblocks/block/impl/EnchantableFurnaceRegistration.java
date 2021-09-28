@@ -1,0 +1,171 @@
+package com.github.jikoo.enchantableblocks.block.impl;
+
+import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
+import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
+import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
+import com.github.jikoo.planarwrappers.util.StringConverters;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.block.BlastFurnace;
+import org.bukkit.block.Block;
+import org.bukkit.block.Furnace;
+import org.bukkit.block.Smoker;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.BlastingRecipe;
+import org.bukkit.inventory.CookingRecipe;
+import org.bukkit.inventory.FurnaceInventory;
+import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * EnchantableRegistration for furnaces.
+ */
+public class EnchantableFurnaceRegistration extends
+    EnchantableRegistration<EnchantableFurnace, EnchantableFurnaceConfig> {
+  // TODO: manage listeners, ticking state when registering
+  // TODO: permissions for enchanting - register as subnodes of enchantableblocks.enchant.anvil/table
+
+  private static final List<Enchantment> ENCHANTMENTS = List.of(
+      Enchantment.DIG_SPEED,
+      Enchantment.DURABILITY,
+      Enchantment.LOOT_BONUS_BLOCKS,
+      Enchantment.SILK_TOUCH);
+  private static final Set<Material> MATERIALS =
+      Collections.unmodifiableSet(
+          EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
+
+  private final Map<Integer, CookingRecipe<?>> blastFurnaceCache = new Int2ObjectOpenHashMap<>();
+  private final Map<Integer, CookingRecipe<?>> smokerCache = new Int2ObjectOpenHashMap<>();
+  private final Map<Integer, CookingRecipe<?>> furnaceCache = new Int2ObjectOpenHashMap<>();
+  private final CookingRecipe<?> INVALID_INPUT = new EmptyCookingRecipe(
+      Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:invalid_input")));
+
+  public EnchantableFurnaceRegistration(@NotNull Plugin plugin) {
+    super(plugin, EnchantableFurnace.class);
+  }
+
+  @Override
+  public @NotNull EnchantableFurnace newBlock(@NotNull Block block, @NotNull ItemStack itemStack,
+      @NotNull ConfigurationSection storage) {
+    return new EnchantableFurnace(this, block, itemStack, storage);
+  }
+
+  @Override
+  protected @NotNull EnchantableFurnaceConfig loadConfig(
+      @NotNull ConfigurationSection configurationSection) {
+    return new EnchantableFurnaceConfig(configurationSection);
+  }
+
+  @Override
+  public @NotNull Collection<Enchantment> getEnchants() {
+    return ENCHANTMENTS;
+  }
+
+  @Override
+  public @NotNull Collection<Material> getMaterials() {
+    return MATERIALS;
+  }
+
+  @Override
+  protected void reload() {
+    super.reload();
+    blastFurnaceCache.clear();
+    smokerCache.clear();
+    furnaceCache.clear();
+  }
+
+  /**
+   * Get a {@link CookingRecipe} for a {@link FurnaceInventory}'s state.
+   *
+   * @param inventory the {@link FurnaceInventory}
+   * @return the {@link CookingRecipe} or {@code null} if no valid recipe is found
+   */
+  public @Nullable CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
+    ItemStack smelting = inventory.getSmelting();
+    if (smelting == null) {
+      return null;
+    }
+
+    // Obtain cache for holder type.
+    Map<Integer, CookingRecipe<?>> recipes;
+    if (inventory.getHolder() instanceof BlastFurnace) {
+      recipes = blastFurnaceCache;
+    } else if (inventory.getHolder() instanceof Smoker) {
+      recipes = smokerCache;
+    } else {
+      recipes = furnaceCache;
+    }
+
+    // Retrieve recipe, caching if necessary, for item.
+    // Note: Does not support recipes that smelt multiple items per.
+    ItemStack cacheData = smelting.clone();
+    cacheData.setAmount(1);
+    Integer cacheId = cacheData.hashCode();
+    CookingRecipe<?> recipe = recipes.computeIfAbsent(cacheId, key -> locateRecipe(inventory.getHolder(), smelting));
+
+    if (!recipe.getInputChoice().test(smelting)) {
+      return null;
+    }
+
+    return recipe;
+  }
+
+  /**
+   * Match a {@link CookingRecipe} for a particular {@link ItemStack} in an inventory belonging to a specific
+   * {@link InventoryHolder}.
+   *
+   * @param holder the inventory holder
+   * @param smelting the recipe input
+   * @return the {@link CookingRecipe} or a default invalid recipe if no match was found
+   */
+  private CookingRecipe<?> locateRecipe(@Nullable InventoryHolder holder, @NotNull ItemStack smelting) {
+    Iterator<Recipe> iterator = Bukkit.recipeIterator();
+    while (iterator.hasNext()) {
+      Recipe next = iterator.next();
+
+      if (!(next instanceof CookingRecipe nextCooking) || isIneligibleRecipe(holder, next)) {
+        continue;
+      }
+
+      if (nextCooking.getInputChoice().test(smelting)) {
+        return nextCooking;
+      }
+    }
+
+    return INVALID_INPUT;
+  }
+
+  /**
+   * Check if an {@link InventoryHolder} is eligible to use a certain {@link Recipe}.
+   *
+   * @param holder the inventory holder
+   * @param recipe the recipe
+   * @return true if the holder is allowed to use the recipe
+   */
+  private boolean isIneligibleRecipe(@Nullable InventoryHolder holder, @NotNull Recipe recipe) {
+    if (holder instanceof BlastFurnace) {
+      return !(recipe instanceof BlastingRecipe);
+    }
+    if (holder instanceof Smoker) {
+      return !(recipe instanceof SmokingRecipe);
+    }
+    return holder instanceof Furnace && (!(recipe instanceof FurnaceRecipe));
+  }
+
+}

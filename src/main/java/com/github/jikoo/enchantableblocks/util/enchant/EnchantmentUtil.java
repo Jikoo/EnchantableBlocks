@@ -13,42 +13,42 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class EnchantmentUtil {
 
-    /**
-     * Get enchantments from an ItemMeta.
-     *
-     * @param meta the ItemMeta
-     * @return the stored enchantments
-     */
-    public static @NotNull Map<Enchantment, Integer> getEnchants(@Nullable ItemMeta meta) {
-        if (meta == null) {
-            return Collections.emptyMap();
-        }
-
-        if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
-            return enchantmentStorageMeta.getStoredEnchants();
-        }
-
-        return meta.getEnchants();
+  /**
+   * Get enchantments from an ItemMeta.
+   *
+   * @param meta the ItemMeta
+   * @return the stored enchantments
+   */
+  public static @NotNull Map<Enchantment, Integer> getEnchants(@Nullable ItemMeta meta) {
+    if (meta == null) {
+      return Collections.emptyMap();
     }
 
-    /**
-     * Set an enchantment on an IemMeta.
-     *
-     * @param meta the ItemMeta
-     * @param enchant the Enchantment to add
-     * @param level the level of the Enchantment
-     */
-    public static void applyEnchant(@Nullable ItemMeta meta, Enchantment enchant, int level) {
-        if (meta == null) {
-            return;
-        }
-        if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
-            enchantmentStorageMeta.addStoredEnchant(enchant, level, true);
-        } else {
-            meta.addEnchant(enchant, level, true);
-        }
+    if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
+      return enchantmentStorageMeta.getStoredEnchants();
     }
 
-    private EnchantmentUtil() {}
+    return meta.getEnchants();
+  }
+
+  /**
+   * Set an enchantment on an IemMeta.
+   *
+   * @param meta the ItemMeta
+   * @param enchant the Enchantment to add
+   * @param level the level of the Enchantment
+   */
+  public static void applyEnchant(@Nullable ItemMeta meta, Enchantment enchant, int level) {
+    if (meta == null) {
+      return;
+    }
+    if (meta instanceof EnchantmentStorageMeta enchantmentStorageMeta) {
+      enchantmentStorageMeta.addStoredEnchant(enchant, level, true);
+    } else {
+      meta.addEnchant(enchant, level, true);
+    }
+  }
+
+  private EnchantmentUtil() {}
 
 }

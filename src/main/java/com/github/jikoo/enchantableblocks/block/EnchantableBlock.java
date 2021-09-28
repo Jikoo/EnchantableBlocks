@@ -1,5 +1,7 @@
 package com.github.jikoo.enchantableblocks.block;
 
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
+import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
@@ -8,111 +10,131 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Base for an enchantable block.
- *
- * <p>Note that subclasses must also implement a static method
- * {@code getConfig(String, Bifunction)} for fetching world configuration values.
  */
-public abstract class EnchantableBlock {
+public abstract class EnchantableBlock<T extends EnchantableBlock<T, U>, U extends EnchantableBlockConfig> {
 
-	private final Block block;
-	private final ItemStack itemStack;
-	private final ConfigurationSection storage;
-	private boolean dirty = false;
+  private final @NotNull EnchantableRegistration<T, U> registration;
+  private final @NotNull Block block;
+  private final @NotNull ItemStack itemStack;
+  private final @NotNull ConfigurationSection storage;
+  private boolean dirty = false;
 
-	protected EnchantableBlock(
-			@NotNull final Block block,
-			@NotNull final ItemStack itemStack,
-			@NotNull ConfigurationSection storage) {
-		this.block = block;
-		this.itemStack = itemStack;
-		if (itemStack.getAmount() > 1) {
-			itemStack.setAmount(1);
-		}
-		this.storage = storage;
-		this.updateStorage();
-	}
+  protected EnchantableBlock(
+      final @NotNull EnchantableRegistration<T, U> registration,
+      final @NotNull Block block,
+      final @NotNull ItemStack itemStack,
+      final @NotNull ConfigurationSection storage) {
+    this.registration = registration;
+    this.block = block;
+    this.itemStack = itemStack;
+    if (itemStack.getAmount() > 1) {
+      itemStack.setAmount(1);
+    }
+    this.storage = storage;
+    this.updateStorage();
+  }
 
-	/**
-	 * Get the in-world Block of the EnchantableBlock.
-	 *
-	 * @return the Block
-	 */
-	public @NotNull Block getBlock() {
-		return this.block;
-	}
+  /**
+   * Get the in-world Block of the EnchantableBlock.
+   *
+   * @return the Block
+   */
+  public @NotNull Block getBlock() {
+    return this.block;
+  }
 
-	/**
-	 * Get the ItemStack used to create the EnchantableBlock.
-	 *
-	 * @return the ItemStack
-	 */
-	public @NotNull ItemStack getItemStack() {
-		return this.itemStack;
-	}
+  /**
+   * Get the ItemStack used to create the EnchantableBlock.
+   *
+   * @return the ItemStack
+   */
+  public @NotNull ItemStack getItemStack() {
+    return this.itemStack;
+  }
 
-	/**
-	 * Check if the EnchantableBlock's in-world location is a Block of a correct Material.
-	 *
-	 * @return true if the Block is a valid Material
-	 */
-	public boolean isCorrectBlockType() {
-		return this.isCorrectType(this.getBlock().getType());
-	}
+  /**
+   * Check if the EnchantableBlock's in-world location is a Block of a correct Material.
+   *
+   * @return true if the Block is a valid Material
+   */
+  public boolean isCorrectBlockType() {
+    return this.isCorrectType(this.getBlock().getType());
+  }
 
-	/**
-	 * Check if a Material is valid for the EnchantableBlock.
-	 *
-	 * @param material the Material to check
-	 * @return true if the Material is valid
-	 */
-	public abstract boolean isCorrectType(@NotNull Material material);
+  /**
+   * Check if a Material is valid for the EnchantableBlock.
+   *
+   * @param material the Material to check
+   * @return true if the Material is valid
+   */
+  public boolean isCorrectType(@NotNull Material material) {
+    return this.getRegistration().getMaterials().contains(material);
+  }
 
-	/**
-	 * Ticks the EnchantableBlock.
-	 */
-	public void tick() {}
+  /**
+   * Ticks the EnchantableBlock.
+   */
+  public void tick() {}
 
-	/**
-	 * Check if the EnchantableBlock has unsaved changes pending.
-	 *
-	 * @return true if the EnchantableBlock needs to be saved
-	 */
-	public boolean isDirty() {
-		this.updateStorage();
-		return this.dirty;
-	}
+  /**
+   * Check if the EnchantableBlock has unsaved changes pending.
+   *
+   * @return true if the EnchantableBlock needs to be saved
+   */
+  public boolean isDirty() {
+    this.updateStorage();
+    return this.dirty;
+  }
 
-	/**
-	 * Set whether the EnchantableBlock needs to be saved.
-	 *
-	 * @param dirty true if the EnchantableBlock needs to be saved
-	 */
-	public void setDirty(boolean dirty) {
-		this.dirty = dirty;
-	}
+  /**
+   * Set whether the EnchantableBlock needs to be saved.
+   *
+   * @param dirty true if the EnchantableBlock needs to be saved
+   */
+  public void setDirty(boolean dirty) {
+    this.dirty = dirty;
+  }
 
-	/**
-	 * Update the ConfigurationSection containing the EnchantableBlock's save data.
-	 */
-	public void updateStorage() {
-		if (!this.itemStack.equals(getStorage().getItemStack("itemstack"))) {
-			getStorage().set("itemstack", this.itemStack);
-			this.dirty = true;
-		}
-	}
+  /**
+   * Update the ConfigurationSection containing the EnchantableBlock's save data.
+   */
+  public void updateStorage() {
+    if (!this.itemStack.equals(getStorage().getItemStack("itemstack"))) {
+      getStorage().set("itemstack", this.itemStack);
+      this.dirty = true;
+    }
+  }
 
-	/**
-	 * Get the ConfigurationSection containing the EnchantableBlock's save data.
-	 *
-	 * @return the ConfigurationSection
-	 */
-	protected @NotNull ConfigurationSection getStorage() {
-		return storage;
-	}
+  /**
+   * Get the ConfigurationSection containing the EnchantableBlock's save data.
+   *
+   * @return the ConfigurationSection
+   */
+  protected @NotNull ConfigurationSection getStorage() {
+    return storage;
+  }
 
-	@Override
-	public String toString() {
-		return getClass().getName() + "[itemStack=" + itemStack.toString() + "]";
-	}
+  /**
+   * Get the configuration for this EnchantableBlock.
+   *
+   * @return the configuration
+   */
+  public @NotNull U getConfig() {
+    return getRegistration().getConfig();
+  }
+
+  /**
+   * Get the registration providing the EnchantableBlock.
+   *
+   * @return the registration
+   */
+  public @NotNull EnchantableRegistration<T, U> getRegistration() {
+    return this.registration;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getName() + "[itemStack=" + itemStack + "]";
+  }
 
 }
