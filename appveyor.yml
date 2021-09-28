@@ -3,10 +3,10 @@ clone_depth: 10
 environment:
   matrix:
     - appveyor_build_worker_image: Visual Studio 2019
-      JAVA_HOME: C:\Program Files\Java\jdk16
+      JAVA_HOME: C:\Program Files\Java\jdk17
 branches:
   only:
-    - master
+    - disabled_until_jdk_17
 init:
   - cmd: SET PATH=C:\Program Files\Git\bin;%PATH%
 install:
