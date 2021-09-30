@@ -32,7 +32,7 @@ class RegionStorageTest {
   @DisplayName("Saving should write to disk.")
   @Test
   void testSave() throws IOException, InvalidConfigurationException {
-    RegionStorage storage = new RegionStorage(plugin, world, 0, 0);
+    RegionStorage storage = new RegionStorage(plugin, new Region(world, 0, 0));
     if (storage.getDataFile().exists()) {
       Files.delete(storage.getDataFile().toPath());
     }
@@ -46,13 +46,13 @@ class RegionStorageTest {
   @DisplayName("Loading should read data from disk.")
   @Test
   void testLoad() throws IOException, InvalidConfigurationException {
-    RegionStorage storage = new RegionStorage(plugin, world, 1, 1);
+    Region region = new Region(world, 1, 1);
+    RegionStorage storage = new RegionStorage(plugin, region);
     String path = "sandwich.bread";
     String areYouAwareOfMyMonstrosity = "hot dog bun";
     storage.set(path, areYouAwareOfMyMonstrosity);
     storage.save();
-    RegionStorage stored = new RegionStorage(plugin, storage.getRegion().worldName(),
-        storage.getRegion().x(), storage.getRegion().z());
+    RegionStorage stored = new RegionStorage(plugin, region);
     stored.load();
     assertThat("Stored value must equal expected value.", stored.get(path),
         is(areYouAwareOfMyMonstrosity));

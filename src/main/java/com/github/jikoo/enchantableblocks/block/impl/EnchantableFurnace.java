@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Track and manage effects for enchanted furnaces.
  */
-public class EnchantableFurnace extends EnchantableBlock<EnchantableFurnace, EnchantableFurnaceConfig> {
+public class EnchantableFurnace extends EnchantableBlock {
 
   private final boolean canPause;
   private boolean updating = false;
@@ -42,6 +42,11 @@ public class EnchantableFurnace extends EnchantableBlock<EnchantableFurnace, Enc
   @Override
   public @NotNull EnchantableFurnaceRegistration getRegistration() {
     return (EnchantableFurnaceRegistration) super.getRegistration();
+  }
+
+  @Override
+  public @NotNull EnchantableFurnaceConfig getConfig() {
+    return getRegistration().getConfig();
   }
 
   /**
@@ -86,6 +91,7 @@ public class EnchantableFurnace extends EnchantableBlock<EnchantableFurnace, Enc
    *
    * @return true if the furnace can pause
    */
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean canPause() {
     return this.canPause;
   }

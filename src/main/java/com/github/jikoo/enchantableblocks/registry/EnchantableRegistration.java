@@ -15,24 +15,21 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Registration entry for an {@link EnchantableBlock} implementation.
- *
- * @param <T> the class of the {@code EnchantableBlock}
- * @param <U> the configuration class
  */
-public abstract class EnchantableRegistration<T extends EnchantableBlock<T, U>, U extends EnchantableBlockConfig> {
+public abstract class EnchantableRegistration {
 
   private final @NotNull Plugin plugin;
-  private final @NotNull Class<T> blockClass;
-  private @Nullable U config;
+  private final @NotNull Class<? extends EnchantableBlock> blockClass;
+  private @Nullable EnchantableBlockConfig config;
 
   /**
    * Constructor for a new {@code EnchantableRegistration}.
    * @param plugin      the plugin providing the registration
    * @param blockClass  the class of the {@link EnchantableBlock}
    */
-  public EnchantableRegistration(
+  protected EnchantableRegistration(
       @NotNull Plugin plugin,
-      @NotNull Class<T> blockClass) {
+      @NotNull Class<? extends EnchantableBlock> blockClass) {
     this.plugin = plugin;
     this.blockClass = blockClass;
   }
@@ -42,7 +39,7 @@ public abstract class EnchantableRegistration<T extends EnchantableBlock<T, U>, 
    *
    * @return the class of the {@code EnchantableBlock}
    */
-  public @NotNull Class<T> getBlockClass() {
+  public @NotNull Class<? extends EnchantableBlock> getBlockClass() {
     return blockClass;
   }
 
@@ -54,17 +51,17 @@ public abstract class EnchantableRegistration<T extends EnchantableBlock<T, U>, 
    * @param storage   the {@link ConfigurationSection} used to store any necessary data
    * @return the {@code EnchantableBlock}
    */
-  protected abstract @NotNull T newBlock(
+  protected abstract @NotNull EnchantableBlock newBlock(
       @NotNull final Block block,
       @NotNull final ItemStack itemStack,
       @NotNull ConfigurationSection storage);
 
-  public U getConfig() {
-    if (config != null) {
-      return config;
+  public EnchantableBlockConfig getConfig() {
+    if (config == null) {
+      config = loadFullConfig(plugin.getConfig());
     }
 
-    return config = loadFullConfig(plugin.getConfig());
+    return config;
   }
 
   /**
@@ -73,7 +70,7 @@ public abstract class EnchantableRegistration<T extends EnchantableBlock<T, U>, 
    * @param fileConfiguration the main plugin configuration
    * @return the block-specific configuration
    */
-  protected final @NotNull U loadFullConfig(@NotNull FileConfiguration fileConfiguration) {
+  protected final @NotNull EnchantableBlockConfig loadFullConfig(@NotNull FileConfiguration fileConfiguration) {
     String path = "blocks." + blockClass.getSimpleName();
     ConfigurationSection configurationSection = fileConfiguration.getConfigurationSection(path);
     if (configurationSection == null) {
@@ -97,7 +94,7 @@ public abstract class EnchantableRegistration<T extends EnchantableBlock<T, U>, 
    * @param configurationSection the block-specific section
    * @return the configuration instance created
    */
-  protected abstract @NotNull U loadConfig(@NotNull ConfigurationSection configurationSection);
+  protected abstract @NotNull EnchantableBlockConfig loadConfig(@NotNull ConfigurationSection configurationSection);
 
   /**
    * Get all possible enchantments for use in enchantment assignment or combination.

@@ -22,7 +22,7 @@ public class EnchantableBlockManager {
 
   private final @NotNull Logger logger;
   private final @NotNull EnchantableBlockRegistry blockRegistry;
-  private final @NotNull BlockMap<EnchantableBlock<?, ?>> blockMap;
+  private final @NotNull BlockMap<EnchantableBlock> blockMap;
   @VisibleForTesting
   final @NotNull Cache<Region, RegionStorageData> saveFileCache;
 
@@ -51,9 +51,9 @@ public class EnchantableBlockManager {
    * @param block the Block
    * @return the EnchantableBlock, or null the Block is not an enchanted block
    */
-  public @Nullable EnchantableBlock<?, ?> getBlock(@NotNull final Block block) {
+  public @Nullable EnchantableBlock getBlock(@NotNull final Block block) {
 
-    EnchantableBlock<?, ?> enchantableBlock = this.blockMap.get(block);
+    EnchantableBlock enchantableBlock = this.blockMap.get(block);
     if (enchantableBlock != null
         && enchantableBlock.getConfig().enabled.get(block.getWorld().getName())) {
       return enchantableBlock;
@@ -63,7 +63,7 @@ public class EnchantableBlockManager {
 
   }
 
-  public @Nullable EnchantableBlock<?, ?> createBlock(
+  public @Nullable EnchantableBlock createBlock(
       @NotNull final Block block,
       @NotNull final ItemStack itemStack) {
 
@@ -71,7 +71,7 @@ public class EnchantableBlockManager {
       return null;
     }
 
-    final EnchantableBlock<?, ?> enchantableBlock = this.newBlock(block, itemStack);
+    final EnchantableBlock enchantableBlock = this.newBlock(block, itemStack);
 
     if (enchantableBlock == null) {
       return null;
@@ -102,7 +102,7 @@ public class EnchantableBlockManager {
    * @param itemStack the ItemStack to create the
    * @return the EnchantableBlock or null if no EnchantableBlock is valid for the given ItemStack
    */
-  private @Nullable EnchantableBlock<?, ?> newBlock(
+  private @Nullable EnchantableBlock newBlock(
       @NotNull final Block block,
       @NotNull ItemStack itemStack) {
     var registration = blockRegistry.get(itemStack.getType());
@@ -150,7 +150,7 @@ public class EnchantableBlockManager {
    * @param storage the ConfigurationSection to load the EnchantableBlock from
    * @return the EnchantableBlock, or null if the EnchantableBlock is not valid.
    */
-  private @Nullable EnchantableBlock<?, ?> loadEnchantableBlock(
+  private @Nullable EnchantableBlock loadEnchantableBlock(
       @NotNull final Block block,
       @NotNull final ConfigurationSection storage) {
     ItemStack itemStack = storage.getItemStack("itemstack");
@@ -159,7 +159,7 @@ public class EnchantableBlockManager {
       return null;
     }
 
-    EnchantableBlock<?, ?> enchantableBlock = this.newBlock(block, itemStack);
+    EnchantableBlock enchantableBlock = this.newBlock(block, itemStack);
 
     if (enchantableBlock == null || !enchantableBlock.isCorrectBlockType()
         || !enchantableBlock.getConfig().enabled.get(
@@ -178,7 +178,7 @@ public class EnchantableBlockManager {
    * valid EnchantableBlock
    */
   public @Nullable ItemStack destroyBlock(@NotNull final Block block) {
-    EnchantableBlock<?, ?> enchantableBlock = this.blockMap.remove(block);
+    EnchantableBlock enchantableBlock = this.blockMap.remove(block);
 
     if (enchantableBlock == null) {
       return null;
@@ -263,17 +263,18 @@ public class EnchantableBlockManager {
         continue;
       }
 
+      String itemPath = xyz + ".itemstack";
       String[] split = xyz.split("_");
       Block block;
 
       if (split.length != 3) {
-        chunkStorage.set(path, null);
+        chunkStorage.set(xyz, null);
         saveData.setDirty();
         this.logger.warning(() -> String.format(
             "Unparseable coordinates in %s: %s representing %s",
             chunk.getWorld().getName(),
             xyz,
-            chunkStorage.getItemStack(path + ".itemstack")));
+            chunkStorage.getItemStack(itemPath)));
         continue;
       }
 
@@ -284,13 +285,13 @@ public class EnchantableBlockManager {
                 Integer.parseInt(split[1]),
                 Integer.parseInt(split[2]));
       } catch (@NotNull NumberFormatException e) {
-        chunkStorage.set(path, null);
+        chunkStorage.set(xyz, null);
         saveData.setDirty();
         this.logger.warning(() -> String.format(
             "Unparseable coordinates in %s: %s representing %s",
             chunk.getWorld().getName(),
             xyz,
-            chunkStorage.getItemStack(path + ".itemstack")));
+            chunkStorage.getItemStack(itemPath)));
         continue;
       }
 
@@ -300,13 +301,13 @@ public class EnchantableBlockManager {
 
       if (enchantableBlock == null) {
         // Invalid EnchantableBlock, could not load.
-        chunkStorage.set(path, null);
+        chunkStorage.set(xyz, null);
         saveData.setDirty();
         this.logger.warning(() -> String.format(
             "Removed invalid save in %s at %s: %s",
             chunk.getWorld().getName(),
             block.getLocation().toVector(),
-            chunkStorage.getItemStack(path + ".itemstack")));
+            chunkStorage.getItemStack(itemPath)));
         continue;
       }
 
@@ -364,9 +365,10 @@ public class EnchantableBlockManager {
         return true;
       }
       final String worldName = storage.getRegion().worldName();
-      return dirty = storage.getRegion().anyChunkMatch((chunkX, chunkZ) ->
+      dirty = storage.getRegion().anyChunkMatch((chunkX, chunkZ) ->
           blockMap.get(worldName, chunkX, chunkZ).stream()
               .anyMatch(EnchantableBlock::isDirty));
+      return dirty;
     }
 
     public void setDirty() {

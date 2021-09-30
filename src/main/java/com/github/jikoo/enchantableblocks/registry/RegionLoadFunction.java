@@ -20,7 +20,7 @@ record RegionLoadFunction(
   public @Nullable RegionStorageData apply(@NotNull Region region, @NotNull Boolean create) {
     RegionStorage storage = new RegionStorage(plugin(), region);
 
-    if (!storage.getDataFile().exists() && !create) {
+    if (!storage.getDataFile().exists() && Boolean.FALSE.equals(create)) {
       return null;
     }
 

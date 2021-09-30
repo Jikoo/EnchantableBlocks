@@ -36,8 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * EnchantableRegistration for furnaces.
  */
-public class EnchantableFurnaceRegistration extends
-    EnchantableRegistration<EnchantableFurnace, EnchantableFurnaceConfig> {
+public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   // TODO: manage listeners, ticking state when registering
   // TODO: permissions for enchanting - register as subnodes of enchantableblocks.enchant.anvil/table
 
@@ -49,12 +48,12 @@ public class EnchantableFurnaceRegistration extends
   private static final Set<Material> MATERIALS =
       Collections.unmodifiableSet(
           EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
+  private static final CookingRecipe<?> INVALID_INPUT = new EmptyCookingRecipe(
+      Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:invalid_input")));
 
   private final Map<Integer, CookingRecipe<?>> blastFurnaceCache = new Int2ObjectOpenHashMap<>();
   private final Map<Integer, CookingRecipe<?>> smokerCache = new Int2ObjectOpenHashMap<>();
   private final Map<Integer, CookingRecipe<?>> furnaceCache = new Int2ObjectOpenHashMap<>();
-  private final CookingRecipe<?> INVALID_INPUT = new EmptyCookingRecipe(
-      Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:invalid_input")));
 
   public EnchantableFurnaceRegistration(@NotNull Plugin plugin) {
     super(plugin, EnchantableFurnace.class);
@@ -64,6 +63,11 @@ public class EnchantableFurnaceRegistration extends
   public @NotNull EnchantableFurnace newBlock(@NotNull Block block, @NotNull ItemStack itemStack,
       @NotNull ConfigurationSection storage) {
     return new EnchantableFurnace(this, block, itemStack, storage);
+  }
+
+  @Override
+  public EnchantableFurnaceConfig getConfig() {
+    return (EnchantableFurnaceConfig) super.getConfig();
   }
 
   @Override

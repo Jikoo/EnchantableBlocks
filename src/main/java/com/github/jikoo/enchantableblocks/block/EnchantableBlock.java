@@ -11,16 +11,16 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Base for an enchantable block.
  */
-public abstract class EnchantableBlock<T extends EnchantableBlock<T, U>, U extends EnchantableBlockConfig> {
+public abstract class EnchantableBlock {
 
-  private final @NotNull EnchantableRegistration<T, U> registration;
+  private final @NotNull EnchantableRegistration registration;
   private final @NotNull Block block;
   private final @NotNull ItemStack itemStack;
   private final @NotNull ConfigurationSection storage;
   private boolean dirty = false;
 
   protected EnchantableBlock(
-      final @NotNull EnchantableRegistration<T, U> registration,
+      final @NotNull EnchantableRegistration registration,
       final @NotNull Block block,
       final @NotNull ItemStack itemStack,
       final @NotNull ConfigurationSection storage) {
@@ -119,7 +119,7 @@ public abstract class EnchantableBlock<T extends EnchantableBlock<T, U>, U exten
    *
    * @return the configuration
    */
-  public @NotNull U getConfig() {
+  public @NotNull EnchantableBlockConfig getConfig() {
     return getRegistration().getConfig();
   }
 
@@ -128,7 +128,7 @@ public abstract class EnchantableBlock<T extends EnchantableBlock<T, U>, U exten
    *
    * @return the registration
    */
-  public @NotNull EnchantableRegistration<T, U> getRegistration() {
+  public @NotNull EnchantableRegistration getRegistration() {
     return this.registration;
   }
 

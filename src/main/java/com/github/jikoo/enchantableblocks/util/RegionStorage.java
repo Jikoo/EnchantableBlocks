@@ -29,6 +29,7 @@ public class RegionStorage extends YamlConfiguration {
    * @param regionX the X coordinate of the region
    * @param regionZ the Z coordinate of the region
    */
+  @Deprecated(since = "3.0.2")
   public RegionStorage(
       @NotNull Plugin plugin,
       @NotNull String worldName,

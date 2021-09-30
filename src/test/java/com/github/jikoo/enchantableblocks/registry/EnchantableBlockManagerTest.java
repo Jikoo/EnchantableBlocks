@@ -145,7 +145,7 @@ class EnchantableBlockManagerTest {
   void testGetBlock() {
     ItemStack stack = new ItemStack(Material.COAL_ORE);
     stack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 1);
-    EnchantableBlock<?, ?> enchantableBlock = manager.createBlock(block, stack);
+    EnchantableBlock enchantableBlock = manager.createBlock(block, stack);
 
     assertThat(
         "Enabled valid block must be retrievable",

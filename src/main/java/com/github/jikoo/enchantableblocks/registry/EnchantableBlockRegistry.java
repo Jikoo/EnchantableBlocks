@@ -1,7 +1,6 @@
 package com.github.jikoo.enchantableblocks.registry;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import java.util.EnumMap;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
@@ -14,15 +13,14 @@ import org.jetbrains.annotations.Nullable;
 public final class EnchantableBlockRegistry {
 
   private final @NotNull Plugin plugin;
-  private final @NotNull EnumMap<Material, EnchantableRegistration<? extends EnchantableBlock<?, ?>, ? extends EnchantableBlockConfig>> materialRegistry;
+  private final @NotNull EnumMap<Material, EnchantableRegistration> materialRegistry;
 
   EnchantableBlockRegistry(@NotNull Plugin plugin) {
     this.plugin = plugin;
     materialRegistry = new EnumMap<>(Material.class);
   }
 
-  public <T extends EnchantableBlock<T, U>, U extends EnchantableBlockConfig> void register(
-      @NotNull EnchantableRegistration<T, U> registration) {
+  public void register(@NotNull EnchantableRegistration registration) {
     registration.getMaterials()
         .forEach(material -> {
           var replaced = this.materialRegistry.put(material, registration);
@@ -37,8 +35,7 @@ public final class EnchantableBlockRegistry {
         });
   }
 
-  public @Nullable EnchantableRegistration<? extends EnchantableBlock<?, ?>, ? extends EnchantableBlockConfig> get(
-      @NotNull Material material) {
+  public @Nullable EnchantableRegistration get(@NotNull Material material) {
     return materialRegistry.get(material);
   }
 

@@ -1,9 +1,8 @@
 package com.github.jikoo.enchantableblocks.block.impl;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
-import com.github.jikoo.enchantableblocks.block.impl.DummyEnchantableBlock.DummyEnchantableConfig;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
+import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
@@ -18,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A dummy EnchantableBlock implementation.
  */
-public abstract class DummyEnchantableBlock extends EnchantableBlock<DummyEnchantableBlock, DummyEnchantableConfig> {
+public abstract class DummyEnchantableBlock extends EnchantableBlock {
 
   private DummyEnchantableBlock(
       @NotNull DummyEnchantableRegistration registration,
@@ -31,7 +30,7 @@ public abstract class DummyEnchantableBlock extends EnchantableBlock<DummyEnchan
   /**
    * A dummy EnchantableRegistration implementation.
    */
-  public static class DummyEnchantableRegistration extends EnchantableRegistration<DummyEnchantableBlock, DummyEnchantableConfig> {
+  public static class DummyEnchantableRegistration extends EnchantableRegistration {
 
     private final Collection<@NotNull Enchantment> enchants;
     private final Collection<@NotNull Material> materials;
