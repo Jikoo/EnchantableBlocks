@@ -1,6 +1,5 @@
-package com.github.jikoo.enchantableblocks.block.impl;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
 import com.github.jikoo.planarwrappers.util.StringConverters;

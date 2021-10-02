@@ -1,8 +1,9 @@
-package com.github.jikoo.enchantableblocks.block.impl;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
+import com.github.jikoo.enchantableblocks.util.ItemStackHelper;
+import com.github.jikoo.enchantableblocks.util.MathHelper;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Track and manage effects for enchanted furnaces.
@@ -31,10 +33,10 @@ public class EnchantableFurnace extends EnchantableBlock {
       final @NotNull ItemStack itemStack,
       final @NotNull ConfigurationSection storage) {
     super(registration, block, itemStack, storage);
-    this.canPause = itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
-    if (this.canPause && itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
+    this.canPause = this.getItemStack().getEnchantments().containsKey(Enchantment.SILK_TOUCH);
+    if (this.canPause && this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
       // New furnaces shouldn't get 1 tick flame for free, but old furnaces need to re-light
-      itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
+      this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
       this.updateStorage();
     }
   }
@@ -103,7 +105,7 @@ public class EnchantableFurnace extends EnchantableBlock {
    * @return true if the furnace should pause
    */
   public boolean shouldPause(final @Nullable Event event) {
-    if (!this.canPause) {
+    if (!this.canPause()) {
       return false;
     }
 
@@ -143,10 +145,10 @@ public class EnchantableFurnace extends EnchantableBlock {
    * @return true if the furnace should pause
    */
   private boolean shouldPause(
-      final @Nullable Furnace furnace,
+      final @NotNull Furnace furnace,
       final @Nullable ItemStack input,
       final @Nullable ItemStack result) {
-    if (!this.canPause || furnace == null) {
+    if (!this.canPause()) {
       return false;
     }
 
@@ -161,7 +163,7 @@ public class EnchantableFurnace extends EnchantableBlock {
     }
 
     // Is the result slot too full for more product?
-    if (result != null) {
+    if (!ItemStackHelper.isEmpty(result)) {
       int stack = result.getType().getMaxStackSize();
       if (result.getAmount() >= stack) {
         return true;
@@ -177,8 +179,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
     // Verify that the smelting item cannot produce a result
     return !recipe.getInputChoice().test(input)
-        || (result != null && result.getType() != Material.AIR
-        && !recipe.getResult().isSimilar(result));
+        || (result != null && result.getType() != Material.AIR && !recipe.getResult().isSimilar(result));
 
   }
 
@@ -186,7 +187,7 @@ public class EnchantableFurnace extends EnchantableBlock {
    * Attempt to pause the furnace.
    */
   public void pause() {
-    if (!this.canPause || this.getFrozenTicks() > 0) {
+    if (!this.canPause() || this.getFrozenTicks() > 0) {
       return;
     }
 
@@ -202,21 +203,27 @@ public class EnchantableFurnace extends EnchantableBlock {
     furnace.update(true);
   }
 
+  /**
+   * Attempt to unpause the furnace.
+   *
+   * @return whether the furnace is unpaused
+   */
   public boolean resume() {
     Furnace furnace = this.getFurnaceTile();
     // Is furnace unfrozen already?
-    if (furnace == null || furnace.getBurnTime() > 0 || this.getFrozenTicks() < 1) {
+    if (furnace == null || !this.isPaused()) {
       return false;
     }
 
     // Is there an input?
     FurnaceInventory furnaceInv = furnace.getInventory();
-    if (furnaceInv.getSmelting() == null) {
+    if (ItemStackHelper.isEmpty(furnaceInv.getSmelting())) {
       return false;
     }
 
     // Is the output full?
-    if (furnaceInv.getResult() != null && furnaceInv.getResult().getAmount() == furnaceInv.getResult().getType().getMaxStackSize()) {
+    ItemStack result = furnaceInv.getResult();
+    if (!ItemStackHelper.isEmpty(result) && result.getAmount() == result.getType().getMaxStackSize()) {
       return false;
     }
 
@@ -227,12 +234,29 @@ public class EnchantableFurnace extends EnchantableBlock {
     }
 
     // Ensure result matches current output
-    if ((furnaceInv.getResult() != null && furnaceInv.getResult().getType() != Material.AIR
-        && !recipe.getResult().isSimilar(furnaceInv.getResult()))) {
+    if (!ItemStackHelper.isEmpty(result) && !recipe.getResult().isSimilar(result)) {
       return false;
     }
 
-    furnace.setBurnTime(this.getFrozenTicks());
+    furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
+    furnace.update(true);
+    this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
+    this.updateStorage();
+    return true;
+  }
+
+  public boolean forceResume() {
+    if (!this.canPause() || this.getFrozenTicks() < 1) {
+      return false;
+    }
+
+    Furnace furnace = this.getFurnaceTile();
+
+    if (furnace == null) {
+      return false;
+    }
+
+    furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
     furnace.update(true);
     this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
     this.updateStorage();
@@ -253,63 +277,51 @@ public class EnchantableFurnace extends EnchantableBlock {
    *
    * @return the number of ticks of fuel
    */
-  private short getFrozenTicks() {
+  @VisibleForTesting
+  short getFrozenTicks() {
     return (short) this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH);
   }
 
   /**
-   * Apply cook time modifiers to a cook time total. Caps to a value between {@code 0} and {@link Short#MAX_VALUE} to
-   * not cause issues with furnaces.
+   * Apply modifiers to total cook time. Higher cook modifiers yield shorter cooking times.
+   *
+   * <p>Uses an inverse sigmoid function. Resulting values are capped between {@code 0} and the
+   * lowest of {@code 2 * totalCookTime} or {@link Short#MAX_VALUE} to not cause display issues.
    *
    * @param totalCookTime the original total cook time
    * @return the modified cook time
    */
-  public int applyCookTimeModifiers(int totalCookTime) {
-    return getCappedTicks(totalCookTime, this.getCookModifier(), 0.5);
+  public short applyCookTimeModifiers(double totalCookTime) {
+    // Invert sign of cook modifier to invert sigmoid.
+    return MathHelper.clampPositiveShort(MathHelper.sigmoid(totalCookTime, -getCookModifier(), 2.0));
   }
 
   /**
-   * Apply burn time modifiers to a burn time total. Caps to a value between {@code 0} and {@link Short#MAX_VALUE} to
-   * not cause issues with furnaces.
+   * Apply modifiers to fuel burn time. Higher burn modifiers yield longer burn times. Higher cook
+   * modifiers yield shorter burn times proportionate to the cooking speed increase.
+   *
+   * <p>Uses a sigmoid function. Resulting values are capped between {@code 0} and the lowest of
+   * {@code 2 * burnTime} or {@link Short#MAX_VALUE} to not cause display issues.
    *
    * @param burnTime the original burn time
    * @return the modified burn time
    */
-  public int applyBurnTimeModifiers(int burnTime) {
-    // Unbreaking causes furnace to burn for longer, increase burn time
-    burnTime = getCappedTicks(burnTime, -getBurnModifier(), 0.2);
-    // Efficiency causes furnace to cook at different rates, change burn time to match cook rate change
-    return applyCookTimeModifiers(burnTime);
+  public short applyBurnTimeModifiers(int burnTime) {
+    // Apply burn time modifiers.
+    double baseTicks = MathHelper.sigmoid(burnTime, getBurnModifier(), 3.0);
+    // Round up so that the same number of items are likely to be able to smelt.
+    baseTicks += 0.5;
+    // Apply cook speed reduction
+    return applyCookTimeModifiers(baseTicks);
   }
 
-  /**
-   * Modify and sanitize ticks using a fractional ratio.
-   *
-   * @param baseTicks the base number of ticks
-   * @param baseModifier the base modifier
-   * @param fractionModifier the fractional increase
-   * @return the sanitized value
-   */
-  private static int getCappedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
-    return Math.max(1, Math.min(Short.MAX_VALUE, getModifiedTicks(baseTicks, baseModifier, fractionModifier)));
-  }
-
-  /**
-   * Modify ticks based on a modifier and a fractional per-level increase.
-   *
-   * @param baseTicks the base number of ticks
-   * @param baseModifier the base modifier
-   * @param fractionModifier the fractional increase
-   * @return the modified value
-   */
-  private static int getModifiedTicks(final int baseTicks, final int baseModifier, final double fractionModifier) {
-    if (baseModifier == 0) {
-      return baseTicks;
-    }
-    if (baseModifier > 0) {
-      return (int) (baseTicks / (1 + baseModifier * fractionModifier));
-    }
-    return (int) (baseTicks * (1 - baseModifier * fractionModifier));
+  @Override
+  public String toString() {
+    return "EnchantableFurnace{" +
+        "block=" + getBlock() +
+        "itemStack=" + getItemStack() +
+        "canPause=" + canPause +
+        '}';
   }
 
   /**
@@ -320,11 +332,12 @@ public class EnchantableFurnace extends EnchantableBlock {
    */
   public static void update(@NotNull EnchantableBlocksPlugin plugin, @NotNull FurnaceInventory inventory) {
 
-    if (inventory.getHolder() == null) {
+    Furnace furnace = inventory.getHolder();
+    if (furnace == null) {
       return;
     }
 
-    var enchantableBlock = plugin.getBlockManager().getBlock(inventory.getHolder().getBlock());
+    var enchantableBlock = plugin.getBlockManager().getBlock(furnace.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
       return;
@@ -337,7 +350,7 @@ public class EnchantableFurnace extends EnchantableBlock {
     enchantableFurnace.updating = true;
 
     plugin.getServer().getScheduler().runTask(plugin, () -> {
-      boolean shouldPause = enchantableFurnace.shouldPause(inventory.getHolder(), inventory.getSmelting(), inventory.getResult());
+      boolean shouldPause = enchantableFurnace.shouldPause(furnace, inventory.getSmelting(), inventory.getResult());
       if (enchantableFurnace.isPaused() == shouldPause) {
         enchantableFurnace.updating = false;
         return;

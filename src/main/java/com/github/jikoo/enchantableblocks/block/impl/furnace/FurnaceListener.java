@@ -1,8 +1,6 @@
-package com.github.jikoo.enchantableblocks.listener;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.block.impl.EnchantableFurnace;
-import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.block.Furnace;
@@ -41,8 +39,7 @@ public class FurnaceListener implements Listener {
       return;
     }
 
-    if (enchantableFurnace.isPaused() && enchantableFurnace.resume()) {
-      // TODO force resume - no reason not to.
+    if (enchantableFurnace.forceResume()) {
       event.setCancelled(true);
       return;
     }

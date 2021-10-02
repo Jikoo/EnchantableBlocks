@@ -85,7 +85,7 @@ public abstract class EnchantableRegistration {
    *
    * <p>Block-specific configuration is stored in the main plugin configuration by block class
    * name,
-   * i.e. {@link com.github.jikoo.enchantableblocks.block.impl.EnchantableFurnace
+   * i.e. {@link com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnace
    * EnchantableFurnaces} are configurable using the section {@code blocks.EnchantableFurnace}.
    *
    * <p>This method is only called when a new configuration instance is being requested. Caching is

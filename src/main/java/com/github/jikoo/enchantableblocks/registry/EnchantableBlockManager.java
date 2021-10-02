@@ -115,8 +115,6 @@ public class EnchantableBlockManager {
       return null;
     }
 
-    itemStack = itemStack.clone();
-    itemStack.setAmount(1);
     return registration.newBlock(block, itemStack, getBlockStorage(block));
   }
 

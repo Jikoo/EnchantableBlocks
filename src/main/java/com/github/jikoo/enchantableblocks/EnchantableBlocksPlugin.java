@@ -1,9 +1,9 @@
 package com.github.jikoo.enchantableblocks;
 
-import com.github.jikoo.enchantableblocks.block.impl.EnchantableFurnaceRegistration;
+import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
 import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
 import com.github.jikoo.enchantableblocks.enchanting.TableEnchanter;
-import com.github.jikoo.enchantableblocks.listener.FurnaceListener;
+import com.github.jikoo.enchantableblocks.block.impl.furnace.FurnaceListener;
 import com.github.jikoo.enchantableblocks.listener.WorldListener;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.io.File;

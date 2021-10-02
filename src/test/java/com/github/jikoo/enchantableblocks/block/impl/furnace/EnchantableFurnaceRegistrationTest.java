@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantableblocks.block.impl;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.both;
@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.WorldMock;
-import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
 import com.github.jikoo.enchantableblocks.util.mock.BlastFurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.SmokerMock;

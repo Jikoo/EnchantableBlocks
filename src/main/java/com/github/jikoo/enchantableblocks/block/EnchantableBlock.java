@@ -26,9 +26,9 @@ public abstract class EnchantableBlock {
       final @NotNull ConfigurationSection storage) {
     this.registration = registration;
     this.block = block;
-    this.itemStack = itemStack;
-    if (itemStack.getAmount() > 1) {
-      itemStack.setAmount(1);
+    this.itemStack = itemStack.clone();
+    if (this.itemStack.getAmount() > 1) {
+      this.itemStack.setAmount(1);
     }
     this.storage = storage;
     this.updateStorage();
@@ -134,7 +134,7 @@ public abstract class EnchantableBlock {
 
   @Override
   public String toString() {
-    return getClass().getName() + "[itemStack=" + itemStack + "]";
+    return getClass().getSimpleName() + "{block=" + block + ",itemStack=" + itemStack + "}";
   }
 
 }

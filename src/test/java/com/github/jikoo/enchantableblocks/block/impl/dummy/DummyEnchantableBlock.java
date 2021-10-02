@@ -1,9 +1,10 @@
-package com.github.jikoo.enchantableblocks.block.impl;
+package com.github.jikoo.enchantableblocks.block.impl.dummy;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import org.bukkit.Material;
@@ -13,11 +14,12 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * A dummy EnchantableBlock implementation.
  */
-public abstract class DummyEnchantableBlock extends EnchantableBlock {
+public class DummyEnchantableBlock extends EnchantableBlock {
 
   private DummyEnchantableBlock(
       @NotNull DummyEnchantableRegistration registration,
@@ -25,6 +27,11 @@ public abstract class DummyEnchantableBlock extends EnchantableBlock {
       @NotNull ItemStack itemStack,
       @NotNull ConfigurationSection storage) {
     super(registration, block, itemStack, storage);
+  }
+
+  @Override
+  public String toString() {
+    return super.toString();
   }
 
   /**
@@ -41,20 +48,16 @@ public abstract class DummyEnchantableBlock extends EnchantableBlock {
         @NotNull Collection<@NotNull Material> materials) {
       super(plugin, DummyEnchantableBlock.class);
       this.enchants = Set.copyOf(enchants);
-      this.materials = EnumSet.copyOf(materials);
+      this.materials = Collections.unmodifiableSet(EnumSet.copyOf(materials));
     }
 
     @Override
-    protected @NotNull DummyEnchantableBlock newBlock(
+    @VisibleForTesting
+    public @NotNull DummyEnchantableBlock newBlock(
         @NotNull Block block,
         @NotNull ItemStack itemStack,
         @NotNull ConfigurationSection storage) {
-      return new DummyEnchantableBlock(this, block, itemStack, storage) {
-        @Override
-        public boolean isCorrectType(@NotNull Material material) {
-          return materials.contains(material);
-        }
-      };
+      return new DummyEnchantableBlock(this, block, itemStack, storage);
     }
 
     @Override

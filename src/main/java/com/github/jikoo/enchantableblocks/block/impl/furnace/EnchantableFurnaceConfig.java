@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantableblocks.config.impl;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.planarwrappers.config.Setting;

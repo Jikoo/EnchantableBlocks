@@ -1,6 +1,7 @@
 package com.github.jikoo.enchantableblocks.util.mock;
 
 import be.seeseemelk.mockbukkit.block.state.TileStateMock;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Furnace;
@@ -17,6 +18,10 @@ public class FurnaceMock extends TileStateMock implements Furnace {
   private @Nullable String customName;
   private @NotNull String lock = "";
   private @Nullable FurnaceInventory inventory;
+
+  public FurnaceMock(@NotNull Material material) {
+    super(material);
+  }
 
   public FurnaceMock(@NotNull Block block) {
     super(block);

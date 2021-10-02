@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.config.impl.EnchantableFurnaceConfig;
+import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceConfig;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;

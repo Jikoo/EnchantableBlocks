@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.block.impl.DummyEnchantableBlock.DummyEnchantableRegistration;
-import com.github.jikoo.enchantableblocks.block.impl.EnchantableFurnaceRegistration;
+import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
+import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
 import java.util.stream.Collectors;
