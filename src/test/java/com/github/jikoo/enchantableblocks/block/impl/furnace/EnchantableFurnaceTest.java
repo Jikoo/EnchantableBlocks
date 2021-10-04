@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Objects;
@@ -34,12 +35,13 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("Feature: Enchantable furnaces")
+@DisplayName("Feature: Enchantable furnaces.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantableFurnaceTest {
 
   private static final short PAUSED_TICKS = 200;
 
+  private EnchantableBlocksPlugin plugin;
   private EnchantableFurnaceRegistration registration;
   private Block block;
   private FurnaceMock tile;
@@ -58,9 +60,12 @@ class EnchantableFurnaceTest {
 
   @BeforeEach
   void setUp() {
-    var plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
+    // Silence load log, don't need it in tests to confirm load runs.
+    plugin.getLogger().addHandler(new PatternCountHandler(".*Loaded all active.*"));
     registration = new EnchantableFurnaceRegistration(plugin);
     var server = MockBukkit.getMock();
+    server.getScheduler().performOneTick();
 
     // Add mock furnace recipe dirt -> coarse dirt
     server.addRecipe(new FurnaceRecipe(
@@ -84,7 +89,7 @@ class EnchantableFurnaceTest {
     return registration.newBlock(block, itemStack, storage);
   }
 
-  @DisplayName("Get initializing registration from block")
+  @DisplayName("Block provides initializing registration.")
   @Test
   void testGetRegistration() {
     var enchantableFurnace = newBlock();
@@ -92,7 +97,7 @@ class EnchantableFurnaceTest {
         enchantableFurnace.getRegistration(), is(registration));
   }
 
-  @DisplayName("Provide config from registration")
+  @DisplayName("Block provides initializing registration's configuration.")
   @Test
   void testGetConfig() {
     var enchantableFurnace = newBlock();
@@ -100,7 +105,7 @@ class EnchantableFurnaceTest {
         enchantableFurnace.getConfig(), is(registration.getConfig()));
   }
 
-  @DisplayName("Supply tile if in-world tile is correct")
+  @DisplayName("In-world tile is provided if correct.")
   @Test
   void testGetFurnaceTile() {
     var enchantableFurnace = newBlock();
@@ -113,7 +118,7 @@ class EnchantableFurnaceTest {
         enchantableFurnace.getFurnaceTile(), is(nullValue()));
   }
 
-  @DisplayName("Get furnace modifiers from enchantments")
+  @DisplayName("Furnace modifiers are obtainable from enchantments.")
   @ParameterizedTest
   @ValueSource(ints = { 1, 2, 3, 4, 5 })
   void testModifier(int modifier) {
@@ -145,7 +150,7 @@ class EnchantableFurnaceTest {
     assertThat("Modifier must be set", enchantableFurnace.getFortune(), is(modifier));
   }
 
-  @DisplayName("Silk touch allows pausing")
+  @DisplayName("Silk touch allows pausing.")
   @Test
   void testCanPause() {
     var enchantableFurnace = newBlock();
@@ -156,7 +161,7 @@ class EnchantableFurnaceTest {
     assertThat("Silk item can pause", enchantableFurnace.canPause());
   }
 
-  @DisplayName("Events that cause inventory modification are handled as if modification occurred")
+  @DisplayName("Events that cause inventory modification are handled as if modification occurred.")
   @Test
   void testShouldPausePostSmelt() {
     PauseSituation pauseSituation = PAUSE_VALID_INPUT_VALID_OUTPUT;
@@ -173,7 +178,7 @@ class EnchantableFurnaceTest {
         enchantableFurnace.shouldPause(event), is(not(pauseSituation.pauseExpected())));
   }
 
-  @DisplayName("Furnaces respond to cases where they should or should not pause appropriately")
+  @DisplayName("Furnaces respond to cases where they should or should not pause appropriately.")
   @ParameterizedTest
   @MethodSource("getPauseCases")
   void testShouldPause(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
@@ -193,7 +198,7 @@ class EnchantableFurnaceTest {
         PAUSE_VALID_INPUT_VALID_OUTPUT));
   }
 
-  @DisplayName("Furnaces pause when they should")
+  @DisplayName("Furnaces pause when appropriate.")
   @ParameterizedTest
   @MethodSource("getPauseTrueCases")
   void testPause(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
@@ -207,7 +212,7 @@ class EnchantableFurnaceTest {
     return Stream.of(PAUSE_VALID_NO_INPUT, PAUSE_VALID_OUTPUT_FULL, PAUSE_INVALID_INPUT);
   }
 
-  @DisplayName("Furnaces resume when they should")
+  @DisplayName("Furnaces resume when appropriate.")
   @ParameterizedTest
   @MethodSource("getResumeCases")
   void testResume(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
@@ -306,7 +311,7 @@ class EnchantableFurnaceTest {
     );
   }
 
-  @DisplayName("Furnaces that have been forcibly resumed are unpaused")
+  @DisplayName("Furnaces that have been forcibly resumed are unpaused.")
   @ParameterizedTest
   @MethodSource("getResumeCases")
   void testForceResume(PauseSituation pauseSituation) {
@@ -320,7 +325,7 @@ class EnchantableFurnaceTest {
         is(prePaused && enchantableFurnace.getFurnaceTile() != null));
   }
 
-  @DisplayName("Cook time modifiers apply correctly to cook time")
+  @DisplayName("Cook time modifiers apply correctly to cook time.")
   @ParameterizedTest
   @CsvSource({
       "0,200,200",
@@ -337,7 +342,7 @@ class EnchantableFurnaceTest {
         enchantableFurnace.applyCookTimeModifiers(ticks), is(expectedTicks));
   }
 
-  @DisplayName("Burn time modifiers apply correctly to burn time")
+  @DisplayName("Burn time modifiers apply correctly to burn time.")
   @ParameterizedTest
   @CsvSource({
       "0,1600,1600",
@@ -352,17 +357,17 @@ class EnchantableFurnaceTest {
         enchantableFurnace.applyBurnTimeModifiers(ticks), is(expectedTicks));
   }
 
-  @DisplayName("Furnace updates do not throw errors and handle all possible situations")
+  @DisplayName("Furnace updates do not throw errors and handle all possible situations.")
   @ParameterizedTest
   @MethodSource("getAllCases")
   void testUpdate(PauseSituation situation) {
     situation.setup().run();
-    var enchantableBlocksPlugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    enchantableBlocksPlugin.getBlockManager().createBlock(this.block, itemStack);
+    plugin.getBlockManager().createBlock(this.block, itemStack);
     var inventory = tile.getInventory();
-    assertDoesNotThrow(() -> EnchantableFurnace.update(enchantableBlocksPlugin, inventory));
+    assertDoesNotThrow(() -> EnchantableFurnace.update(plugin, inventory));
     var scheduler = MockBukkit.getMock().getScheduler();
     assertDoesNotThrow(scheduler::performOneTick);
+    plugin.getBlockManager().destroyBlock(block);
   }
 
   Stream<PauseSituation> getAllCases() {

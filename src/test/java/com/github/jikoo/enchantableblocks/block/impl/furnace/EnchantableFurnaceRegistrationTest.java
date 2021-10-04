@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.WorldMock;
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.util.mock.BlastFurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.SmokerMock;
@@ -50,8 +51,9 @@ class EnchantableFurnaceRegistrationTest {
   @BeforeAll
   void beforeAll() {
     ServerMock server = MockBukkit.mock();
-    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    registration = new EnchantableFurnaceRegistration(plugin);
+    var enchantableBlocksPlugin = MockBukkit.load(EnchantableBlocksPlugin.class);
+    registration = new EnchantableFurnaceRegistration(enchantableBlocksPlugin);
+    plugin = enchantableBlocksPlugin;
 
     WorldMock world = server.addSimpleWorld("world");
 
@@ -175,6 +177,7 @@ class EnchantableFurnaceRegistrationTest {
         });
   }
 
+  @DisplayName("Recipe lookup functions for null input.")
   @Test
   void testGetFurnaceRecipeNull() {
     // Try each furnace type

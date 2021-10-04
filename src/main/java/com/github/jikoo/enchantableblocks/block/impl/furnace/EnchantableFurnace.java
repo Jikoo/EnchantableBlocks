@@ -22,7 +22,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 /**
  * Track and manage effects for enchanted furnaces.
  */
-public class EnchantableFurnace extends EnchantableBlock {
+class EnchantableFurnace extends EnchantableBlock {
 
   private final boolean canPause;
   private boolean updating = false;

@@ -3,6 +3,7 @@ package com.github.jikoo.enchantableblocks.block.impl.furnace;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.IntSupplier;
 import org.bukkit.block.Furnace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,22 +18,24 @@ import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Listener for furnace-specific events.
  */
-public class FurnaceListener implements Listener {
+class FurnaceListener implements Listener {
 
   private final EnchantableBlocksPlugin plugin;
   private final EnchantableBlockManager manager;
 
-  public FurnaceListener(final @NotNull EnchantableBlocksPlugin plugin) {
+  FurnaceListener(final @NotNull EnchantableBlocksPlugin plugin) {
     this.plugin = plugin;
     this.manager = plugin.getBlockManager();
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  private void onFurnaceConsumeFuel(final @NotNull FurnaceBurnEvent event) {
+  @VisibleForTesting
+  void onFurnaceConsumeFuel(final @NotNull FurnaceBurnEvent event) {
     var enchantableBlock = this.manager.getBlock(event.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
@@ -48,7 +51,8 @@ public class FurnaceListener implements Listener {
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  private void onFurnaceStartSmelt(final @NotNull FurnaceStartSmeltEvent event) {
+  @VisibleForTesting
+  void onFurnaceStartSmelt(final @NotNull FurnaceStartSmeltEvent event) {
     var enchantableBlock = this.manager.getBlock(event.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
@@ -59,7 +63,8 @@ public class FurnaceListener implements Listener {
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  private void onFurnaceSmelt(final @NotNull FurnaceSmeltEvent event) {
+  @VisibleForTesting
+  void onFurnaceSmelt(final @NotNull FurnaceSmeltEvent event) {
     var enchantableBlock = this.manager.getBlock(event.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
@@ -72,12 +77,13 @@ public class FurnaceListener implements Listener {
       return;
     }
 
-    if (enchantableFurnace.getFortune() > 0) {
+    int fortune = enchantableFurnace.getFortune();
+    if (fortune > 0) {
       String world = furnace.getWorld().getName();
       EnchantableFurnaceConfig configuration = enchantableFurnace.getConfig();
       boolean listContains = configuration.fortuneList.get(world).contains(event.getSource().getType());
       if (configuration.fortuneListIsBlacklist.get(world) != listContains) {
-        this.applyFortune(event, enchantableFurnace);
+        applyFortune(event, fortune);
       }
     }
 
@@ -95,17 +101,26 @@ public class FurnaceListener implements Listener {
     }
   }
 
-  private void applyFortune(final @NotNull FurnaceSmeltEvent event,
-      final @NotNull EnchantableFurnace enchantableFurnace) {
-    ItemStack result = event.getResult();
+  private static void applyFortune(final @NotNull FurnaceSmeltEvent event, final int fortune) {
+    applyFortune(event, () -> FurnaceListener.getFortuneResult(fortune));
+  }
 
-    // Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight
-    // To easily recreate this, a random number between -1 inclusive and fortune level exclusive is generated.
-    int bonus = ThreadLocalRandom.current().nextInt(enchantableFurnace.getFortune() + 2) - 1;
+  @VisibleForTesting
+  static void applyFortune(
+      @NotNull FurnaceSmeltEvent event,
+      @NotNull IntSupplier bonusCalculator) {
+    ItemStack result = event.getResult();
+    int tillFullStack = result.getType().getMaxStackSize() - result.getAmount();
+
+    // Ignore results that are already full.
+    if (tillFullStack == 0) {
+      return;
+    }
 
     // To prevent oversized stacks, restrict bonus to remainder for a max stack.
-    bonus = Math.min(result.getType().getMaxStackSize() - result.getAmount(), bonus);
+    int bonus = Math.min(tillFullStack, bonusCalculator.getAsInt());
 
+    // Ignore bonus that shouldn't modify stack.
     if (bonus <= 0) {
       return;
     }
@@ -114,15 +129,24 @@ public class FurnaceListener implements Listener {
     event.setResult(result);
   }
 
+  @VisibleForTesting
+  static int getFortuneResult(int maxBonus) {
+    // Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight.
+    // For simplicity, generate a number between -1 inclusive and fortune level + 1 exclusive.
+    return ThreadLocalRandom.current().nextInt(-1, maxBonus + 1);
+  }
+
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onInventoryClick(final @NotNull InventoryClickEvent event) {
+  @VisibleForTesting
+  void onInventoryClick(final @NotNull InventoryClickEvent event) {
     if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
       EnchantableFurnace.update(plugin, furnaceInventory);
     }
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onInventoryMoveItem(final @NotNull InventoryMoveItemEvent event) {
+  @VisibleForTesting
+  void onInventoryMoveItem(final @NotNull InventoryMoveItemEvent event) {
     if (event.getDestination() instanceof FurnaceInventory furnaceInventory) {
       EnchantableFurnace.update(plugin, furnaceInventory);
     } else if (event.getSource() instanceof FurnaceInventory furnaceInventory) {
@@ -131,7 +155,8 @@ public class FurnaceListener implements Listener {
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onInventoryDrag(final @NotNull InventoryDragEvent event) {
+  @VisibleForTesting
+  void onInventoryDrag(final @NotNull InventoryDragEvent event) {
     if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
       EnchantableFurnace.update(plugin, furnaceInventory);
     }

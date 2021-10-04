@@ -1,5 +1,6 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
+import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
 import com.github.jikoo.planarwrappers.util.StringConverters;
@@ -20,6 +21,8 @@ import org.bukkit.block.Furnace;
 import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
@@ -28,7 +31,6 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +38,6 @@ import org.jetbrains.annotations.Nullable;
  * EnchantableRegistration for furnaces.
  */
 public class EnchantableFurnaceRegistration extends EnchantableRegistration {
-  // TODO: manage listeners, ticking state when registering
-  // TODO: permissions for enchanting - register as subnodes of enchantableblocks.enchant.anvil/table
 
   private static final List<Enchantment> ENCHANTMENTS = List.of(
       Enchantment.DIG_SPEED,
@@ -53,9 +53,12 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   private final Map<Integer, CookingRecipe<?>> blastFurnaceCache = new Int2ObjectOpenHashMap<>();
   private final Map<Integer, CookingRecipe<?>> smokerCache = new Int2ObjectOpenHashMap<>();
   private final Map<Integer, CookingRecipe<?>> furnaceCache = new Int2ObjectOpenHashMap<>();
+  private final @NotNull Listener listener;
 
-  public EnchantableFurnaceRegistration(@NotNull Plugin plugin) {
+  public EnchantableFurnaceRegistration(@NotNull EnchantableBlocksPlugin plugin) {
     super(plugin, EnchantableFurnace.class);
+    this.listener = new FurnaceListener(plugin);
+    plugin.getServer().getPluginManager().registerEvents(listener, plugin);
   }
 
   @Override
@@ -65,7 +68,7 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   }
 
   @Override
-  public EnchantableFurnaceConfig getConfig() {
+  public @NotNull EnchantableFurnaceConfig getConfig() {
     return (EnchantableFurnaceConfig) super.getConfig();
   }
 
@@ -91,6 +94,8 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
     blastFurnaceCache.clear();
     smokerCache.clear();
     furnaceCache.clear();
+    HandlerList.unregisterAll(listener);
+    plugin.getServer().getPluginManager().registerEvents(listener, plugin);
   }
 
   /**

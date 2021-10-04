@@ -3,7 +3,6 @@ package com.github.jikoo.enchantableblocks;
 import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
 import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
 import com.github.jikoo.enchantableblocks.enchanting.TableEnchanter;
-import com.github.jikoo.enchantableblocks.block.impl.furnace.FurnaceListener;
 import com.github.jikoo.enchantableblocks.listener.WorldListener;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.io.File;
@@ -45,7 +44,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
     // Register implementation-specific details for furnaces.
     this.blockManager.getRegistry().register(new EnchantableFurnaceRegistration(this));
-    this.getServer().getPluginManager().registerEvents(new FurnaceListener(this), this);
 
     // Only load blocks when server startup is complete to allow other providers time to enable.
     getServer().getScheduler().runTask(this, this::loadEnchantableBlocks);

@@ -48,7 +48,7 @@ public class DummyEnchantableBlock extends EnchantableBlock {
         @NotNull Collection<@NotNull Material> materials) {
       super(plugin, DummyEnchantableBlock.class);
       this.enchants = Set.copyOf(enchants);
-      this.materials = Collections.unmodifiableSet(EnumSet.copyOf(materials));
+      this.materials = materials.isEmpty() ? Set.of() : Collections.unmodifiableSet(EnumSet.copyOf(materials));
     }
 
     @Override

@@ -12,7 +12,6 @@ import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
-import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
@@ -87,7 +86,7 @@ class EnchantableBlockManagerTest {
   @DisplayName("Configuration cache should be reloaded when manager is reloaded.")
   void testReloadRegistry() {
     EnchantableBlockRegistry registry = manager.getRegistry();
-    var registration = new EnchantableFurnaceRegistration(plugin);
+    var registration = new DummyEnchantableRegistration(plugin, Set.of(), Set.of(Material.DIRT));
     registry.register(registration);
     var config = registration.getConfig();
     assertThat("Config must be cached", registration.getConfig(), is(config));

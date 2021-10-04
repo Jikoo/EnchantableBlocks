@@ -9,6 +9,16 @@ public final class MathHelper {
    * @return the clamped value
    */
   public static short clampPositiveShort(double value) {
+    return clampPositiveShort((long) value);
+  }
+
+  /**
+   * Clamp a value between {@code 0} and {@link Short#MAX_VALUE} and cast to short.
+   *
+   * @param value the value to clamp
+   * @return the clamped value
+   */
+  public static short clampPositiveShort(long value) {
     return (short) Math.max(0, Math.min(Short.MAX_VALUE, value));
   }
 

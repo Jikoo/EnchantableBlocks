@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
-import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +46,11 @@ class EnchantableBlockRegistryTest {
   @Test
   void testRegisterAndGet() {
     EnchantableBlockRegistry registry = new EnchantableBlockRegistry(plugin);
-    EnchantableFurnaceRegistration registration = new EnchantableFurnaceRegistration(plugin);
+    EnchantableRegistration registration = new DummyEnchantableRegistration(
+        plugin,
+        Set.of(Enchantment.DIG_SPEED, Enchantment.LOOT_BONUS_BLOCKS),
+        EnumSet.of(Material.FURNACE, Material.ACACIA_WOOD)
+    );
 
     assertDoesNotThrow(
         () -> registry.register(registration),
@@ -89,9 +96,9 @@ class EnchantableBlockRegistryTest {
   void testMissingConfig() {
     Plugin noConfig = MockBukkit.createMockPlugin();
     EnchantableBlockRegistry registry = new EnchantableBlockRegistry(noConfig);
-    var registration = new EnchantableFurnaceRegistration(noConfig);
+    var registration = new DummyEnchantableRegistration(noConfig, Set.of(), Set.of());
     registry.register(registration);
-    noConfig.getConfig().set("blocks.EnchantableFurnace", null);
+    noConfig.getConfig().set("blocks.DummyEnchantableBlock", null);
     assertDoesNotThrow(registration::getConfig, "Nonexistent sections must be handled gracefully");
   }
 

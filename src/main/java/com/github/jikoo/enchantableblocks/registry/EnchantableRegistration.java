@@ -17,8 +17,11 @@ import org.jetbrains.annotations.Nullable;
  * Registration entry for an {@link EnchantableBlock} implementation.
  */
 public abstract class EnchantableRegistration {
+  // TODO: permissions for enchanting
+  //  - register as subnodes of enchantableblocks.enchant.anvil/table for each class?
+  //    or add a hasPermission method to check if valid perms are present
 
-  private final @NotNull Plugin plugin;
+  protected final @NotNull Plugin plugin;
   private final @NotNull Class<? extends EnchantableBlock> blockClass;
   private @Nullable EnchantableBlockConfig config;
 
@@ -56,7 +59,7 @@ public abstract class EnchantableRegistration {
       @NotNull final ItemStack itemStack,
       @NotNull ConfigurationSection storage);
 
-  public EnchantableBlockConfig getConfig() {
+  public @NotNull EnchantableBlockConfig getConfig() {
     if (config == null) {
       config = loadFullConfig(plugin.getConfig());
     }
@@ -83,13 +86,13 @@ public abstract class EnchantableRegistration {
   /**
    * Load a new copy of the block-specific configuration from its {@link ConfigurationSection}.
    *
-   * <p>Block-specific configuration is stored in the main plugin configuration by block class
-   * name,
-   * i.e. {@link com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnace
-   * EnchantableFurnaces} are configurable using the section {@code blocks.EnchantableFurnace}.
+   * <p>Block-specific configuration is stored in the main plugin configuration by class simple
+   * name, i.e. a class
+   * {@code com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock} is
+   * configurable using the section {@code blocks.DummyEnchantableBlock}.
    *
    * <p>This method is only called when a new configuration instance is being requested. Caching is
-   * handled by the registry.
+   * handled by the {@link #getConfig} method.
    *
    * @param configurationSection the block-specific section
    * @return the configuration instance created
@@ -101,6 +104,10 @@ public abstract class EnchantableRegistration {
    *
    * <p>Note that configurations may later disable certain enchantments. This is only a listing of
    * enchantments that have implemented functions, not allowed enchantments.
+   *
+   * <p>Note that this list also may not be an exhaustive list of enchantments with functionality -
+   * there may be enchantments with game breaking capabilities that can only be created via creative
+   * mode or administrative powers.
    *
    * @return a collection of potential enchantments
    */
