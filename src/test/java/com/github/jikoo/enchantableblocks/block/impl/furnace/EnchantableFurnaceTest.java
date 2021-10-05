@@ -64,6 +64,7 @@ class EnchantableFurnaceTest {
     plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
     manager = new EnchantableBlockManager(plugin);
     registration = new EnchantableFurnaceRegistration(plugin, manager);
+    manager.getRegistry().register(registration);
     var server = MockBukkit.getMock();
     server.getScheduler().performOneTick();
 
