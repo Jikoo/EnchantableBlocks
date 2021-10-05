@@ -9,8 +9,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
+import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Objects;
@@ -23,6 +22,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +41,8 @@ class EnchantableFurnaceTest {
 
   private static final short PAUSED_TICKS = 200;
 
-  private EnchantableBlocksPlugin plugin;
+  private Plugin plugin;
+  private EnchantableBlockManager manager;
   private EnchantableFurnaceRegistration registration;
   private Block block;
   private FurnaceMock tile;
@@ -60,10 +61,9 @@ class EnchantableFurnaceTest {
 
   @BeforeEach
   void setUp() {
-    plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    // Silence load log, don't need it in tests to confirm load runs.
-    plugin.getLogger().addHandler(new PatternCountHandler(".*Loaded all active.*"));
-    registration = new EnchantableFurnaceRegistration(plugin);
+    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    manager = new EnchantableBlockManager(plugin);
+    registration = new EnchantableFurnaceRegistration(plugin, manager);
     var server = MockBukkit.getMock();
     server.getScheduler().performOneTick();
 
@@ -362,12 +362,12 @@ class EnchantableFurnaceTest {
   @MethodSource("getAllCases")
   void testUpdate(PauseSituation situation) {
     situation.setup().run();
-    plugin.getBlockManager().createBlock(this.block, itemStack);
+    manager.createBlock(this.block, itemStack);
     var inventory = tile.getInventory();
-    assertDoesNotThrow(() -> EnchantableFurnace.update(plugin, inventory));
+    assertDoesNotThrow(() -> EnchantableFurnace.update(plugin, manager, inventory));
     var scheduler = MockBukkit.getMock().getScheduler();
     assertDoesNotThrow(scheduler::performOneTick);
-    plugin.getBlockManager().destroyBlock(block);
+    manager.destroyBlock(block);
   }
 
   Stream<PauseSituation> getAllCases() {

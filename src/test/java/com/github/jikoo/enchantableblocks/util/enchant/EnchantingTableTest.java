@@ -5,14 +5,20 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.entity.PlayerMock;
+import be.seeseemelk.mockbukkit.scheduler.BukkitSchedulerMock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.enchantments.EnchantmentOffer;
+import org.bukkit.inventory.InventoryView;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,6 +146,34 @@ class EnchantingTableTest {
       assertThat("Button level may not exceed 30", buttonLevels1[i], lessThanOrEqualTo(30));
       assertThat("Button level may not be negative", buttonLevels1[i], greaterThanOrEqualTo(0));
     }
+  }
+
+  @DisplayName("Button updates send to user as expected.")
+  @Test
+  void testSendButtonUpdates() {
+    var server = MockBukkit.getMock();
+
+    var plugin = MockBukkit.createMockPlugin("SampleText");
+
+    var player = new PlayerMock(server, "sampletext") {
+      @Override
+      public boolean setWindowProperty(@NotNull InventoryView.Property prop, int value) {
+        // Sends packet to client, ignore.
+        return true;
+      }
+    };
+
+    EnchantmentOffer[] offers = new EnchantmentOffer[] {
+        new EnchantmentOffer(Enchantment.DIG_SPEED, 5, 1),
+        new EnchantmentOffer(Enchantment.DURABILITY, 20, 2),
+        new EnchantmentOffer(Enchantment.SILK_TOUCH, 30, 3)
+    };
+
+    assertDoesNotThrow(() -> EnchantingTableUtil.updateButtons(plugin, player, offers));
+
+    BukkitSchedulerMock scheduler = server.getScheduler();
+
+    assertDoesNotThrow(() -> scheduler.performTicks(2));
   }
 
   @AfterAll

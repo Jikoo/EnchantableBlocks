@@ -1,6 +1,5 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntSupplier;
@@ -16,6 +15,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -25,12 +25,12 @@ import org.jetbrains.annotations.VisibleForTesting;
  */
 class FurnaceListener implements Listener {
 
-  private final EnchantableBlocksPlugin plugin;
+  private final Plugin plugin;
   private final EnchantableBlockManager manager;
 
-  FurnaceListener(final @NotNull EnchantableBlocksPlugin plugin) {
+  FurnaceListener(@NotNull Plugin plugin, @NotNull EnchantableBlockManager manager) {
     this.plugin = plugin;
-    this.manager = plugin.getBlockManager();
+    this.manager = manager;
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -140,7 +140,7 @@ class FurnaceListener implements Listener {
   @VisibleForTesting
   void onInventoryClick(final @NotNull InventoryClickEvent event) {
     if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
-      EnchantableFurnace.update(plugin, furnaceInventory);
+      EnchantableFurnace.update(plugin, manager, furnaceInventory);
     }
   }
 
@@ -148,9 +148,9 @@ class FurnaceListener implements Listener {
   @VisibleForTesting
   void onInventoryMoveItem(final @NotNull InventoryMoveItemEvent event) {
     if (event.getDestination() instanceof FurnaceInventory furnaceInventory) {
-      EnchantableFurnace.update(plugin, furnaceInventory);
+      EnchantableFurnace.update(plugin, manager, furnaceInventory);
     } else if (event.getSource() instanceof FurnaceInventory furnaceInventory) {
-      EnchantableFurnace.update(plugin, furnaceInventory);
+      EnchantableFurnace.update(plugin, manager, furnaceInventory);
     }
   }
 
@@ -158,7 +158,7 @@ class FurnaceListener implements Listener {
   @VisibleForTesting
   void onInventoryDrag(final @NotNull InventoryDragEvent event) {
     if (event.getView().getTopInventory() instanceof FurnaceInventory furnaceInventory) {
-      EnchantableFurnace.update(plugin, furnaceInventory);
+      EnchantableFurnace.update(plugin, manager, furnaceInventory);
     }
   }
 

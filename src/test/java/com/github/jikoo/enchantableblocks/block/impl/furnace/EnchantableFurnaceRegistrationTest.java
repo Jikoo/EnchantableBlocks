@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.WorldMock;
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.mock.BlastFurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.enchantableblocks.util.mock.SmokerMock;
@@ -51,9 +51,9 @@ class EnchantableFurnaceRegistrationTest {
   @BeforeAll
   void beforeAll() {
     ServerMock server = MockBukkit.mock();
-    var enchantableBlocksPlugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    registration = new EnchantableFurnaceRegistration(enchantableBlocksPlugin);
-    plugin = enchantableBlocksPlugin;
+    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    var manager = new EnchantableBlockManager(plugin);
+    registration = new EnchantableFurnaceRegistration(plugin, manager);
 
     WorldMock world = server.addSimpleWorld("world");
 

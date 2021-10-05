@@ -1,7 +1,7 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.ItemStackHelper;
 import com.github.jikoo.enchantableblocks.util.MathHelper;
 import org.bukkit.Material;
@@ -15,6 +15,7 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -238,7 +239,8 @@ class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
-    furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
+    furnace.setBurnTime(
+        MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
     furnace.update(true);
     this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
     this.updateStorage();
@@ -256,7 +258,8 @@ class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
-    furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
+    furnace.setBurnTime(
+        MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
     furnace.update(true);
     this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
     this.updateStorage();
@@ -327,17 +330,20 @@ class EnchantableFurnace extends EnchantableBlock {
   /**
    * Update the state of a potential {@code EnchantableFurnace}.
    *
-   * @param plugin the {@link EnchantableBlocksPlugin} instance
+   * @param plugin the {@link Plugin} instance
    * @param inventory the furnace inventory that may need an update
    */
-  public static void update(@NotNull EnchantableBlocksPlugin plugin, @NotNull FurnaceInventory inventory) {
+  public static void update(
+      @NotNull Plugin plugin,
+      @NotNull EnchantableBlockManager manager,
+      @NotNull FurnaceInventory inventory) {
 
     Furnace furnace = inventory.getHolder();
     if (furnace == null) {
       return;
     }
 
-    var enchantableBlock = plugin.getBlockManager().getBlock(furnace.getBlock());
+    var enchantableBlock = manager.getBlock(furnace.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
       return;

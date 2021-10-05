@@ -1,11 +1,11 @@
 package com.github.jikoo.enchantableblocks.listener;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -18,7 +18,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Listener for generic world events.
@@ -27,35 +29,41 @@ import org.jetbrains.annotations.NotNull;
  */
 public class WorldListener implements Listener {
 
-  private final EnchantableBlocksPlugin plugin;
+  private final Plugin plugin;
   private final EnchantableBlockManager manager;
-  private final Map<Block, DropReplacement> pendingDrops = new HashMap<>();
+  @VisibleForTesting
+  final Map<Block, DropReplacement> pendingDrops = new HashMap<>();
 
-  public WorldListener(final @NotNull EnchantableBlocksPlugin plugin) {
+  public WorldListener(@NotNull Plugin plugin, @NotNull EnchantableBlockManager manager) {
     this.plugin = plugin;
-    this.manager = plugin.getBlockManager();
+    this.manager = manager;
   }
 
+  @VisibleForTesting
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  public void onChunkLoad(final @NotNull ChunkLoadEvent event) {
+  void onChunkLoad(@NotNull ChunkLoadEvent event) {
     plugin.getServer().getScheduler().runTask(plugin, () -> manager.loadChunkBlocks(event.getChunk()));
   }
 
+  @VisibleForTesting
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  public void onChunkUnload(final @NotNull ChunkUnloadEvent event) {
+  void onChunkUnload(@NotNull ChunkUnloadEvent event) {
     manager.unloadChunkBlocks(event.getChunk());
   }
 
+  @VisibleForTesting
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  public void onBlockPlace(final @NotNull BlockPlaceEvent event) {
+  void onBlockPlace(@NotNull BlockPlaceEvent event) {
     manager.createBlock(event.getBlock(), event.getItemInHand());
   }
 
+  @VisibleForTesting
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  public void onBlockBreak(final @NotNull BlockBreakEvent event) {
+  void onBlockBreak(@NotNull BlockBreakEvent event) {
     ItemStack drop = manager.destroyBlock(event.getBlock());
 
-    if (drop == null || !event.isDropItems() || event.getPlayer().getGameMode() == GameMode.CREATIVE) {
+    if (drop == null || drop.getType() == Material.AIR
+        || !event.isDropItems() || event.getPlayer().getGameMode() == GameMode.CREATIVE) {
       return;
     }
 
@@ -69,8 +77,9 @@ public class WorldListener implements Listener {
     plugin.getServer().getScheduler().runTask(plugin, () -> pendingDrops.remove(event.getBlock()));
   }
 
+  @VisibleForTesting
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  public void onBlockDropItem(BlockDropItemEvent event) {
+  void onBlockDropItem(@NotNull BlockDropItemEvent event) {
     Block block = event.getBlock();
     DropReplacement dropChange = pendingDrops.remove(block);
 
@@ -88,6 +97,7 @@ public class WorldListener implements Listener {
     block.getWorld().dropItem(block.getLocation().add(0.5, 0.1, 0.5), dropChange.replacement());
   }
 
-  private static record DropReplacement(ItemStack target, ItemStack replacement) {}
+  @VisibleForTesting
+  static record DropReplacement(ItemStack target, ItemStack replacement) {}
 
 }

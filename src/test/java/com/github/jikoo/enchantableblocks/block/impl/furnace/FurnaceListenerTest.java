@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.inventory.ChestInventoryMock;
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
@@ -32,10 +31,8 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.PluginManager;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +47,7 @@ class FurnaceListenerTest {
 
   private static final short BURN_TIME = 1600;
 
-  private PluginManager pluginManager;
+  private FurnaceListener listener;
   private EnchantableBlockManager manager;
   private FurnaceRecipe recipe;
   private Player player;
@@ -61,7 +58,6 @@ class FurnaceListenerTest {
   @BeforeAll
   void setUpAll() {
     var server = MockBukkit.mock();
-    pluginManager = server.getPluginManager();
 
     // Add mock furnace recipe dirt -> coarse dirt
     recipe = new FurnaceRecipe(
@@ -71,10 +67,6 @@ class FurnaceListenerTest {
 
     // Add a player for events
     player = MockBukkit.getMock().addPlayer("sampletext");
-
-    var plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    manager = plugin.getBlockManager();
-    server.getScheduler().performOneTick();
   }
 
   @AfterAll
@@ -84,6 +76,11 @@ class FurnaceListenerTest {
 
   @BeforeEach
   void setUp() {
+    var plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    manager = new EnchantableBlockManager(plugin);
+    manager.getRegistry().register(new EnchantableFurnaceRegistration(plugin, manager));
+    listener = new FurnaceListener(plugin, manager);
+
     // Set up block and state
     var server = MockBukkit.getMock();
     var world = server.addSimpleWorld("world");
@@ -97,11 +94,6 @@ class FurnaceListenerTest {
     itemStack = new ItemStack(Material.FURNACE);
   }
 
-  @AfterEach
-  void tearDown() {
-    manager.destroyBlock(block);
-  }
-
   private @Nullable EnchantableBlock newBlock() {
     return manager.createBlock(block, itemStack);
   }
@@ -112,7 +104,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
     assertThat("Invalid block must be ignored", !event.isCancelled());
     assertThat("Burn time must be unmodified", event.getBurnTime(), is((int) BURN_TIME));
   }
@@ -124,7 +116,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
     assertThat("Resume must cancel event", event.isCancelled());
   }
 
@@ -135,7 +127,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
     assertThat("Non-resume event is not cancelled", !event.isCancelled());
     assertThat("Burn time must be modified", event.getBurnTime(), is(not(BURN_TIME)));
   }
@@ -146,7 +138,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceStartSmeltEvent(block, recipe.getInput(), recipe);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
     assertThat(
         "Cook time must not be modified",
         event.getTotalCookTime(),
@@ -160,7 +152,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceStartSmeltEvent(block, recipe.getInput(), recipe);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
     assertThat(
         "Cook time must be modified",
         event.getTotalCookTime(),
@@ -173,7 +165,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
     assertThat("Result must not be modified", event.getResult(), is(recipe.getResult()));
   }
@@ -186,7 +178,7 @@ class FurnaceListenerTest {
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     block.setType(Material.DIRT);
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
     assertThat("Result must not be modified", event.getResult(), is(recipe.getResult()));
   }
@@ -199,7 +191,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
     assertThat("Result must not be modified", event.getResult(), is(recipe.getResult()));
   }
@@ -211,7 +203,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
   }
 
@@ -249,7 +241,7 @@ class FurnaceListenerTest {
     ItemStack input = recipe.getInput();
     input.setAmount(2);
     var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
   }
 
@@ -261,7 +253,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertDoesNotThrow(() -> MockBukkit.getMock().getScheduler().performOneTick());
     assertThat("Event is never cancelled", !event.isCancelled());
   }
@@ -273,7 +265,7 @@ class FurnaceListenerTest {
     player.openInventory(new ChestInventoryMock(null, 9));
     var event = new InventoryClickEvent(player.getOpenInventory(), SlotType.CONTAINER, 0,
         ClickType.LEFT, InventoryAction.PICKUP_ALL);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryClick(event));
     player.closeInventory();
   }
 
@@ -283,7 +275,7 @@ class FurnaceListenerTest {
     player.openInventory(tile.getInventory());
     var event = new InventoryClickEvent(player.getOpenInventory(), SlotType.CONTAINER, 0,
         ClickType.LEFT, InventoryAction.PICKUP_ALL);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryClick(event));
     player.closeInventory();
   }
 
@@ -293,7 +285,7 @@ class FurnaceListenerTest {
     player.closeInventory();
     var event = new InventoryMoveItemEvent(player.getInventory(), new ItemStack(Material.DIRT),
         player.getInventory(), true);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
   }
 
   @DisplayName("Item movements from a furnace are handled appropriately.")
@@ -302,7 +294,7 @@ class FurnaceListenerTest {
     player.openInventory(tile.getInventory());
     var event = new InventoryMoveItemEvent(tile.getInventory(), new ItemStack(Material.DIRT),
         player.getInventory(), false);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
     player.closeInventory();
   }
 
@@ -312,7 +304,7 @@ class FurnaceListenerTest {
     player.closeInventory();
     var event = new InventoryMoveItemEvent(player.getInventory(), new ItemStack(Material.DIRT),
         tile.getInventory(), true);
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
   }
 
   @DisplayName("Non-furnace drags are ignored.")
@@ -322,7 +314,7 @@ class FurnaceListenerTest {
     player.openInventory(new ChestInventoryMock(null, 9));
     var event = new InventoryDragEvent(player.getOpenInventory(), new ItemStack(Material.AIR),
         new ItemStack(Material.DIRT), false, Map.of(0, new ItemStack(Material.DIRT)));
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryDrag(event));
     player.closeInventory();
   }
 
@@ -332,7 +324,7 @@ class FurnaceListenerTest {
     player.openInventory(tile.getInventory());
     var event = new InventoryDragEvent(player.getOpenInventory(), new ItemStack(Material.AIR),
         new ItemStack(Material.DIRT), false, Map.of(0, new ItemStack(Material.DIRT)));
-    assertDoesNotThrow(() -> pluginManager.callEvent(event));
+    assertDoesNotThrow(() -> listener.onInventoryDrag(event));
     player.closeInventory();
   }
 

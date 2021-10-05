@@ -38,12 +38,14 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
     this.saveDefaultConfig();
 
     // Register generic listeners for block management.
-    this.getServer().getPluginManager().registerEvents(new WorldListener(this), this);
+    this.getServer().getPluginManager().registerEvents(
+        new WorldListener(this, getBlockManager()), this);
     this.getServer().getPluginManager().registerEvents(new TableEnchanter(this), this);
     this.getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
 
     // Register implementation-specific details for furnaces.
-    this.blockManager.getRegistry().register(new EnchantableFurnaceRegistration(this));
+    this.blockManager.getRegistry().register(
+        new EnchantableFurnaceRegistration(this, this.getBlockManager()));
 
     // Only load blocks when server startup is complete to allow other providers time to enable.
     getServer().getScheduler().runTask(this, this::loadEnchantableBlocks);

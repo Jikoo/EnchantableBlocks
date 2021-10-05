@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
 import com.github.jikoo.planarwrappers.util.StringConverters;
@@ -31,6 +31,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,9 +56,11 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   private final Map<Integer, CookingRecipe<?>> furnaceCache = new Int2ObjectOpenHashMap<>();
   private final @NotNull Listener listener;
 
-  public EnchantableFurnaceRegistration(@NotNull EnchantableBlocksPlugin plugin) {
+  public EnchantableFurnaceRegistration(
+      @NotNull Plugin plugin,
+      @NotNull EnchantableBlockManager manager) {
     super(plugin, EnchantableFurnace.class);
-    this.listener = new FurnaceListener(plugin);
+    this.listener = new FurnaceListener(plugin, manager);
     plugin.getServer().getPluginManager().registerEvents(listener, plugin);
   }
 

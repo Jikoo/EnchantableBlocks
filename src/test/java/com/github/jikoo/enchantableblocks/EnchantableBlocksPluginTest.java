@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
@@ -37,7 +38,13 @@ class EnchantableBlocksPluginTest {
     plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
   }
 
-  @DisplayName("Plugin should load.")
+  @DisplayName("Plugin has no-arg constructor.")
+  @Test
+  void testNoArgConstructor() {
+    assertThrows(IllegalStateException.class, EnchantableBlocksPlugin::new);
+  }
+
+  @DisplayName("Plugin loads.")
   @Test
   void testPluginLoad() {
     assertDoesNotThrow(this::loadPlugin);
