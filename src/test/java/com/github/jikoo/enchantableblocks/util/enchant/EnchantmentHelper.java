@@ -59,7 +59,7 @@ public final class EnchantmentHelper {
     }).forEach(enchantmentMock -> putEnchant(enchantmentMock.getKey(), enchantmentMock));
   }
 
-  static void setupToolEnchants() {
+  public static void setupToolEnchants() {
     setupEnchant("efficiency", 5, EnchantmentTarget.TOOL);
     setupEnchant("unbreaking", 3, EnchantmentTarget.BREAKABLE);
     setupEnchant("fortune", 3, EnchantmentTarget.TOOL);

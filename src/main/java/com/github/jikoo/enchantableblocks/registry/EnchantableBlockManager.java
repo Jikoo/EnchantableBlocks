@@ -41,10 +41,6 @@ public class EnchantableBlockManager {
     return this.blockRegistry;
   }
 
-  public void reload() {
-    this.blockRegistry.reload();
-  }
-
   /**
    * Get an EnchantableBlock by Block.
    *

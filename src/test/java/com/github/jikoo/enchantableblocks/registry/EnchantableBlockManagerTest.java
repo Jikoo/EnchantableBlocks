@@ -90,7 +90,7 @@ class EnchantableBlockManagerTest {
     registry.register(registration);
     var config = registration.getConfig();
     assertThat("Config must be cached", registration.getConfig(), is(config));
-    manager.reload();
+    registry.reload();
     assertThat("Config cached must be cleared", registration.getConfig(), is(not(config)));
   }
 
@@ -152,7 +152,7 @@ class EnchantableBlockManagerTest {
         is(enchantableBlock));
 
     plugin.getConfig().set(DISABLED_WORLD_PATH, true);
-    manager.reload();
+    manager.getRegistry().reload();
     enchantableBlock = manager.createBlock(blockDisabledWorld, stack);
     assertThat(
         "Enabled valid block must be retrievable",
@@ -160,7 +160,7 @@ class EnchantableBlockManagerTest {
         is(enchantableBlock));
 
     plugin.getConfig().set(DISABLED_WORLD_PATH, false);
-    manager.reload();
+    manager.getRegistry().reload();
     assertThat(
         "Valid block in disabled world must return null",
         manager.getBlock(blockDisabledWorld),

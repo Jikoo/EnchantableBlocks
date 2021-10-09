@@ -46,7 +46,7 @@ class ConfigTest {
     MockBukkit.mock();
     EnchantableBlocksPlugin plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
     PluginHelper.setDataDir(plugin);
-    plugin.getBlockManager().reload();
+    plugin.getBlockManager().getRegistry().reload();
     EnchantableBlockConfig config = Objects.requireNonNull(plugin.getBlockManager().getRegistry().get(Material.FURNACE)).getConfig();
     this.config = (EnchantableFurnaceConfig) config;
   }

@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * A registry for {@link EnchantableBlock} implementations.
@@ -15,7 +16,8 @@ public final class EnchantableBlockRegistry {
   private final @NotNull Plugin plugin;
   private final @NotNull EnumMap<Material, EnchantableRegistration> materialRegistry;
 
-  EnchantableBlockRegistry(@NotNull Plugin plugin) {
+  @VisibleForTesting
+  public EnchantableBlockRegistry(@NotNull Plugin plugin) {
     this.plugin = plugin;
     materialRegistry = new EnumMap<>(Material.class);
   }
@@ -39,7 +41,7 @@ public final class EnchantableBlockRegistry {
     return materialRegistry.get(material);
   }
 
-  void reload() {
+  public void reload() {
     materialRegistry.values().stream().distinct().forEach(EnchantableRegistration::reload);
   }
 

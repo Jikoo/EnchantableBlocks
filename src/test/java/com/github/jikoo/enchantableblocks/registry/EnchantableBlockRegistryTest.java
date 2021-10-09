@@ -33,7 +33,7 @@ class EnchantableBlockRegistryTest {
     MockBukkit.mock();
     EnchantableBlocksPlugin plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
     PluginHelper.setDataDir(plugin);
-    plugin.getBlockManager().reload();
+    plugin.getBlockManager().getRegistry().reload();
     this.plugin = plugin;
   }
 

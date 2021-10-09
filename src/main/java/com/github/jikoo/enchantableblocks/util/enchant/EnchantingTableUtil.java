@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A utility for calculating enchantments in a similar fashion to enchanting tables.
@@ -72,7 +73,7 @@ public final class EnchantingTableUtil {
    * @param offers the enchantment offers
    */
   public static void updateButtons(@NotNull Plugin plugin, @NotNull Player player,
-      EnchantmentOffer @NotNull [] offers) {
+      @Nullable EnchantmentOffer @NotNull [] offers) {
     Bukkit.getScheduler().runTaskLater(plugin, () -> {
       for (int i = 1; i <= 3; ++i) {
         EnchantmentOffer offer = offers[i - 1];

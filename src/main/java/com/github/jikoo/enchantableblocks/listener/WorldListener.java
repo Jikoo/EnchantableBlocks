@@ -24,8 +24,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Listener for generic world events.
- *
- * @author Jikoo
  */
 public class WorldListener implements Listener {
 
