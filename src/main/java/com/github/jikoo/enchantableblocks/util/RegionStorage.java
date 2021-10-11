@@ -21,24 +21,6 @@ public class RegionStorage extends YamlConfiguration {
   private final @NotNull Region region;
 
   /**
-   * @deprecated Use {@link RegionStorage(Plugin, Region)}.
-   * Construct a new {@code RegionStorage}.
-   *
-   * @param plugin the plugin for which data is being stored
-   * @param worldName the name of the world owning the region
-   * @param regionX the X coordinate of the region
-   * @param regionZ the Z coordinate of the region
-   */
-  @Deprecated(since = "3.0.2")
-  public RegionStorage(
-      @NotNull Plugin plugin,
-      @NotNull String worldName,
-      int regionX,
-      int regionZ) {
-    this(plugin, new Region(worldName, regionX, regionZ));
-  }
-
-  /**
    * Construct a new {@code RegionStorage}.
    *
    * @param plugin the plugin for which data is being stored
