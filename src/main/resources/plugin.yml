@@ -10,9 +10,6 @@ libraries:
 permissions:
  enchantableblocks.enchant:
   default: true
-  children:
-   enchantableblocks.enchant.table: true
-   enchantableblocks.enchant.anvil: true
 
 commands:
  enchantableblocks:

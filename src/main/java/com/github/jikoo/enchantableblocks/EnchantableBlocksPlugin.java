@@ -1,7 +1,7 @@
 package com.github.jikoo.enchantableblocks;
 
 import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceRegistration;
-import com.github.jikoo.enchantableblocks.enchanting.AnvilEnchanter;
+import com.github.jikoo.enchantableblocks.listener.AnvilEnchanter;
 import com.github.jikoo.enchantableblocks.listener.TableEnchanter;
 import com.github.jikoo.enchantableblocks.listener.WorldListener;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
@@ -31,10 +31,12 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
   }
 
   @Override
-  public void onEnable() {
-
+  public void onLoad() {
     this.blockManager = new EnchantableBlockManager(this);
+  }
 
+  @Override
+  public void onEnable() {
     this.saveDefaultConfig();
 
     // Register generic listeners for block management.
@@ -42,7 +44,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
         new WorldListener(this, getBlockManager()), this);
     this.getServer().getPluginManager().registerEvents(
         new TableEnchanter(this, this.getBlockManager().getRegistry()), this);
-    this.getServer().getPluginManager().registerEvents(new AnvilEnchanter(this), this);
+    this.getServer().getPluginManager().registerEvents(
+        new AnvilEnchanter(this, this.getBlockManager().getRegistry()), this);
 
     // Register implementation-specific details for furnaces.
     this.blockManager.getRegistry().register(

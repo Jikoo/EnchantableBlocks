@@ -207,6 +207,10 @@ class AnvilTest {
         (added.getType() == Material.ENCHANTED_BOOK ? isVanilla ? 9 : 13 : isVanilla ? 13 : 21)
             + repairCost;
     assertThat("Operation cost is correct", result.getCost(), is(cost));
+
+    operation.setRenameText("sample text");
+    var renameResult = operation.apply(base, added);
+    assertThat("Rename adds 1 to cost", renameResult.getCost(), is(cost + 1));
   }
 
   private Stream<Arguments> getCombineScenarios() {

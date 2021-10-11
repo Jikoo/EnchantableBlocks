@@ -3,12 +3,14 @@ package com.github.jikoo.enchantableblocks.registry;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import java.util.Collection;
+import java.util.Locale;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,9 +19,6 @@ import org.jetbrains.annotations.Nullable;
  * Registration entry for an {@link EnchantableBlock} implementation.
  */
 public abstract class EnchantableRegistration {
-  // TODO: permissions for enchanting
-  //  - register as subnodes of enchantableblocks.enchant.anvil/table for each class?
-  //    or add a hasPermission method to check if valid perms are present
 
   protected final @NotNull Plugin plugin;
   private final @NotNull Class<? extends EnchantableBlock> blockClass;
@@ -126,6 +125,54 @@ public abstract class EnchantableRegistration {
    */
   protected void reload() {
     config = null;
+  }
+
+  /**
+   * Check if a {@link Permissible} has permission to enchant this registration's block using a
+   * particular enchantment technique.
+   *
+   * @param permissible the {@code Permissible}
+   * @param enchanterType the type of the enchanter
+   * @return true if the {@code Permissible} is allowed to enchant the block
+   */
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+  public boolean hasEnchantPermission(
+      @NotNull Permissible permissible,
+      @NotNull String enchanterType) {
+    String pluginName = plugin.getName().toLowerCase(Locale.ROOT);
+    String blockType = getBlockClass().getSimpleName().toLowerCase(Locale.ROOT);
+    String node = String.format("%s.enchant.%s.%s", pluginName, enchanterType, blockType);
+    return hasNodeOrParent(permissible, node);
+  }
+
+  /**
+   * Recursively check a node and its parents.
+   *
+   * <p>If the {@link Permissible} has the node, returns true. If it is set and they lack it,
+   * returns false. If the node is unset, the parent node is checked. This repeats until the top
+   * level node is reached, at which point false is returned.
+   *
+   * @param permissible the {@code Permissible} who may have the node
+   * @param node the node to check
+   * @return true if the {@code Permissible} has the node
+   */
+  private static boolean hasNodeOrParent(@NotNull Permissible permissible, @NotNull String node) {
+    if (permissible.hasPermission(node)) {
+      // Permission is true.
+      return true;
+    } else if (permissible.isPermissionSet(node)) {
+      // Permission is explicitly set to false.
+      return false;
+    }
+
+    // Ensure node is not a top level node.
+    int nodeSeparator = node.lastIndexOf('.');
+    if (nodeSeparator == -1) {
+      return false;
+    }
+
+    // Fall through to parent node.
+    return hasNodeOrParent(permissible, node.substring(0, nodeSeparator));
   }
 
 }

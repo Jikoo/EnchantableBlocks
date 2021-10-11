@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A container for data required to calculate an anvil combination.
@@ -13,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 public class AnvilOperation {
 
   /**
-   * Unmodifiable constant for vanilla settings.
+   * Constant for vanilla settings. Only renameText is modifiable.
    */
   public static final AnvilOperation VANILLA = new AnvilOperation() {
 
@@ -57,12 +58,13 @@ public class AnvilOperation {
   };
 
   private boolean combineEnchants;
-  private BiPredicate<Enchantment, ItemStack> enchantApplies;
-  private BiPredicate<Enchantment, Enchantment> enchantConflicts;
-  private ToIntFunction<Enchantment> enchantMaxLevel;
-  private BiPredicate<ItemStack, ItemStack> materialRepairs;
-  private BiPredicate<ItemStack, ItemStack> materialCombines;
+  private @NotNull BiPredicate<@NotNull Enchantment, @NotNull ItemStack> enchantApplies;
+  private @NotNull BiPredicate<@NotNull Enchantment, @NotNull Enchantment> enchantConflicts;
+  private @NotNull ToIntFunction<@NotNull Enchantment> enchantMaxLevel;
+  private @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> materialRepairs;
+  private @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> materialCombines;
   private boolean mergeRepairs;
+  private @Nullable String renameText;
 
   /**
    * Constructor for a new AnvilOperation.
@@ -101,7 +103,7 @@ public class AnvilOperation {
    *
    * @return the method for determining if an enchantment is applicable
    */
-  public @NotNull BiPredicate<Enchantment, ItemStack> getEnchantApplies() {
+  public @NotNull BiPredicate<@NotNull Enchantment, @NotNull ItemStack> getEnchantApplies() {
     return enchantApplies;
   }
 
@@ -111,7 +113,7 @@ public class AnvilOperation {
    * @param enchantApplies the method for determining if an enchantment is applicable
    */
   public void setEnchantApplies(
-      @NotNull BiPredicate<Enchantment, ItemStack> enchantApplies) {
+      @NotNull BiPredicate<@NotNull Enchantment, @NotNull ItemStack> enchantApplies) {
     this.enchantApplies = enchantApplies;
   }
 
@@ -120,7 +122,7 @@ public class AnvilOperation {
    *
    * @return the method for determining if enchantments conflict
    */
-  public @NotNull BiPredicate<Enchantment, Enchantment> getEnchantConflicts() {
+  public @NotNull BiPredicate<@NotNull Enchantment, @NotNull Enchantment> getEnchantConflicts() {
     return enchantConflicts;
   }
 
@@ -130,7 +132,7 @@ public class AnvilOperation {
    * @param enchantConflicts the method for determining if enchantments conflict
    */
   public void setEnchantConflicts(
-      @NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {
+      @NotNull BiPredicate<@NotNull Enchantment, @NotNull Enchantment> enchantConflicts) {
     this.enchantConflicts = enchantConflicts;
   }
 
@@ -139,7 +141,7 @@ public class AnvilOperation {
    *
    * @return the method supplying maximum level for an enchantment
    */
-  public @NotNull ToIntFunction<Enchantment> getEnchantMaxLevel() {
+  public @NotNull ToIntFunction<@NotNull Enchantment> getEnchantMaxLevel() {
     return enchantMaxLevel;
   }
 
@@ -148,7 +150,7 @@ public class AnvilOperation {
    *
    * @param enchantMaxLevel the method supplying maximum level for an enchantment
    */
-  public void setEnchantMaxLevel(@NotNull ToIntFunction<Enchantment> enchantMaxLevel) {
+  public void setEnchantMaxLevel(@NotNull ToIntFunction<@NotNull Enchantment> enchantMaxLevel) {
     this.enchantMaxLevel = enchantMaxLevel;
   }
 
@@ -157,7 +159,7 @@ public class AnvilOperation {
    *
    * @return the method determining whether an item should combine its enchantments
    */
-  public @NotNull BiPredicate<ItemStack, ItemStack> getMaterialCombines() {
+  public @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> getMaterialCombines() {
     return materialCombines;
   }
 
@@ -167,7 +169,7 @@ public class AnvilOperation {
    * @param materialCombines the method determining whether an item should combine its enchantments
    */
   public void setMaterialCombines(
-      @NotNull BiPredicate<ItemStack, ItemStack> materialCombines) {
+      @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> materialCombines) {
     this.materialCombines = materialCombines;
   }
 
@@ -177,7 +179,7 @@ public class AnvilOperation {
    * @see #setMaterialRepairs
    * @return the method determining whether an item is repaired by another item
    */
-  public @NotNull BiPredicate<ItemStack, ItemStack> getMaterialRepairs() {
+  public @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> getMaterialRepairs() {
     return materialRepairs;
   }
 
@@ -192,7 +194,7 @@ public class AnvilOperation {
    * @param materialRepairs the method determining whether an item is repaired by another item
    */
   public void setMaterialRepairs(
-      @NotNull BiPredicate<ItemStack, ItemStack> materialRepairs) {
+      @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> materialRepairs) {
     this.materialRepairs = materialRepairs;
   }
 
@@ -210,7 +212,8 @@ public class AnvilOperation {
    * Set whether the base item is allowed to be repaired by merging with the addition.
    *
    * <p>N.B. Only {@link org.bukkit.inventory.meta.Damageable Damageable} items can be repaired.
-   * A merge repair combines the remaining durability of both items and adds a bonus of 12% of maximum durability.
+   * A merge repair combines the remaining durability of both items and adds a bonus of 12% of
+   * maximum durability.
    *
    * @param mergeRepairs whether the base item is allowed to be repaired by the addition
    */
@@ -219,14 +222,39 @@ public class AnvilOperation {
   }
 
   /**
+   * Get the name applied to the resulting item.
+   *
+   * @return the rename text
+   */
+  public @Nullable String getRenameText() {
+    return renameText;
+  }
+
+  /**
+   * Set the name applied to the resulting item by this operation.
+   *
+   * @param renameText the name applied to the resulting item
+   */
+  public void setRenameText(@Nullable String renameText) {
+    this.renameText = renameText;
+  }
+
+  /**
    * Get an AnvilResult for this anvil operation.
+   *
+   * <p>N.B. for ease of operation reuse, calls to
+   * {@code AnvilOperation#apply(ItemStack, ItemStack)} also reset {@link #getRenameText()} to
+   * {@code null}.
    *
    * @param base the base item
    * @param addition the added item
    * @return the AnvilResult
+   * @see #setRenameText(String)
    */
   public @NotNull AnvilResult apply(@NotNull ItemStack base, @NotNull ItemStack addition) {
-    return AnvilUtil.combine(base, addition, this);
+    var result = AnvilUtil.combine(base, addition, this);
+    this.setRenameText(null);
+    return result;
   }
 
 }

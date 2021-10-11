@@ -51,19 +51,26 @@ public final class AnvilUtil {
 
     if (operation.isMergeRepairs() && canRepairWithMerge(base, addition)) {
       // Do repairs via merge of identical materials.
-      result = repairWithMerge(base, addition);
+      result = applyRename(operation, repairWithMerge(base, addition));
     } else if (canRepairWithMaterial(base, addition, operation)) {
       // Do repairs via supported material, i.e. diamonds are used to repair a diamond shovel.
       result = repairWithMaterial(base, addition);
+      if (result != null) {
+        result = applyRename(operation, result);
+      }
     }
 
     // If the operation is supposed to support enchantment merges, material combination must work.
     if (!operation.isCombineEnchants() || !operation.getMaterialCombines().test(base, addition)) {
-      return result == null || result.getResult().isSimilar(base) ? EMPTY : result;
+      if (result == null || result.getResult().isSimilar(base)) {
+        return EMPTY;
+      }
+
+      return result;
     }
 
     if (result == null) {
-      result = new AnvilResult(base, getBaseCost(base, addition));
+      result = applyRename(operation, new AnvilResult(base, getBaseCost(base, addition)));
     }
 
     AnvilResult combineResult = combineEnchantments(result, addition, operation);
@@ -134,7 +141,7 @@ public final class AnvilUtil {
     return result;
   }
 
-  private static AnvilResult repairWithMerge(@NotNull ItemStack base, @NotNull ItemStack addition) {
+  private static @NotNull AnvilResult repairWithMerge(@NotNull ItemStack base, @NotNull ItemStack addition) {
     Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta());
     Damageable addedDurability = (Damageable) Objects.requireNonNull(addition.getItemMeta());
 
@@ -213,6 +220,24 @@ public final class AnvilUtil {
     }
 
     return value / 2;
+  }
+
+  private static @NotNull AnvilResult applyRename(
+      @NotNull AnvilOperation operation,
+      @NotNull AnvilResult result) {
+    var itemMeta = result.getResult().getItemMeta();
+
+    // If names are equal or name cannot be set, no change.
+    if (itemMeta == null || Objects.equals(itemMeta.getDisplayName(), operation.getRenameText())) {
+      return result;
+    }
+
+    // Increase cost by 1 and apply display name change.
+    var newResult = new AnvilResult(result.getResult(), result.getCost() + 1, result.getRepairCount());
+    itemMeta.setDisplayName(operation.getRenameText());
+    newResult.getResult().setItemMeta(itemMeta);
+
+    return newResult;
   }
 
   private AnvilUtil() {}

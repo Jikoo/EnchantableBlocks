@@ -7,7 +7,6 @@ import com.github.jikoo.enchantableblocks.util.enchant.EnchantingTableUtil;
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -116,17 +115,8 @@ public class TableEnchanter implements Listener {
     var registration = registry.get(itemStack.getType());
 
     // No registration, no enchantments.
-    if (registration == null || registration.getEnchants().isEmpty()) {
-      return true;
-    }
-
-    if (player.hasPermission("enchantableblocks.enchant.table")) {
-      return false;
-    }
-
-    String blockType = registration.getBlockClass().getSimpleName().toLowerCase(Locale.ROOT);
-
-    return !player.hasPermission("enchantableblocks.enchant.table." + blockType);
+    return registration == null || registration.getEnchants().isEmpty()
+        || !registration.hasEnchantPermission(player, "table");
   }
 
   @VisibleForTesting
