@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -187,11 +186,6 @@ public class EnchantableBlockManager {
     var chunkPath = getChunkPath(block);
 
     ItemStack itemStack = enchantableBlock.getItemStack();
-    // TODO should this be an implementation-specific handler?
-    if (itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
-      // Silk time isn't supposed to be preserved when broken.
-      itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    }
 
     if (!saveData.getStorage().isConfigurationSection(chunkPath)) {
       saveData.getStorage().set(chunkPath, null);

@@ -21,24 +21,49 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
- * Track and manage effects for enchanted furnaces.
+ * Track and manage effects for enchanted furnaces, blast furnaces, and smokers.
  */
 class EnchantableFurnace extends EnchantableBlock {
 
+  private static final String PATH_CAN_PAUSE = "silk.enabled";
+  private static final String PATH_FROZEN_TICKS = "silk.ticks";
+
   private final boolean canPause;
+  private short frozenTicks;
   private boolean updating = false;
 
+  /**
+   * Construct a new EnchantableFurnace instance.
+   *
+   * @param registration the {@link EnchantableFurnaceRegistration} creating the instance
+   * @param block the in-world {@link Block}
+   * @param itemStack the {@link ItemStack} used in creation
+   * @param storage the {@link ConfigurationSection} containing save data
+   */
   EnchantableFurnace(
       final @NotNull EnchantableFurnaceRegistration registration,
       final @NotNull Block block,
-      final @NotNull ItemStack itemStack,
+      @NotNull ItemStack itemStack,
       final @NotNull ConfigurationSection storage) {
     super(registration, block, itemStack, storage);
-    this.canPause = this.getItemStack().getEnchantments().containsKey(Enchantment.SILK_TOUCH);
-    if (this.canPause && this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH) == 1) {
-      // New furnaces shouldn't get 1 tick flame for free, but old furnaces need to re-light
-      this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
-      this.updateStorage();
+    if (storage.isBoolean(PATH_CAN_PAUSE)) {
+      // Existing furnace, use stored data.
+      this.canPause = storage.getBoolean(PATH_CAN_PAUSE, false);
+      this.frozenTicks = MathHelper.clampPositiveShort(storage.getInt(PATH_FROZEN_TICKS, 0));
+    } else {
+      // New or legacy furnace.
+      itemStack = this.getItemStack();
+      this.canPause = itemStack.getEnchantments().containsKey(Enchantment.SILK_TOUCH);
+      this.frozenTicks = 0;
+      // Convert legacy furnaces - silk enchant level used for frozen ticks.
+      if (this.canPause && itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH) != 1) {
+        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+        this.frozenTicks = MathHelper.clampPositiveShort(
+            itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH));
+      }
+      storage.set(PATH_CAN_PAUSE, canPause);
+      storage.set(PATH_FROZEN_TICKS, frozenTicks);
+      this.setDirty(true);
     }
   }
 
@@ -198,7 +223,7 @@ class EnchantableFurnace extends EnchantableBlock {
       return;
     }
 
-    this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, furnace.getBurnTime());
+    this.setFrozenTicks(furnace.getBurnTime());
     this.updateStorage();
     furnace.setBurnTime((short) 0);
     furnace.update(true);
@@ -242,7 +267,7 @@ class EnchantableFurnace extends EnchantableBlock {
     furnace.setBurnTime(
         MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
     furnace.update(true);
-    this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
+    this.setFrozenTicks((short) 0);
     this.updateStorage();
     return true;
   }
@@ -261,7 +286,7 @@ class EnchantableFurnace extends EnchantableBlock {
     furnace.setBurnTime(
         MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
     furnace.update(true);
-    this.getItemStack().addUnsafeEnchantment(Enchantment.SILK_TOUCH, 0);
+    this.setFrozenTicks((short) 0);
     this.updateStorage();
     return true;
   }
@@ -272,7 +297,19 @@ class EnchantableFurnace extends EnchantableBlock {
    * @return true if the furnace is paused
    */
   public boolean isPaused() {
-    return this.canPause && this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH) > 0;
+    return this.canPause && this.frozenTicks > 0;
+  }
+
+  /**
+   * Set the number of ticks the furnace is paused for.
+   *
+   * @param frozenTicks the number of ticks to freeze
+   */
+  @VisibleForTesting
+  void setFrozenTicks(short frozenTicks) {
+    this.frozenTicks = frozenTicks;
+    this.getStorage().set(PATH_FROZEN_TICKS, this.frozenTicks);
+    this.setDirty(true);
   }
 
   /**
@@ -282,7 +319,7 @@ class EnchantableFurnace extends EnchantableBlock {
    */
   @VisibleForTesting
   short getFrozenTicks() {
-    return (short) this.getItemStack().getEnchantmentLevel(Enchantment.SILK_TOUCH);
+    return this.frozenTicks;
   }
 
   /**
@@ -324,6 +361,7 @@ class EnchantableFurnace extends EnchantableBlock {
         "block=" + getBlock() +
         "itemStack=" + getItemStack() +
         "canPause=" + canPause +
+        "frozenTicks=" + frozenTicks +
         '}';
   }
 

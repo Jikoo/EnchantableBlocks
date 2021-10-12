@@ -86,7 +86,7 @@ class EnchantableFurnaceTest {
     storage = plugin.getConfig().createSection("going.to.the.store");
   }
 
-  private EnchantableFurnace newBlock() {
+  private @NotNull EnchantableFurnace newBlock() {
     return registration.newBlock(block, itemStack, storage);
   }
 
@@ -151,14 +151,18 @@ class EnchantableFurnaceTest {
     assertThat("Modifier must be set", enchantableFurnace.getFortune(), is(modifier));
   }
 
+  @DisplayName("Silk touch not present does not allow pausing.")
+  @Test
+  void testCannotPause() {
+    var enchantableFurnace = newBlock();
+    assertThat("Non-silk item cannot pause", enchantableFurnace.canPause(), is(false));
+  }
+
   @DisplayName("Silk touch allows pausing.")
   @Test
   void testCanPause() {
-    var enchantableFurnace = newBlock();
-    assertThat("Non-silk item cannot pause", enchantableFurnace.canPause(), is(false));
-
     itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    enchantableFurnace = newBlock();
+    var enchantableFurnace = newBlock();
     assertThat("Silk item can pause", enchantableFurnace.canPause());
   }
 
