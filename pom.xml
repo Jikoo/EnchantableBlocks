@@ -188,6 +188,7 @@
                     <include>com/github/jikoo/planarwrappers/util/Coords.class</include>
                     <include>com/github/jikoo/planarwrappers/util/StringConverters.class</include>
                     <include>com/github/jikoo/planarwrappers/util/WeightedRandom.class</include>
+                    <include>com/github/jikoo/planarwrappers/util/WeightedRandom$Choice.class</include>
                   </includes>
                 </filter>
                 <filter>
