@@ -15,7 +15,6 @@ import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentHelper;
-import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -50,7 +49,6 @@ class TableEnchanterTest {
 
   private ServerMock server;
   private Plugin plugin;
-  private PatternCountHandler cannotObtainSeed;
   private EnchantableBlockRegistry registry;
   private Player player;
   private TableEnchanter listener;
@@ -72,8 +70,6 @@ class TableEnchanterTest {
       }
     };
     plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    cannotObtainSeed = new PatternCountHandler("Cannot obtain seed");
-    plugin.getLogger().addHandler(cannotObtainSeed);
     registry = new EnchantableBlockRegistry(plugin);
 
     // Add dummy registrations for valid and invalid materials.

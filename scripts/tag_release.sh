@@ -14,7 +14,7 @@ git add .
 git commit -S -m "Bump version to $version for release"
 git tag -s "$version" -m "Release $version"
 
-mvn clean package -am -P all
+mvn clean package -am
 
 mvn versions:set -DnewVersion="$snapshot"
 
