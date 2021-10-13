@@ -28,7 +28,6 @@ public class TableEnchanter implements Listener {
 
   private final Plugin plugin;
   private final EnchantableBlockRegistry registry;
-  private boolean needPluginSeed = false;
   private final NamespacedKey seedKey;
 
   /**
@@ -192,31 +191,6 @@ public class TableEnchanter implements Listener {
    */
   @VisibleForTesting
   long getEnchantmentSeed(@NotNull Player player, @NotNull IntSupplier supplier) {
-    if (needPluginSeed) {
-      return getPluginSeed(player, supplier);
-    }
-
-    try {
-      // Attempt to get internal seed
-      Object nmsPlayer = player.getClass().getDeclaredMethod("getHandle").invoke(player);
-      return (int) nmsPlayer.getClass().getDeclaredMethod("eG").invoke(nmsPlayer);
-    } catch (ReflectiveOperationException | ClassCastException e) {
-      plugin.getLogger().warning(
-          "Cannot obtain seed from EntityPlayer. Falling through to internal seed.");
-      needPluginSeed = true;
-      return getPluginSeed(player, supplier);
-    }
-  }
-
-  /**
-   * Obtain the plugin-created enchantment seed from the {@link Player}.
-   *
-   * @param player the player
-   * @param supplier the way to obtain the seed if not present
-   * @return the enchantment seed
-   */
-  @VisibleForTesting
-  long getPluginSeed(@NotNull Player player, @NotNull IntSupplier supplier) {
     var integer = player.getPersistentDataContainer().get(seedKey, PersistentDataType.INTEGER);
 
     if (integer == null) {

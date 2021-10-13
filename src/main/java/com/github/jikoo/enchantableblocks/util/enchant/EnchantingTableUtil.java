@@ -99,21 +99,22 @@ public final class EnchantingTableUtil {
    * @return the magic value or 0 if the value cannot be obtained
    */
   private static int getEnchantmentId(@NotNull Enchantment enchantment) {
-    String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
-    String nmsVersion = split[split.length - 1];
+    // Re-obtain from registry to ensure we have the internal enchantment.
+    enchantment = Enchantment.getByKey(enchantment.getKey());
+    if (enchantment == null) {
+      return 0;
+    }
 
     try {
       Class<?> clazzRegistry = Class.forName("net.minecraft.core.IRegistry");
+      // NMSREF net.minecraft.core.Registry.ENCHANTMENT
       Object enchantmentRegistry = clazzRegistry.getDeclaredField("X").get(null);
+      // NMSREF net.minecraft.core.Registry#getId - N.B. Spigot appears to deobf, do not trust mapping
       Method methodRegistryGetId = clazzRegistry.getDeclaredMethod("getId", Object.class);
 
-      Class<?> clazzCraftEnchant =
-          Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
-      Method methodCraftEnchantGetRaw =
-          clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
+      Method getHandle = enchantment.getClass().getDeclaredMethod("getHandle");
 
-      return (int) methodRegistryGetId.invoke(enchantmentRegistry,
-          methodCraftEnchantGetRaw.invoke(null, enchantment));
+      return (int) methodRegistryGetId.invoke(enchantmentRegistry, getHandle.invoke(enchantment));
     } catch (ReflectiveOperationException | ClassCastException e) {
       return 0;
     }

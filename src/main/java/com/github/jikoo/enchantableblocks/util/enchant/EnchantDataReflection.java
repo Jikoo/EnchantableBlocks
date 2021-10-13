@@ -19,6 +19,7 @@ final class EnchantDataReflection {
    * @return the rarity or UNKNOWN if unable to fetch
    */
   static Rarity getRarity(Enchantment enchantment) {
+    // NMSREF net.minecraft.world.item.enchantment.Enchantment#getRarity()
     return nmsHandler(enchantment, nmsEnchant -> {
       Object enchantmentRarity = nmsEnchant.getClass().getDeclaredMethod("d").invoke(nmsEnchant);
       int weight = (int) enchantmentRarity.getClass().getDeclaredMethod("a")
@@ -34,6 +35,7 @@ final class EnchantDataReflection {
    * @return the internal method or the default value if the internal method is not available
    */
   static IntUnaryOperator getMinEnchantQuality(Enchantment enchantment) {
+    // NMSREF net.minecraft.world.item.enchantment.Enchantment#getMinCost(int)
     return nmsIntUnaryOperator(enchantment, "a", EnchantDataReflection::defaultMinEnchantQuality);
   }
 
@@ -54,6 +56,7 @@ final class EnchantDataReflection {
    * @return the internal method or the default value if the internal method is not available
    */
   static IntUnaryOperator getMaxEnchantQuality(Enchantment enchantment) {
+    // NMSREF net.minecraft.world.item.enchantment.Enchantment#getMaxCost(int)
     return nmsIntUnaryOperator(enchantment, "b", EnchantDataReflection::defaultMaxEnchantQuality);
   }
 
@@ -99,8 +102,10 @@ final class EnchantDataReflection {
    * @param <T> the type of value
    * @return the internal value or default value if the internal value is not available
    */
-  private static <T> T nmsHandler(@NotNull Enchantment enchantment,
-      @NotNull ThrowingFunction<Object, T, ReflectiveOperationException> function, @NotNull T defaultValue) {
+  private static <T> T nmsHandler(
+      @NotNull Enchantment enchantment,
+      @NotNull ThrowingFunction<Object, T, ReflectiveOperationException> function,
+      @NotNull T defaultValue) {
     try {
       Enchantment craftEnchant = Enchantment.getByKey(enchantment.getKey());
 
@@ -108,7 +113,8 @@ final class EnchantDataReflection {
         return defaultValue;
       }
 
-      Object nmsEnchant = craftEnchant.getClass().getDeclaredMethod("getHandle").invoke(craftEnchant);
+      Object nmsEnchant = craftEnchant.getClass().getDeclaredMethod("getHandle")
+          .invoke(craftEnchant);
 
       return function.apply(nmsEnchant);
     } catch (Exception e) {

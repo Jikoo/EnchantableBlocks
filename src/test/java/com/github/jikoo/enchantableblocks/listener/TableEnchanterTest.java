@@ -195,51 +195,21 @@ class TableEnchanterTest {
   void testOwnSeed() {
     var value = 10;
     var expected = value - 1;
-    var ownSeed1 = listener.getPluginSeed(player, () -> expected);
-    assertThat("Own seed must be from supplier", ownSeed1, is((long) expected));
-    var ownSeed2 = listener.getPluginSeed(player, () -> value);
-    assertThat("Own seed must be from cache", ownSeed2, is((long) expected));
+    var ownSeed1 = listener.getEnchantmentSeed(player, () -> expected);
+    assertThat("Seed must be from supplier", ownSeed1, is((long) expected));
+    var ownSeed2 = listener.getEnchantmentSeed(player, () -> value);
+    assertThat("Seed must be from cache", ownSeed2, is((long) expected));
   }
 
   @Test
   void testResetSeed() {
     var value1 = 10;
-    var ownSeed1 = listener.getPluginSeed(player, () -> value1);
-    assertThat("Own seed must be from supplier", ownSeed1, is((long) value1));
+    var ownSeed1 = listener.getEnchantmentSeed(player, () -> value1);
+    assertThat("Seed must be from supplier", ownSeed1, is((long) value1));
     listener.resetSeed(player);
     var value2 = value1 - 1;
-    var ownSeed2 = listener.getPluginSeed(player, () -> value2);
-    assertThat("Own seed must be from supplier", ownSeed2, is((long) value2));
-  }
-
-  @Test
-  void testInternalSeed() {
-    var value = 10;
-    var expected = value - 1;
-    player = new PlayerMock(server,"sampletext") {
-      @SuppressWarnings("unused")
-      public Object getHandle() {
-        return new Object() {
-          public int eG() {
-            return expected;
-          }
-        };
-      }
-    };
-    var seed = listener.getEnchantmentSeed(player, () -> value);
-    assertThat("Seed must be from player", seed, is((long) expected));
-  }
-
-  @Test
-  void testBrokenInternalSeed() {
-    var value = 10;
-    var seed = listener.getEnchantmentSeed(player, () -> value);
-    assertThat("Seed must fall through", seed, is((long) value));
-    assertThat("Fallthrough must be logged", cannotObtainSeed.getMatches(), is(1));
-    // Again to hit fallthrough more quickly
-    seed = listener.getEnchantmentSeed(player, () -> value);
-    assertThat("Seed must fall through", seed, is((long) value));
-    assertThat("Fallthrough must not be logged repeatedly", cannotObtainSeed.getMatches(), is(1));
+    var ownSeed2 = listener.getEnchantmentSeed(player, () -> value2);
+    assertThat("Seed must be from supplier", ownSeed2, is((long) value2));
   }
 
   @Test

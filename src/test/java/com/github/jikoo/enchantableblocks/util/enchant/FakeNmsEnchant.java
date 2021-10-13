@@ -20,6 +20,7 @@ class FakeNmsEnchant extends EnchantmentMock {
     this.maxQuality = maxQuality;
   }
 
+  // NMSREF net.minecraft.world.item.enchantment.Enchantment
   public Object getHandle() {
     return new Object() {
 
