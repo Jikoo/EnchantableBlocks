@@ -26,7 +26,11 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
     super();
   }
 
-  public EnchantableBlocksPlugin(JavaPluginLoader loader, PluginDescriptionFile description, File dataFolder, File file) {
+  public EnchantableBlocksPlugin(
+      @NotNull JavaPluginLoader loader,
+      @NotNull PluginDescriptionFile description,
+      @NotNull File dataFolder,
+      @NotNull File file) {
     super(loader, description, dataFolder, file);
   }
 
@@ -64,7 +68,9 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
         this.blockManager.loadChunkBlocks(chunk);
       }
     }
-    getLogger().info(() -> "Loaded all active blocks in " + ((System.nanoTime() - startTime) / 1_000_000_000D) + " seconds");
+    getLogger().info(() ->
+        "Loaded all active blocks in "
+            + ((System.nanoTime() - startTime) / 1_000_000_000D) + " seconds");
   }
 
   @Override
@@ -86,7 +92,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
     this.reloadConfig();
     this.blockManager.getRegistry().reload();
-    sender.sendMessage("[EnchantableBlocks v" + getDescription().getVersion() + "] Reloaded config and registry cache.");
+    sender.sendMessage(
+        "[EnchantableBlocks v"
+            + getDescription().getVersion()
+            + "] Reloaded config and registry cache.");
     return true;
   }
 

@@ -36,7 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * EnchantableRegistration for furnaces.
+ * EnchantableRegistration for furnace variants.
  */
 public class EnchantableFurnaceRegistration extends EnchantableRegistration {
 
@@ -56,6 +56,13 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   private final Map<Integer, CookingRecipe<?>> furnaceCache = new Int2ObjectOpenHashMap<>();
   private final @NotNull Listener listener;
 
+  /**
+   * Construct a new {@code EnchantableFurnaceRegistration} for the given {@link Plugin} and
+   * {@link EnchantableBlockManager}.
+   *
+   * @param plugin the owning {@code Plugin}
+   * @param manager the owning {@code EnchantableBlockManager}
+   */
   public EnchantableFurnaceRegistration(
       @NotNull Plugin plugin,
       @NotNull EnchantableBlockManager manager) {
@@ -128,7 +135,8 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
     ItemStack cacheData = smelting.clone();
     cacheData.setAmount(1);
     Integer cacheId = cacheData.hashCode();
-    CookingRecipe<?> recipe = recipes.computeIfAbsent(cacheId, key -> locateRecipe(inventory.getHolder(), smelting));
+    CookingRecipe<?> recipe = recipes.computeIfAbsent(cacheId,
+        key -> locateRecipe(inventory.getHolder(), smelting));
 
     if (!recipe.getInputChoice().test(smelting)) {
       return null;
@@ -138,14 +146,16 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   }
 
   /**
-   * Match a {@link CookingRecipe} for a particular {@link ItemStack} in an inventory belonging to a specific
-   * {@link InventoryHolder}.
+   * Match a {@link CookingRecipe} for a particular {@link ItemStack} in an inventory belonging to a
+   * specific {@link InventoryHolder}.
    *
    * @param holder the inventory holder
    * @param smelting the recipe input
    * @return the {@link CookingRecipe} or a default invalid recipe if no match was found
    */
-  private CookingRecipe<?> locateRecipe(@Nullable InventoryHolder holder, @NotNull ItemStack smelting) {
+  private CookingRecipe<?> locateRecipe(
+      @Nullable InventoryHolder holder,
+      @NotNull ItemStack smelting) {
     Iterator<Recipe> iterator = Bukkit.recipeIterator();
     while (iterator.hasNext()) {
       Recipe next = iterator.next();

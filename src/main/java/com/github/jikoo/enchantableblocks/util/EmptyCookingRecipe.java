@@ -12,6 +12,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
 
+  /**
+   * Create a new {@code EmptyCookingRecipe}.
+   *
+   * @param key the {@link NamespacedKey} of the recipe
+   */
   public EmptyCookingRecipe(@NotNull NamespacedKey key) {
     super(
         key,

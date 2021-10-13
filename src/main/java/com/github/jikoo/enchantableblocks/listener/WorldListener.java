@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
- * Listener for generic world events.
+ * Listener for block loading, unloading, creation, and destruction.
  */
 public class WorldListener implements Listener {
 
@@ -32,6 +32,13 @@ public class WorldListener implements Listener {
   @VisibleForTesting
   final Map<Block, DropReplacement> pendingDrops = new HashMap<>();
 
+  /**
+   * Construct a new {@code WorldListener} to manage world events for
+   * {@link com.github.jikoo.enchantableblocks.block.EnchantableBlock EnchantableBlocks}.
+   *
+   * @param plugin the owning {@link Plugin}
+   * @param manager the {@link EnchantableBlockManager} managing blocks
+   */
   public WorldListener(@NotNull Plugin plugin, @NotNull EnchantableBlockManager manager) {
     this.plugin = plugin;
     this.manager = manager;

@@ -26,11 +26,11 @@ public final class EnchantingTableUtil {
   private static final Random RANDOM = new Random();
 
   /**
-   * Get three integers representing button levels in an enchantment table.
+   * Get three integers representing button levels in an enchanting table.
    *
    * @param shelves the number of bookshelves to use when calculating levels
    * @param seed the seed of the calculation
-   * @return an array of three ints
+   * @return an array of three integers
    */
   public static int[] getButtonLevels(int shelves, long seed) {
     shelves = Math.min(shelves, 15);
@@ -45,7 +45,7 @@ public final class EnchantingTableUtil {
   }
 
   /**
-   * Get an integer for an enchantment level in an enchantment table.
+   * Get an integer for a button's level requirement in an enchanting table.
    *
    * @param button the number of the button
    * @param shelves the number of bookshelves present
@@ -66,8 +66,8 @@ public final class EnchantingTableUtil {
   }
 
   /**
-   * Update enchantment table buttons for a player after a tick has passed.
-   * This fixes desync problems that prevent the client from enchanting ordinarily un-enchantable objects.
+   * Update enchantment table buttons for a player after a tick has passed. This fixes desync
+   * problems that prevent the client from enchanting ordinarily un-enchantable objects.
    *
    * @param player the player enchanting
    * @param offers the enchantment offers
@@ -78,46 +78,56 @@ public final class EnchantingTableUtil {
       for (int i = 1; i <= 3; ++i) {
         EnchantmentOffer offer = offers[i - 1];
         if (offer != null) {
-          player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_BUTTON" + i), offer.getCost());
-          player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_LEVEL" + i), offer.getEnchantmentLevel());
-          player.setWindowProperty(InventoryView.Property.valueOf("ENCHANT_ID" + i), getEnchantmentId(offer.getEnchantment()));
+          player.setWindowProperty(
+              InventoryView.Property.valueOf("ENCHANT_BUTTON" + i),
+              offer.getCost());
+          player.setWindowProperty(
+              InventoryView.Property.valueOf("ENCHANT_LEVEL" + i),
+              offer.getEnchantmentLevel());
+          player.setWindowProperty(
+              InventoryView.Property.valueOf("ENCHANT_ID" + i),
+              getEnchantmentId(offer.getEnchantment()));
         }
       }
     }, 1L);
   }
 
   /**
-   * Get the magic enchantment ID for use in packets.
+   * Get an {@link Enchantment Enchantment's} magic ID for use in packets.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @return the magic value or 0 if the value cannot be obtained
    */
-  private static int getEnchantmentId(Enchantment enchantment) {
+  private static int getEnchantmentId(@NotNull Enchantment enchantment) {
     String[] split = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
     String nmsVersion = split[split.length - 1];
 
     try {
-      Class<?> clazzIRegistry = Class.forName("net.minecraft.core.IRegistry");
-      Object enchantmentRegistry = clazzIRegistry.getDeclaredField("X").get(null);
-      Method methodIRegistryGetId = clazzIRegistry.getDeclaredMethod("getId", Object.class);
+      Class<?> clazzRegistry = Class.forName("net.minecraft.core.IRegistry");
+      Object enchantmentRegistry = clazzRegistry.getDeclaredField("X").get(null);
+      Method methodRegistryGetId = clazzRegistry.getDeclaredMethod("getId", Object.class);
 
-      Class<?> clazzCraftEnchant = Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
-      Method methodCraftEnchantGetRaw = clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
+      Class<?> clazzCraftEnchant =
+          Class.forName("org.bukkit.craftbukkit." + nmsVersion + ".enchantments.CraftEnchantment");
+      Method methodCraftEnchantGetRaw =
+          clazzCraftEnchant.getDeclaredMethod("getRaw", Enchantment.class);
 
-      return (int) methodIRegistryGetId.invoke(enchantmentRegistry, methodCraftEnchantGetRaw.invoke(null, enchantment));
+      return (int) methodRegistryGetId.invoke(enchantmentRegistry,
+          methodCraftEnchantGetRaw.invoke(null, enchantment));
     } catch (ReflectiveOperationException | ClassCastException e) {
       return 0;
     }
   }
 
   /**
-   * Generate a set of levelled enchantments in a similar fashion to vanilla.
-   * Follows provided rules for enchantment incompatibility.
+   * Generate a set of levelled {@link Enchantment Enchantments} in a similar fashion to vanilla.
+   * Follows provided rules for incompatibility.
    *
    * @param operation the data used to calculate the results of the operation
    * @return the selected enchantments mapped to their corresponding levels
    */
-  static Map<Enchantment, Integer> calculateEnchantments(EnchantOperation operation) {
+  static @NotNull Map<Enchantment, Integer> calculateEnchantments(
+      @NotNull EnchantOperation operation) {
 
     // Ensure enchantments present.
     if (operation.getEnchantments().isEmpty()) {
@@ -128,12 +138,14 @@ public final class EnchantingTableUtil {
     RANDOM.setSeed(operation.getSeed());
 
     // Determine effective level.
-    int enchantQuality = getEnchantQuality(operation.getEnchantability(), operation.getButtonLevel());
+    int enchantQuality =
+        getEnchantQuality(operation.getEnchantability(), operation.getButtonLevel());
     final int firstEffective = enchantQuality;
 
     // Determine available enchantments.
     Collection<EnchantData> available = operation.getEnchantments().stream().map(EnchantData::of)
-        .filter(enchData -> getEnchantmentLevel(enchData, firstEffective) > 0).collect(Collectors.toSet());
+        .filter(enchData -> getEnchantmentLevel(enchData, firstEffective) > 0)
+        .collect(Collectors.toSet());
 
     // Ensure enchantments are available.
     if (available.isEmpty()) {
@@ -152,17 +164,19 @@ public final class EnchantingTableUtil {
   }
 
   /**
-   * Randomly select and add an enchantment based on quality.
+   * Randomly select and add an {@link Enchantment} based on quality.
    *
-   * <p>If quality is too low or high, enchantment may not be applied.
+   * <p>If quality is too low or high, {@code Enchantment} may not be applied.
    *
-   * @param selected the map of already-selected enchantments
-   * @param available the available enchantments
-   * @param enchantQuality the quality of the enchantment
-   * @param incompatibility the way to determine if two enchantments are incompatible
+   * @param selected the map of already-selected {@code Enchantments}
+   * @param available the available {@code Enchantments}
+   * @param enchantQuality the quality of the {@code Enchantment}
+   * @param incompatibility the way to determine if two {@code Enchantments} are incompatible
    */
-  private static void addEnchant(@NotNull Map<Enchantment, Integer> selected,
-      @NotNull Collection<EnchantData> available, int enchantQuality,
+  private static void addEnchant(
+      @NotNull Map<Enchantment, Integer> selected,
+      @NotNull Collection<EnchantData> available,
+      int enchantQuality,
       @NotNull BiPredicate<Enchantment, Enchantment> incompatibility) {
     if (available.isEmpty())  {
       return;
@@ -196,7 +210,9 @@ public final class EnchantingTableUtil {
     }
 
     int enchantQuality = enchantability.getValue() / 4 + 1;
-    enchantQuality = enchantLevel + 1 + RANDOM.nextInt(enchantQuality) + RANDOM.nextInt(enchantQuality);
+    enchantQuality = enchantLevel + 1
+        + RANDOM.nextInt(enchantQuality)
+        + RANDOM.nextInt(enchantQuality);
     // Random enchantability penalty/bonus 85-115%
     double bonus = (RANDOM.nextDouble() + RANDOM.nextDouble() - 1) * 0.15 + 1;
     enchantQuality = (int) (enchantQuality * bonus + 0.5);
@@ -206,14 +222,17 @@ public final class EnchantingTableUtil {
   /**
    * Get an enchantment level based on enchantment quality.
    *
-   * <p>Returns 0 if enchantment is too low or high quality. Enchantments of level 0 should not be added.
+   * <p>Returns 0 if enchantment is too low or high quality. Enchantments of level 0 should not be
+   * added.
    *
    * @param enchant the enchantment
    * @param enchantQuality the quality of the enchantment
    * @return the level of the enchantment
    */
   private static int getEnchantmentLevel(@NotNull EnchantData enchant, int enchantQuality) {
-    for (int i = enchant.getEnchantment().getMaxLevel(); i >= enchant.getEnchantment().getStartLevel(); --i) {
+    for (int i = enchant.getEnchantment().getMaxLevel();
+        i >= enchant.getEnchantment().getStartLevel();
+        --i) {
       if (enchant.getMaxEffectiveLevel(i) < enchantQuality) {
         return 0;
       }

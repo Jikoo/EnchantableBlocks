@@ -35,51 +35,51 @@ public abstract class EnchantableBlock {
   }
 
   /**
-   * Get the in-world Block of the EnchantableBlock.
+   * Get the in-world {@link Block}.
    *
-   * @return the Block
+   * @return the {@code Block}
    */
   public @NotNull Block getBlock() {
     return this.block;
   }
 
   /**
-   * Get the ItemStack used to create the EnchantableBlock.
+   * Get the {@link ItemStack} that created this block.
    *
-   * @return the ItemStack
+   * @return the {@code ItemStack}
    */
   public @NotNull ItemStack getItemStack() {
     return this.itemStack;
   }
 
   /**
-   * Check if the EnchantableBlock's in-world location is a Block of a correct Material.
+   * Check if the block's in-world location is a {@link Block} of a correct {@link Material}.
    *
-   * @return true if the Block is a valid Material
+   * @return true if the {@code Block} is a valid type
    */
   public boolean isCorrectBlockType() {
     return this.isCorrectType(this.getBlock().getType());
   }
 
   /**
-   * Check if a Material is valid for the EnchantableBlock.
+   * Check if a {@link Material} is valid.
    *
-   * @param material the Material to check
-   * @return true if the Material is valid
+   * @param material the {@code Material} to check
+   * @return true if the {@code Material} is valid
    */
   public boolean isCorrectType(@NotNull Material material) {
     return this.getRegistration().getMaterials().contains(material);
   }
 
   /**
-   * Ticks the EnchantableBlock.
+   * Tick the block.
    */
   public void tick() {}
 
   /**
-   * Check if the EnchantableBlock has unsaved changes pending.
+   * Check if the block has unsaved changes pending.
    *
-   * @return true if the EnchantableBlock needs to be saved
+   * @return true if the block needs to be saved
    */
   public boolean isDirty() {
     this.updateStorage();
@@ -87,16 +87,16 @@ public abstract class EnchantableBlock {
   }
 
   /**
-   * Set whether the EnchantableBlock needs to be saved.
+   * Set whether the block needs to be saved.
    *
-   * @param dirty true if the EnchantableBlock needs to be saved
+   * @param dirty true if the block needs to be saved
    */
   public void setDirty(boolean dirty) {
     this.dirty = dirty;
   }
 
   /**
-   * Update the ConfigurationSection containing the EnchantableBlock's save data.
+   * Update the {@link ConfigurationSection} containing the block's save data.
    */
   public void updateStorage() {
     if (!this.itemStack.equals(getStorage().getItemStack("itemstack"))) {
@@ -106,16 +106,16 @@ public abstract class EnchantableBlock {
   }
 
   /**
-   * Get the ConfigurationSection containing the EnchantableBlock's save data.
+   * Get the {@link ConfigurationSection} containing the block's save data.
    *
-   * @return the ConfigurationSection
+   * @return the save data
    */
   protected @NotNull ConfigurationSection getStorage() {
     return storage;
   }
 
   /**
-   * Get the configuration for this EnchantableBlock.
+   * Get the {@link EnchantableBlockConfig} for this block.
    *
    * @return the configuration
    */
@@ -124,7 +124,7 @@ public abstract class EnchantableBlock {
   }
 
   /**
-   * Get the registration providing the EnchantableBlock.
+   * Get the {@link EnchantableRegistration} providing the block implementation.
    *
    * @return the registration
    */

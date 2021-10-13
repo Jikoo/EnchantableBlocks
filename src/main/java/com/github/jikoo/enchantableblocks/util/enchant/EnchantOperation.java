@@ -24,7 +24,7 @@ public class EnchantOperation {
   Enchantability enchantability = Enchantability.BOOK;
 
   /**
-   * Constructor for a new EnchantOperation.
+   * Construct a new {@code EnchantOperation}.
    *
    * @param enchantments the enchantments that may be applied
    */
@@ -33,9 +33,9 @@ public class EnchantOperation {
   }
 
   /**
-   * Get the enchantments that may be applied by the enchantment operation.
+   * Get the {@link Enchantment Enchantments} that may be applied by the operation.
    *
-   *  @return a Collection of enchantments that may be applied
+   *  @return a {@link Collection} of {@code Enchantments} that may be applied
    */
   public Collection<Enchantment> getEnchantments() {
     return this.enchantments;
@@ -60,7 +60,8 @@ public class EnchantOperation {
   }
 
   /**
-   * Set the seed used by the {@link java.util.Random Random} to ensure consistent results for consistent inputs.
+   * Set the seed used by the {@link java.util.Random Random} to ensure consistent results for
+   * consistent inputs.
    *
    * @param seed the enchanting seed
    */
@@ -96,27 +97,27 @@ public class EnchantOperation {
   }
 
   /**
-   * Set the method determining if two enchantments are incompatible.
+   * Set the method determining if two {@link Enchantment Enchantments} are incompatible.
    *
-   * @param incompatibility the method determining enchantments incompatible
+   * @param incompatibility the incompatibility comparison
    */
   public void setIncompatibility(BiPredicate<Enchantment, Enchantment> incompatibility) {
     this.incompatibility = incompatibility;
   }
 
   /**
-   * Get the method for comparing enchantments to determine incompatiblity.
+   * Get the method for comparing {@link Enchantment Enchantments} to determine incompatiblity.
    *
-   * @return the enchantment incompatibility comparison
+   * @return the incompatibility comparison
    */
   public BiPredicate<Enchantment, Enchantment> getIncompatibility() {
     return this.incompatibility;
   }
 
   /**
-   * Get the enchantments resulting from the enchanting operation.
+   * Get the {@link Enchantment Enchantments} resulting from the enchanting operation.
    *
-   * @return the enchantments resulting from the enchanting operation
+   * @return the results of the enchanting operation
    */
   public Map<Enchantment, Integer> apply() {
     return EnchantingTableUtil.calculateEnchantments(this);

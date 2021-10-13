@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 /**
- * Track and manage effects for enchanted furnaces, blast furnaces, and smokers.
+ * Track and manage effects for enchanted furnace variants.
  */
 class EnchantableFurnace extends EnchantableBlock {
 
@@ -33,7 +33,7 @@ class EnchantableFurnace extends EnchantableBlock {
   private boolean updating = false;
 
   /**
-   * Construct a new EnchantableFurnace instance.
+   * Construct a new {@code EnchantableFurnace} instance.
    *
    * @param registration the {@link EnchantableFurnaceRegistration} creating the instance
    * @param block the in-world {@link Block}

@@ -15,6 +15,7 @@ import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentHelper;
+import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -49,6 +50,7 @@ class TableEnchanterTest {
 
   private ServerMock server;
   private Plugin plugin;
+  private PatternCountHandler cannotObtainSeed;
   private EnchantableBlockRegistry registry;
   private Player player;
   private TableEnchanter listener;
@@ -70,6 +72,8 @@ class TableEnchanterTest {
       }
     };
     plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    cannotObtainSeed = new PatternCountHandler("Cannot obtain seed");
+    plugin.getLogger().addHandler(cannotObtainSeed);
     registry = new EnchantableBlockRegistry(plugin);
 
     // Add dummy registrations for valid and invalid materials.
@@ -191,20 +195,20 @@ class TableEnchanterTest {
   void testOwnSeed() {
     var value = 10;
     var expected = value - 1;
-    var ownSeed1 = listener.getOwnSeed(player, () -> expected);
+    var ownSeed1 = listener.getPluginSeed(player, () -> expected);
     assertThat("Own seed must be from supplier", ownSeed1, is((long) expected));
-    var ownSeed2 = listener.getOwnSeed(player, () -> value);
+    var ownSeed2 = listener.getPluginSeed(player, () -> value);
     assertThat("Own seed must be from cache", ownSeed2, is((long) expected));
   }
 
   @Test
   void testResetSeed() {
     var value1 = 10;
-    var ownSeed1 = listener.getOwnSeed(player, () -> value1);
+    var ownSeed1 = listener.getPluginSeed(player, () -> value1);
     assertThat("Own seed must be from supplier", ownSeed1, is((long) value1));
     listener.resetSeed(player);
     var value2 = value1 - 1;
-    var ownSeed2 = listener.getOwnSeed(player, () -> value2);
+    var ownSeed2 = listener.getPluginSeed(player, () -> value2);
     assertThat("Own seed must be from supplier", ownSeed2, is((long) value2));
   }
 
@@ -231,9 +235,11 @@ class TableEnchanterTest {
     var value = 10;
     var seed = listener.getEnchantmentSeed(player, () -> value);
     assertThat("Seed must fall through", seed, is((long) value));
+    assertThat("Fallthrough must be logged", cannotObtainSeed.getMatches(), is(1));
     // Again to hit fallthrough more quickly
     seed = listener.getEnchantmentSeed(player, () -> value);
     assertThat("Seed must fall through", seed, is((long) value));
+    assertThat("Fallthrough must not be logged repeatedly", cannotObtainSeed.getMatches(), is(1));
   }
 
   @Test

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.IntUnaryOperator;
 import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Container for extra enchantment-related data necessary to generate enchantments.
@@ -70,51 +71,76 @@ class EnchantData implements WeightedRandom.Choice {
     add(Enchantment.MENDING, Rarity.RARE, level -> level * 25);
   }
 
-  private static IntUnaryOperator modLvl(int base, int levelMod) {
+  private static @NotNull IntUnaryOperator modLvl(int base, int levelMod) {
     return level -> base + (level - 1) * levelMod;
   }
 
-  private static IntUnaryOperator val(int value) {
+  private static @NotNull IntUnaryOperator val(int value) {
     return integer -> value;
   }
 
-  private static void add(Enchantment enchantment, Rarity rarity, IntUnaryOperator min, IntUnaryOperator max) {
+  private static void add(
+      @NotNull Enchantment enchantment,
+      @NotNull Rarity rarity,
+      @NotNull IntUnaryOperator min,
+      @NotNull IntUnaryOperator max) {
     EnchantData data = new EnchantData(enchantment, rarity, min, max);
     ENCHANT_DATA.put(data.getEnchantment(), data);
   }
 
-  private static void add(Enchantment enchantment, Rarity rarity, IntUnaryOperator min, int maxMod) {
+  private static void add(
+      @NotNull Enchantment enchantment,
+      @NotNull Rarity rarity,
+      @NotNull IntUnaryOperator min,
+      int maxMod) {
     add(enchantment, rarity, min, level -> min.applyAsInt(level) + maxMod);
   }
 
-  private static void add(Enchantment enchantment, Rarity rarity, IntUnaryOperator min) {
+  private static void add(
+      @NotNull Enchantment enchantment,
+      @NotNull Rarity rarity,
+      @NotNull IntUnaryOperator min) {
     add(enchantment, rarity, min, 50);
   }
 
-  private static void addProtection(Enchantment enchantment, Rarity rarity, int base, int levelMod) {
+  private static void addProtection(
+      @NotNull Enchantment enchantment,
+      @NotNull Rarity rarity,
+      int base,
+      int levelMod) {
     add(enchantment, rarity, modLvl(base, levelMod), levelMod);
   }
 
-  private static void addLoot(Enchantment enchantment, IntUnaryOperator min, IntUnaryOperator max) {
+  private static void addLoot(
+      @NotNull Enchantment enchantment,
+      @NotNull IntUnaryOperator min,
+      @NotNull IntUnaryOperator max) {
     add(enchantment, Rarity.RARE, min, max);
   }
 
-  public static EnchantData of(Enchantment enchantment) {
+  @TestOnly
+  static boolean isPresent(@NotNull Enchantment enchantment) {
+    return ENCHANT_DATA.containsKey(enchantment);
+  }
+
+  static EnchantData of(@NotNull Enchantment enchantment) {
     return ENCHANT_DATA.computeIfAbsent(enchantment, EnchantData::new);
   }
 
-  private final Enchantment enchantment;
-  private final Rarity rarity;
-  private final IntUnaryOperator minEffectiveLevel;
-  private final IntUnaryOperator maxEffectiveLevel;
+  private final @NotNull Enchantment enchantment;
+  private final @NotNull Rarity rarity;
+  private final @NotNull IntUnaryOperator minEffectiveLevel;
+  private final @NotNull IntUnaryOperator maxEffectiveLevel;
 
-  EnchantData(@NotNull Enchantment enchantment) {
+  private EnchantData(@NotNull Enchantment enchantment) {
     this(enchantment, EnchantDataReflection.getRarity(enchantment),
         EnchantDataReflection.getMinEnchantQuality(enchantment),
         EnchantDataReflection.getMaxEnchantQuality(enchantment));
   }
 
-  EnchantData(@NotNull Enchantment enchantment, Rarity rarity,
+  private EnchantData(
+      @NotNull Enchantment enchantment,
+      @NotNull Rarity rarity,
       @NotNull IntUnaryOperator minEnchantQuality,
       @NotNull IntUnaryOperator maxEnchantQuality) {
     this.enchantment = enchantment;
@@ -123,11 +149,11 @@ class EnchantData implements WeightedRandom.Choice {
     this.maxEffectiveLevel = maxEnchantQuality;
   }
 
-  public Enchantment getEnchantment() {
+  @NotNull Enchantment getEnchantment() {
     return this.enchantment;
   }
 
-  public Rarity getRarity() {
+  @NotNull Rarity getRarity() {
     return this.rarity;
   }
 
@@ -136,11 +162,11 @@ class EnchantData implements WeightedRandom.Choice {
     return this.getRarity().getWeight();
   }
 
-  public int getMinEffectiveLevel(int level) {
+  int getMinEffectiveLevel(int level) {
     return this.minEffectiveLevel.applyAsInt(level);
   }
 
-  public int getMaxEffectiveLevel(int level) {
+  int getMaxEffectiveLevel(int level) {
     return this.maxEffectiveLevel.applyAsInt(level);
   }
 

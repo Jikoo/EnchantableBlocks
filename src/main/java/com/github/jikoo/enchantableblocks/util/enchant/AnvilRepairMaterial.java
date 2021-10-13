@@ -54,7 +54,7 @@ public final class AnvilRepairMaterial {
   }
 
   /**
-   * Get whether or not an item is repairable by another item.
+   * Get whether an item is repairable by another item.
    *
    * <p>N.B. This is for pure material-based repair operations, not for combination operations.
    *

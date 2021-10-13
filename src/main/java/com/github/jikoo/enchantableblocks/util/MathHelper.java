@@ -3,7 +3,7 @@ package com.github.jikoo.enchantableblocks.util;
 public final class MathHelper {
 
   /**
-   * Clamp a value between {@code 0} and {@link Short#MAX_VALUE} and cast to short.
+   * Clamp a value between {@code 0} and {@link Short#MAX_VALUE} and cast to a {@code short}.
    *
    * @param value the value to clamp
    * @return the clamped value
@@ -13,7 +13,7 @@ public final class MathHelper {
   }
 
   /**
-   * Clamp a value between {@code 0} and {@link Short#MAX_VALUE} and cast to short.
+   * Clamp a value between {@code 0} and {@link Short#MAX_VALUE} and cast to a {@code short}.
    *
    * @param value the value to clamp
    * @return the clamped value

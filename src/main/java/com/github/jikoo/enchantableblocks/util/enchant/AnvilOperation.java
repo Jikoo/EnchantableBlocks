@@ -67,7 +67,7 @@ public class AnvilOperation {
   private @Nullable String renameText;
 
   /**
-   * Constructor for a new AnvilOperation.
+   * Construct a new {@code AnvilOperation}.
    */
   public AnvilOperation() {
     combineEnchants = true;
@@ -81,36 +81,38 @@ public class AnvilOperation {
   }
 
   /**
-   * Get whether enchantments should be combined by the operation.
+   * Get whether {@link Enchantment Enchantments} should be combined by the operation.
    *
-   * @return true if enchantments should be combined
+   * @return true if {@code Enchantments} should be combined
    */
   public boolean isCombineEnchants() {
     return combineEnchants;
   }
 
   /**
-   * Set whether enchantments should be combined by the operation.
+   * Set whether {@link Enchantment Enchantments} should be combined by the operation.
    *
-   * @param combineEnchants whether enchantments should be combined
+   * @param combineEnchants whether {@code Enchantments} should be combined
    */
   public void setCombineEnchants(boolean combineEnchants) {
     this.combineEnchants = combineEnchants;
   }
 
   /**
-   * Get the method for determining if an enchantment is applicable for an ItemStack.
+   * Get the method for determining if an {@link Enchantment} is applicable for an
+   * {@link ItemStack}.
    *
-   * @return the method for determining if an enchantment is applicable
+   * @return the method for determining if an {@code Enchantment} is applicable
    */
   public @NotNull BiPredicate<@NotNull Enchantment, @NotNull ItemStack> getEnchantApplies() {
     return enchantApplies;
   }
 
   /**
-   * Set the method for determining if an enchantment is applicable for an ItemStack.
+   * Set the method for determining if an {@link Enchantment} is applicable for an
+   * {@link ItemStack}.
    *
-   * @param enchantApplies the method for determining if an enchantment is applicable
+   * @param enchantApplies the method for determining if an {@code Enchantment} is applicable
    */
   public void setEnchantApplies(
       @NotNull BiPredicate<@NotNull Enchantment, @NotNull ItemStack> enchantApplies) {
@@ -118,18 +120,18 @@ public class AnvilOperation {
   }
 
   /**
-   * Get the method for determining if enchantments conflict.
+   * Get the method for determining if {@link Enchantment Enchantments} conflict.
    *
-   * @return the method for determining if enchantments conflict
+   * @return the method for determining if {@code Enchantments} conflict
    */
   public @NotNull BiPredicate<@NotNull Enchantment, @NotNull Enchantment> getEnchantConflicts() {
     return enchantConflicts;
   }
 
   /**
-   * Set the method for determining if enchantments conflict.
+   * Set the method for determining if {@link Enchantment Enchantments} conflict.
    *
-   * @param enchantConflicts the method for determining if enchantments conflict
+   * @param enchantConflicts the method for determining if {@code Enchantments} conflict
    */
   public void setEnchantConflicts(
       @NotNull BiPredicate<@NotNull Enchantment, @NotNull Enchantment> enchantConflicts) {
@@ -137,36 +139,39 @@ public class AnvilOperation {
   }
 
   /**
-   * Get the method supplying maximum level for an enchantment.
+   * Get the method supplying maximum level for an {@link Enchantment}.
    *
-   * @return the method supplying maximum level for an enchantment
+   * @return the method supplying maximum level for an {@code Enchantment}
    */
   public @NotNull ToIntFunction<@NotNull Enchantment> getEnchantMaxLevel() {
     return enchantMaxLevel;
   }
 
   /**
-   * Set the method supplying maximum level for an enchantment.
+   * Set the method supplying maximum level for an {@link Enchantment}.
    *
-   * @param enchantMaxLevel the method supplying maximum level for an enchantment
+   * @param enchantMaxLevel the method supplying maximum level for an {@code Enchantment}
    */
   public void setEnchantMaxLevel(@NotNull ToIntFunction<@NotNull Enchantment> enchantMaxLevel) {
     this.enchantMaxLevel = enchantMaxLevel;
   }
 
   /**
-   * Get the method determining whether an item should combine its enchantments with another item.
+   * Get the method determining whether an item should combine its {@link Enchantment Enchantments}
+   * with another item.
    *
-   * @return the method determining whether an item should combine its enchantments
+   * @return the method determining whether an item should combine its {@code Enchantments}
    */
   public @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> getMaterialCombines() {
     return materialCombines;
   }
 
   /**
-   * Set the method determining whether an item should combine its enchantments with another item.
+   * Set the method determining whether an item should combine its {@link Enchantment Enchantments}
+   * with another item.
    *
-   * @param materialCombines the method determining whether an item should combine its enchantments
+   * @param materialCombines the method determining whether an item should combine its
+   *                         {@code Enchantments}
    */
   public void setMaterialCombines(
       @NotNull BiPredicate<@NotNull ItemStack, @NotNull ItemStack> materialCombines) {
@@ -240,15 +245,15 @@ public class AnvilOperation {
   }
 
   /**
-   * Get an AnvilResult for this anvil operation.
+   * Get an {@link AnvilResult} for this anvil operation.
    *
    * <p>N.B. for ease of operation reuse, calls to
    * {@code AnvilOperation#apply(ItemStack, ItemStack)} also reset {@link #getRenameText()} to
    * {@code null}.
    *
-   * @param base the base item
-   * @param addition the added item
-   * @return the AnvilResult
+   * @param base the base {@link ItemStack}
+   * @param addition the added {@code ItemStack}
+   * @return the {@code AnvilResult}
    * @see #setRenameText(String)
    */
   public @NotNull AnvilResult apply(@NotNull ItemStack base, @NotNull ItemStack addition) {

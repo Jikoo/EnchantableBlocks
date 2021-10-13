@@ -11,10 +11,10 @@ import org.jetbrains.annotations.Nullable;
 public final class ItemStackHelper {
 
   /**
-   * Check if an {@link ItemStack} is null or empty.
+   * Check if an {@link ItemStack} is {@code null} or empty.
    *
    * @param itemStack the item
-   * @return true if the item is null or empty
+   * @return true if the item is {@code null} or empty
    */
   @Contract("null -> true")
   public static boolean isEmpty(@Nullable ItemStack itemStack) {

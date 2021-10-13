@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantableblocks.config;
+package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.everyItem;
@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
-import com.github.jikoo.enchantableblocks.block.impl.furnace.EnchantableFurnaceConfig;
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.TestInstance;
 
 @DisplayName("Feature: Configuration should be interpretable in a simple fashion.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ConfigTest {
+class EnchantableFurnaceConfigTest {
 
   private static final String INVALID_WORLD = "%invalid_world%";
   private static final String ORE_WORLD = "mining_dimension";

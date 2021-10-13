@@ -10,12 +10,20 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 
-public class EnchantableFurnaceConfig extends EnchantableBlockConfig {
+/**
+ * Configuration for {@link EnchantableFurnace EnchantableFurnaces}.
+ */
+class EnchantableFurnaceConfig extends EnchantableBlockConfig {
 
   public final Setting<Boolean> fortuneListIsBlacklist;
   public final Setting<Set<Material>> fortuneList;
 
-  public EnchantableFurnaceConfig(@NotNull ConfigurationSection configurationSection) {
+  /**
+   * Construct a new {@code EnchantableFurnaceConfig} with the given {@link ConfigurationSection}.
+   *
+   * @param configurationSection the configuration
+   */
+  EnchantableFurnaceConfig(@NotNull ConfigurationSection configurationSection) {
     super(configurationSection);
     fortuneListIsBlacklist = new BooleanSetting(section, "fortuneListIsBlacklist", true);
     fortuneList = new MaterialSetSetting(

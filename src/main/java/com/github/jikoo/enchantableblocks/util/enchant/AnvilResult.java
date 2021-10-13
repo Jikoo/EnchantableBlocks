@@ -14,14 +14,36 @@ public class AnvilResult {
   private final int cost;
   private final int repairCount;
 
+  /**
+   * Construct a new empty {@code AnvilResult}.
+   */
   AnvilResult() {
     this(new ItemStack(Material.AIR), 0);
   }
 
+  /**
+   * Construct a new {@code AnvilResult}.
+   *
+   * <p>The result is always cloned to prevent accidents. The repair cost is set to the specified
+   * cost.
+   *
+   * @param result the resulting {@link ItemStack}
+   * @param cost the cost in experience levels
+   */
   AnvilResult(ItemStack result, int cost) {
     this(result, cost, 0);
   }
 
+  /**
+   * Construct a new {@code AnvilResult}.
+   *
+   * <p>The result is always cloned to prevent accidents. The repair cost is set to the specified
+   * cost.
+   *
+   * @param result the resulting {@link ItemStack}
+   * @param cost the cost in experience levels
+   * @param repairCount the number of items consumed from the addition slot for material repairs
+   */
   AnvilResult(ItemStack result, int cost, int repairCount) {
     this.result = result.clone();
     this.cost = cost;

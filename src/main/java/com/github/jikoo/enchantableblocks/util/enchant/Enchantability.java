@@ -78,8 +78,9 @@ public enum Enchantability {
    * Get sorted values mapped to magic internal enchantability.
    *
    * <p>Note: Conflicts result in the first value being preserved.
-   * <br>For example, {@link #LEATHER}, {@link #NETHERITE}, and {@link #WOOD} all have the same magic value.
-   * {@link #LEATHER} comes first, so {@link #NETHERITE} and {@link #WOOD} will never be present.
+   * <br>For example, {@link #LEATHER}, {@link #NETHERITE}, and {@link #WOOD} all have the same
+   * magic value. {@link #LEATHER} comes first, so {@link #NETHERITE} and {@link #WOOD} will never
+   * be present.
    *
    * @return a map of enchantability for magic values
    */

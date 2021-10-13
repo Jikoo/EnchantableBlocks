@@ -14,9 +14,9 @@ import org.jetbrains.annotations.Nullable;
 public final class EnchantmentUtil {
 
   /**
-   * Get enchantments from an ItemMeta.
+   * Get {@link Enchantment Enchantments} from an {@link ItemMeta}.
    *
-   * @param meta the ItemMeta
+   * @param meta the {@code ItemMeta}
    * @return the stored enchantments
    */
   public static @NotNull Map<Enchantment, Integer> getEnchants(@Nullable ItemMeta meta) {
@@ -32,11 +32,11 @@ public final class EnchantmentUtil {
   }
 
   /**
-   * Set an enchantment on an IemMeta.
+   * Set an {@link Enchantment Enchantments} on an {@link ItemMeta}.
    *
-   * @param meta the ItemMeta
-   * @param enchant the Enchantment to add
-   * @param level the level of the Enchantment
+   * @param meta the {@code ItemMeta}
+   * @param enchant the {@code Enchantment} to add
+   * @param level the level of the {@code Enchantment}
    */
   public static void applyEnchant(@Nullable ItemMeta meta, Enchantment enchant, int level) {
     if (meta == null) {

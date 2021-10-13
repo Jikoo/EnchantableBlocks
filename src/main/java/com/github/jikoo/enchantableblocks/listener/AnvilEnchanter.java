@@ -25,6 +25,12 @@ public class AnvilEnchanter implements Listener {
   private final Plugin plugin;
   private final EnchantableBlockRegistry registry;
 
+  /**
+   * Construct a new {@code AnvilEnchanter} to provide enchantments for blocks.
+   *
+   * @param plugin the owning {@link Plugin}
+   * @param registry the {@link EnchantableBlockRegistry} providing block details
+   */
   public AnvilEnchanter(@NotNull Plugin plugin, @NotNull EnchantableBlockRegistry registry) {
     this.plugin = plugin;
     this.registry = registry;

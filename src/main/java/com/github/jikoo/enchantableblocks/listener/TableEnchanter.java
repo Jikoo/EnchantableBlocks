@@ -1,18 +1,12 @@
 package com.github.jikoo.enchantableblocks.listener;
 
-import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantOperation;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantingTableUtil;
-import com.google.common.collect.Multimap;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntSupplier;
 import org.bukkit.NamespacedKey;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -34,9 +28,15 @@ public class TableEnchanter implements Listener {
 
   private final Plugin plugin;
   private final EnchantableBlockRegistry registry;
-  private boolean needOwnSeed = false;
+  private boolean needPluginSeed = false;
   private final NamespacedKey seedKey;
 
+  /**
+   * Construct a new {@code TableEnchanter} to provide enchantments for blocks.
+   *
+   * @param plugin the owning {@link Plugin}
+   * @param registry the {@link EnchantableBlockRegistry} providing block details
+   */
   public TableEnchanter(@NotNull Plugin plugin, @NotNull EnchantableBlockRegistry registry) {
     this.plugin = plugin;
     this.registry = registry;
@@ -51,7 +51,7 @@ public class TableEnchanter implements Listener {
       return;
     }
 
-    EnchantOperation operation = getOperation(event.getItem(), event.getEnchanter());
+    var operation = getOperation(event.getItem(), event.getEnchanter());
 
     if (operation == null) {
       return;
@@ -61,7 +61,8 @@ public class TableEnchanter implements Listener {
     int[] buttonLevels = EnchantingTableUtil.getButtonLevels(event.getEnchantmentBonus(),
         getEnchantmentSeed(event.getEnchanter(), this::getRandomSeed));
     for (int buttonNumber = 0; buttonNumber < 3; ++buttonNumber) {
-      event.getOffers()[buttonNumber] = getOffer(operation, event.getEnchanter(), buttonNumber, buttonLevels[buttonNumber]);
+      event.getOffers()[buttonNumber] =
+          getOffer(operation, event.getEnchanter(), buttonNumber, buttonLevels[buttonNumber]);
     }
 
     // Force button refresh.
@@ -76,17 +77,18 @@ public class TableEnchanter implements Listener {
       return;
     }
 
-    EnchantOperation operation = getOperation(event.getItem(), event.getEnchanter());
+    var operation = getOperation(event.getItem(), event.getEnchanter());
 
     if (operation == null) {
       return;
     }
 
     operation.setButtonLevel(event.getExpLevelCost());
-    operation.setSeed(getEnchantmentSeed(event.getEnchanter(), this::getRandomSeed) + event.whichButton());
+    operation.setSeed(
+        getEnchantmentSeed(event.getEnchanter(), this::getRandomSeed) + event.whichButton());
 
     // Calculate enchantments offered for levels offered.
-    Map<Enchantment, Integer> enchantments = operation.apply();
+    var enchantments = operation.apply();
 
     event.getEnchantsToAdd().putAll(enchantments);
   }
@@ -126,10 +128,10 @@ public class TableEnchanter implements Listener {
       return null;
     }
 
-    String world = enchanter.getWorld().getName();
-    EnchantableBlockConfig config = registration.getConfig();
-    Collection<Enchantment> enchants = new ArrayList<>(registration.getEnchants());
-    Set<Enchantment> blacklist = config.tableDisabledEnchants.get(world);
+    var world = enchanter.getWorld().getName();
+    var config = registration.getConfig();
+    var enchants = new ArrayList<>(registration.getEnchants());
+    var blacklist = config.tableDisabledEnchants.get(world);
     enchants.removeAll(blacklist);
 
     if (enchants.isEmpty()) {
@@ -138,7 +140,7 @@ public class TableEnchanter implements Listener {
 
     EnchantOperation operation = new EnchantOperation(enchants);
 
-    Multimap<Enchantment, Enchantment> enchantConflicts = config.tableEnchantmentConflicts.get(world);
+    var enchantConflicts = config.tableEnchantmentConflicts.get(world);
     operation.setIncompatibility((enchantment, enchantment2) ->
         enchantConflicts.get(enchantment).contains(enchantment2)
             || enchantConflicts.get(enchantment2).contains(enchantment));
@@ -148,10 +150,11 @@ public class TableEnchanter implements Listener {
   }
 
   /**
-   * Get an offer of the first enchantment that will be rolled at the specified level for the player.
+   * Get an {@link EnchantmentOffer} of the first enchantment rolled for the {@link Player}.
    *
    * @param operation the enchantment operation
-   * @param player the player enchanting
+   * @param player the {@code Player} enchanting
+   * @param buttonNumber the button index pressed
    * @param enchantLevel the level of the enchantment
    * @return the offer or null if no enchantments will be available
    */
@@ -171,28 +174,26 @@ public class TableEnchanter implements Listener {
     operation.setSeed(getEnchantmentSeed(player, this::getRandomSeed) + buttonNumber);
 
     // Calculate enchantments offered for levels offered.
-    Map<Enchantment, Integer> enchantments = operation.apply();
+    var enchantments = operation.apply();
 
-    // No enchantments available, no offer.
-    if (enchantments.isEmpty()) {
-      return null;
-    }
-
-    // Set up offer.
-    Map.Entry<Enchantment, Integer> firstEnchant = enchantments.entrySet().iterator().next();
-    return new EnchantmentOffer(firstEnchant.getKey(), firstEnchant.getValue(), enchantLevel);
+    // Get offer for first enchantment if present, otherwise return null.
+    return enchantments.entrySet().stream().findFirst()
+        .map(entry -> new EnchantmentOffer(entry.getKey(), entry.getValue(), enchantLevel))
+        .orElse(null);
   }
 
   /**
-   * Get the enchantment seed of a player.
+   * Obtain the enchantment seed from the {@link Player}. If unable to use Minecraft's internal
+   * seed, falls through to a consistent plugin-created seed.
    *
    * @param player the player
+   * @param supplier the way to obtain the seed if not present
    * @return the enchantment seed
    */
   @VisibleForTesting
   long getEnchantmentSeed(@NotNull Player player, @NotNull IntSupplier supplier) {
-    if (needOwnSeed) {
-      return getOwnSeed(player, supplier);
+    if (needPluginSeed) {
+      return getPluginSeed(player, supplier);
     }
 
     try {
@@ -200,14 +201,23 @@ public class TableEnchanter implements Listener {
       Object nmsPlayer = player.getClass().getDeclaredMethod("getHandle").invoke(player);
       return (int) nmsPlayer.getClass().getDeclaredMethod("eG").invoke(nmsPlayer);
     } catch (ReflectiveOperationException | ClassCastException e) {
-      needOwnSeed = true;
-      return getOwnSeed(player, supplier);
+      plugin.getLogger().warning(
+          "Cannot obtain seed from EntityPlayer. Falling through to internal seed.");
+      needPluginSeed = true;
+      return getPluginSeed(player, supplier);
     }
   }
 
+  /**
+   * Obtain the plugin-created enchantment seed from the {@link Player}.
+   *
+   * @param player the player
+   * @param supplier the way to obtain the seed if not present
+   * @return the enchantment seed
+   */
   @VisibleForTesting
-  long getOwnSeed(@NotNull Player player, @NotNull IntSupplier supplier) {
-    Integer integer = player.getPersistentDataContainer().get(seedKey, PersistentDataType.INTEGER);
+  long getPluginSeed(@NotNull Player player, @NotNull IntSupplier supplier) {
+    var integer = player.getPersistentDataContainer().get(seedKey, PersistentDataType.INTEGER);
 
     if (integer == null) {
       integer = supplier.getAsInt();
@@ -217,6 +227,11 @@ public class TableEnchanter implements Listener {
     return integer;
   }
 
+  /**
+   * Get a random seed.
+   *
+   * @return a random seed
+   */
   private int getRandomSeed() {
     return ThreadLocalRandom.current().nextInt();
   }

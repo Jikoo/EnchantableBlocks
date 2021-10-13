@@ -11,6 +11,9 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * A {@link BiFunction} used to load data from disk.
+ */
 record RegionLoadFunction(
     @NotNull Plugin plugin,
     @NotNull EnchantableBlockManager manager)

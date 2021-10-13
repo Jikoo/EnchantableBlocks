@@ -30,7 +30,8 @@ public final class AnvilUtil {
    * @param repairCount the repair count
    * @throws ReflectiveOperationException if the repair count field has changed
    */
-  public static void setRepairCount(AnvilInventory inventory, int repairCount) throws ReflectiveOperationException {
+  public static void setRepairCount(AnvilInventory inventory, int repairCount)
+      throws ReflectiveOperationException {
     Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
     Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("h");
     fieldRepairCount.setAccessible(true);
@@ -94,15 +95,22 @@ public final class AnvilUtil {
     return cost;
   }
 
-  private static boolean canRepairWithMaterial(@NotNull ItemStack toRepair, @NotNull ItemStack consumed, @NotNull AnvilOperation operation) {
+  private static boolean canRepairWithMaterial(
+      @NotNull ItemStack toRepair,
+      @NotNull ItemStack consumed,
+      @NotNull AnvilOperation operation) {
     return canRepair(toRepair, () -> operation.getMaterialRepairs().test(toRepair, consumed));
   }
 
-  private static boolean canRepairWithMerge(@NotNull ItemStack toRepair, @NotNull ItemStack consumed) {
+  private static boolean canRepairWithMerge(
+      @NotNull ItemStack toRepair,
+      @NotNull ItemStack consumed) {
     return canRepair(toRepair, () -> toRepair.getType() == consumed.getType());
   }
 
-  private static boolean canRepair(@NotNull ItemStack toRepair, @NotNull BooleanSupplier materialComparison) {
+  private static boolean canRepair(
+      @NotNull ItemStack toRepair,
+      @NotNull BooleanSupplier materialComparison) {
     ItemMeta itemMeta = Objects.requireNonNull(toRepair.getItemMeta());
     // Ensure item is damageable.
     if (toRepair.getType().getMaxDurability() == 0 || itemMeta.isUnbreakable()) {
@@ -116,7 +124,9 @@ public final class AnvilUtil {
     return itemMeta instanceof Damageable damageable && damageable.hasDamage();
   }
 
-  private static @Nullable AnvilResult repairWithMaterial(@NotNull ItemStack base, @NotNull ItemStack added) {
+  private static @Nullable AnvilResult repairWithMaterial(
+      @NotNull ItemStack base,
+      @NotNull ItemStack added) {
     // Safe - ItemMeta is always a Damageable Repairable by this point.
     int damage = ((Damageable) Objects.requireNonNull(base.getItemMeta())).getDamage();
     short maxDurability = base.getType().getMaxDurability();
@@ -141,7 +151,9 @@ public final class AnvilUtil {
     return result;
   }
 
-  private static @NotNull AnvilResult repairWithMerge(@NotNull ItemStack base, @NotNull ItemStack addition) {
+  private static @NotNull AnvilResult repairWithMerge(
+      @NotNull ItemStack base,
+      @NotNull ItemStack addition) {
     Damageable damageable = (Damageable) Objects.requireNonNull(base.getItemMeta());
     Damageable addedDurability = (Damageable) Objects.requireNonNull(addition.getItemMeta());
 
@@ -168,8 +180,10 @@ public final class AnvilUtil {
       return EMPTY;
     }
 
-    Map<Enchantment, Integer> baseEnchants = new HashMap<>(EnchantmentUtil.getEnchants(Objects.requireNonNull(base.getItemMeta())));
-    Map<Enchantment, Integer> addedEnchants = EnchantmentUtil.getEnchants(Objects.requireNonNull(addition.getItemMeta()));
+    Map<Enchantment, Integer> baseEnchants = new HashMap<>(
+        EnchantmentUtil.getEnchants(Objects.requireNonNull(base.getItemMeta())));
+    Map<Enchantment, Integer> addedEnchants =
+        EnchantmentUtil.getEnchants(Objects.requireNonNull(addition.getItemMeta()));
 
     int cost = oldResult.getCost();
     boolean affected = false;
@@ -232,12 +246,14 @@ public final class AnvilUtil {
       return result;
     }
 
-    // Increase cost by 1 and apply display name change.
-    var newResult = new AnvilResult(result.getResult(), result.getCost() + 1, result.getRepairCount());
+    // Modify existing result. This is Not Great, but the result is always discarded when this
+    // method is called, so it's safe. If we do this after the new result creation we have to
+    // reobtain and re-verify the item meta due to the change in repair cost.
     itemMeta.setDisplayName(operation.getRenameText());
-    newResult.getResult().setItemMeta(itemMeta);
+    result.getResult().setItemMeta(itemMeta);
 
-    return newResult;
+    // Increase cost by 1 and apply display name change.
+    return new AnvilResult(result.getResult(), result.getCost() + 1, result.getRepairCount());
   }
 
   private AnvilUtil() {}

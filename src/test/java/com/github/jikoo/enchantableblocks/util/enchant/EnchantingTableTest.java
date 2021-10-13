@@ -4,7 +4,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
@@ -14,7 +13,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Stream;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.inventory.InventoryView;
@@ -29,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Unit tests for enchantments.
@@ -55,19 +52,6 @@ class EnchantingTableTest {
   void beforeAll() {
     MockBukkit.mock();
     EnchantmentHelper.setupToolEnchants();
-  }
-
-  @DisplayName("Enchantments should be explicitly supported.")
-  @ParameterizedTest
-  @MethodSource("enchantmentStream")
-  void testExplicitSupport(Enchantment enchantment) {
-    EnchantData enchantData = EnchantData.of(enchantment);
-    assertThat("Enchantment should be explicitly supported", Rarity.UNKNOWN,
-        not(enchantData.getRarity()));
-  }
-
-  static Stream<Enchantment> enchantmentStream() {
-    return Arrays.stream(Enchantment.values());
   }
 
   @DisplayName("Enchantability should be able to be converted from magic values.")

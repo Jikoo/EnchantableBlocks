@@ -104,7 +104,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
+    assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Invalid block must be ignored", !event.isCancelled());
     assertThat("Burn time must be unmodified", event.getBurnTime(), is((int) BURN_TIME));
   }
@@ -116,7 +116,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
+    assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Resume must cancel event", event.isCancelled());
   }
 
@@ -127,7 +127,7 @@ class FurnaceListenerTest {
     var enchantableBlock = newBlock();
     assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
-    assertDoesNotThrow(() -> listener.onFurnaceConsumeFuel(event));
+    assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Non-resume event is not cancelled", !event.isCancelled());
     assertThat("Burn time must be modified", event.getBurnTime(), is(not(BURN_TIME)));
   }

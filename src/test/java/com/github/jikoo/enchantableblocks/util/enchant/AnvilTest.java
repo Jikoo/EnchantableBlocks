@@ -202,7 +202,6 @@ class AnvilTest {
 
     int repairCost = requireRepairable(base.getItemMeta()).getRepairCost() + requireRepairable(
         added.getItemMeta()).getRepairCost();
-    // TODO: verify values to ensure calculations are correct, clean up mess
     int cost =
         (added.getType() == Material.ENCHANTED_BOOK ? isVanilla ? 9 : 13 : isVanilla ? 13 : 21)
             + repairCost;

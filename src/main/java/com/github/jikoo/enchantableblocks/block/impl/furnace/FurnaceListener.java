@@ -35,7 +35,7 @@ class FurnaceListener implements Listener {
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
   @VisibleForTesting
-  void onFurnaceConsumeFuel(final @NotNull FurnaceBurnEvent event) {
+  void onFurnaceBurn(final @NotNull FurnaceBurnEvent event) {
     var enchantableBlock = this.manager.getBlock(event.getBlock());
 
     if (!(enchantableBlock instanceof EnchantableFurnace enchantableFurnace)) {
@@ -81,7 +81,8 @@ class FurnaceListener implements Listener {
     if (fortune > 0) {
       String world = furnace.getWorld().getName();
       EnchantableFurnaceConfig configuration = enchantableFurnace.getConfig();
-      boolean listContains = configuration.fortuneList.get(world).contains(event.getSource().getType());
+      boolean listContains = configuration.fortuneList.get(world)
+          .contains(event.getSource().getType());
       if (configuration.fortuneListIsBlacklist.get(world) != listContains) {
         applyFortune(event, fortune);
       }

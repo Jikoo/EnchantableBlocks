@@ -8,28 +8,29 @@ import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A utility for using the server implementation to create new EnchantData instances.
+ * A utility for using the server implementation details in {@link EnchantData} instances.
  */
 final class EnchantDataReflection {
 
   /**
-   * Fetch an enchantment's internal rarity.
+   * Fetch an {@link Enchantment Enchantment's} internal rarity.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @return the rarity or UNKNOWN if unable to fetch
    */
   static Rarity getRarity(Enchantment enchantment) {
     return nmsHandler(enchantment, nmsEnchant -> {
       Object enchantmentRarity = nmsEnchant.getClass().getDeclaredMethod("d").invoke(nmsEnchant);
-      int weight = (int) enchantmentRarity.getClass().getDeclaredMethod("a").invoke(enchantmentRarity);
+      int weight = (int) enchantmentRarity.getClass().getDeclaredMethod("a")
+          .invoke(enchantmentRarity);
       return Rarity.of(weight);
     }, Rarity.UNKNOWN);
   }
 
   /**
-   * Fetch an enchantment's internal minimum enchantment quality calculation method.
+   * Fetch an {@link Enchantment Enchantment's} internal minimum quality calculation method.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @return the internal method or the default value if the internal method is not available
    */
   static IntUnaryOperator getMinEnchantQuality(Enchantment enchantment) {
@@ -47,12 +48,12 @@ final class EnchantDataReflection {
   }
 
   /**
-   * Fetch an enchantment's internal maximum enchantment quality calculation method.
+   * Fetch an {@link Enchantment Enchantment's} internal maximum quality calculation method.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @return the internal method or the default value if the internal method is not available
    */
-  protected static IntUnaryOperator getMaxEnchantQuality(Enchantment enchantment) {
+  static IntUnaryOperator getMaxEnchantQuality(Enchantment enchantment) {
     return nmsIntUnaryOperator(enchantment, "b", EnchantDataReflection::defaultMaxEnchantQuality);
   }
 
@@ -70,7 +71,7 @@ final class EnchantDataReflection {
   /**
    * Helper for fetching an internal method to convert an int into another int.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @param methodName the name of the internal method
    * @param defaultOperator the default method
    * @return the internal method or default value if the internal method is not available
@@ -90,9 +91,9 @@ final class EnchantDataReflection {
   }
 
   /**
-   * Helper for fetching an internal object from an enchantment.
+   * Helper for fetching an internal object from an {@link Enchantment}.
    *
-   * @param enchantment the enchantment
+   * @param enchantment the {@code Enchantment}
    * @param function the function to obtain the value
    * @param defaultValue the default value
    * @param <T> the type of value

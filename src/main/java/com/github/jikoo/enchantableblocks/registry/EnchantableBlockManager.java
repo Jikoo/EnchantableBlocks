@@ -17,6 +17,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+/**
+ * A management system for {@link EnchantableBlock EnchantableBlocks}.
+ */
 public class EnchantableBlockManager {
 
   private final @NotNull Logger logger;
@@ -25,6 +28,11 @@ public class EnchantableBlockManager {
   @VisibleForTesting
   final @NotNull Cache<Region, RegionStorageData> saveFileCache;
 
+  /**
+   * Construct a new {@code EnchantableBlockManager} for the given {@link Plugin}.
+   *
+   * @param plugin the {@code Plugin}
+   */
   public EnchantableBlockManager(@NotNull Plugin plugin) {
     this.logger = plugin.getLogger();
     blockRegistry = new EnchantableBlockRegistry(plugin);
@@ -36,15 +44,20 @@ public class EnchantableBlockManager {
         .withLoadFunction(new RegionLoadFunction(plugin, this)).build();
   }
 
+  /**
+   * Get the {@link EnchantableBlockRegistry} belonging to the manager.
+   *
+   * @return the registry
+   */
   public @NotNull EnchantableBlockRegistry getRegistry() {
     return this.blockRegistry;
   }
 
   /**
-   * Get an EnchantableBlock by Block.
+   * Get an {@link EnchantableBlock} by {@link Block}.
    *
-   * @param block the Block
-   * @return the EnchantableBlock, or null the Block is not an enchanted block
+   * @param block the {@code Block}
+   * @return the {@code EnchantableBlock} or {@code null} the {@code Block} is not stored
    */
   public @Nullable EnchantableBlock getBlock(@NotNull final Block block) {
 
@@ -58,6 +71,16 @@ public class EnchantableBlockManager {
 
   }
 
+  /**
+   * Create an {@link EnchantableBlock} for a {@link Block} from an {@link ItemStack}.
+   *
+   * <p>Note that this will override existing {@link EnchantableBlock EnchantableBlocks} without
+   * warning.
+   *
+   * @param block the {@code Block}
+   * @param itemStack the {@code ItemStack}
+   * @return the {@code EnchantableBlock} or {@code null} if not created
+   */
   public @Nullable EnchantableBlock createBlock(
       @NotNull final Block block,
       @NotNull final ItemStack itemStack) {
@@ -78,27 +101,28 @@ public class EnchantableBlockManager {
   }
 
   /**
-   * Helper method for ensuring an {@link ItemStack} is a block.
+   * Helper method for ensuring an {@link ItemStack} can be used to create an
+   * {@link EnchantableBlock}.
    *
-   * @param itemStack the item
-   * @return true if the item is not a block
+   * @param itemStack the {@code ItemStack}
+   * @return true if the {@code ItemStack} is an invalid type
    */
   private boolean isInvalidBlock(@Nullable ItemStack itemStack) {
     return itemStack == null
-        ||itemStack.getType().isAir()
+        || itemStack.getType().isAir()
         || !itemStack.getType().isBlock()
         || itemStack.getEnchantments().isEmpty();
   }
 
   /**
-   * Create an EnchantableBlock from an ItemStack.
+   * Create an {@link EnchantableBlock} for a {@link Block} from an {@link ItemStack}.
    *
-   * @param block     the Block this EnchantableBlock is attached to
-   * @param itemStack the ItemStack to create the
-   * @return the EnchantableBlock or null if no EnchantableBlock is valid for the given ItemStack
+   * @param block the {@code Block}
+   * @param itemStack the {@code ItemStack}
+   * @return the {@code EnchantableBlock} or {@code null} if no registration matches
    */
   private @Nullable EnchantableBlock newBlock(
-      @NotNull final Block block,
+      @NotNull Block block,
       @NotNull ItemStack itemStack) {
     var registration = blockRegistry.get(itemStack.getType());
 
@@ -113,6 +137,13 @@ public class EnchantableBlockManager {
     return registration.newBlock(block, itemStack, getBlockStorage(block));
   }
 
+  /**
+   * Helper method for getting a non-null {@link ConfigurationSection} for a {@link Block}, creating
+   * as needed.
+   *
+   * @param block the {@code Block}
+   * @return the {@code ConfigurationSection}
+   */
   private @NotNull ConfigurationSection getBlockStorage(@NotNull Block block) {
     var chunkStorage = this.getChunkStorage(block);
     var blockPath = getBlockPath(block);
@@ -124,6 +155,13 @@ public class EnchantableBlockManager {
     return chunkStorage.createSection(blockPath);
   }
 
+  /**
+   * Helper method for getting a non-null {@link ConfigurationSection} for a {@link Chunk}, creating
+   * as needed.
+   *
+   * @param block a {@link Block} in the {@link Chunk}
+   * @return the {@code ConfigurationSection}
+   */
   private @NotNull ConfigurationSection getChunkStorage(@NotNull Block block) {
     var storagePair = saveFileCache.get(new Region(block));
     var regionStorage = Objects.requireNonNull(storagePair).getStorage();
@@ -137,11 +175,11 @@ public class EnchantableBlockManager {
   }
 
   /**
-   * Load an EnchantableBlock from storage.
+   * Load an {@link EnchantableBlock} from storage.
    *
-   * @param block   the Block
-   * @param storage the ConfigurationSection to load the EnchantableBlock from
-   * @return the EnchantableBlock, or null if the EnchantableBlock is not valid.
+   * @param block the {@link Block}
+   * @param storage the {@link ConfigurationSection} to load the {@code EnchantableBlock} from
+   * @return the {@code EnchantableBlock} or {@code null} if invalid
    */
   private @Nullable EnchantableBlock loadEnchantableBlock(
       @NotNull final Block block,
@@ -164,11 +202,10 @@ public class EnchantableBlockManager {
   }
 
   /**
-   * Remove an EnchantableBlock.
+   * Remove an {@link EnchantableBlock}.
    *
-   * @param block the EnchantableBlock
-   * @return the ItemStack representation of the EnchantableBlock or null if the Block was not a
-   * valid EnchantableBlock
+   * @param block the {@link Block} representing an {@code EnchantableBlock}
+   * @return the {@link ItemStack} representation or {@code null} if not valid
    */
   public @Nullable ItemStack destroyBlock(@NotNull final Block block) {
     EnchantableBlock enchantableBlock = this.blockMap.remove(block);
@@ -221,9 +258,9 @@ public class EnchantableBlockManager {
   }
 
   /**
-   * Load all stored EnchantableBlocks in a chunk.
+   * Load all stored {@link EnchantableBlock EnchantableBlocks} for a {@link Chunk}.
    *
-   * @param chunk the Chunk
+   * @param chunk the {@code Chunk}
    */
   public void loadChunkBlocks(@NotNull final Chunk chunk) {
 
@@ -303,51 +340,110 @@ public class EnchantableBlockManager {
     }
   }
 
+  /**
+   * Unload all stored {@link EnchantableBlock EnchantableBlocks} for a {@link Chunk}.
+   *
+   * @param chunk the {@code Chunk}
+   */
   public void unloadChunkBlocks(@NotNull final Chunk chunk) {
     // Clear out and clean up loaded EnchantableBlocks.
     this.blockMap.remove(chunk);
   }
 
+  /**
+   * Expire all values in the save file cache.
+   */
   public void expireCache() {
     saveFileCache.expireAll();
   }
 
+  /**
+   * Get the path for a {@link Chunk Chunk's} {@link ConfigurationSection} from a {@link Block}.
+   *
+   * @param block the {@code Block}
+   * @return the path
+   */
   @VisibleForTesting
   static @NotNull String getChunkPath(@NotNull Block block) {
     return getChunkPath(Coords.blockToChunk(block.getX()), Coords.blockToChunk(block.getZ()));
   }
 
+  /**
+   * Get the path for a {@link Chunk Chunk's} {@link ConfigurationSection}.
+   *
+   * @param chunk the {@code Block}
+   * @return the path
+   */
   private static @NotNull String getChunkPath(@NotNull Chunk chunk) {
     return getChunkPath(chunk.getX(), chunk.getZ());
   }
 
+  /**
+   * Get the path for a {@link Chunk Chunk's} {@link ConfigurationSection} from chunk coordinates.
+   *
+   * @param chunkX the chunk X coordinate
+   * @param chunkZ the chunk Z coordinate
+   * @return the path
+   */
   private static @NotNull String getChunkPath(int chunkX, int chunkZ) {
     return chunkX + "_" + chunkZ;
   }
 
+  /**
+   * Get the path for a {@link Block Block's} {@link ConfigurationSection}.
+   *
+   * @param block the {@code Block}
+   * @return the path
+   */
   @VisibleForTesting
   static @NotNull String getBlockPath(@NotNull Block block) {
     return getBlockPath(block.getX(), block.getY(), block.getZ());
   }
 
+  /**
+   * Get the path for a {@link Block Block's} {@link ConfigurationSection} from coordinates.
+   *
+   * @param x the X coordinate
+   * @param y the Y coordinate
+   * @param z the Z coordinate
+   * @return the path
+   */
   @VisibleForTesting
   static @NotNull String getBlockPath(int x, int y, int z) {
     return x + "_" + y + "_" + z;
   }
 
+  /**
+   * Container for ensuring that {@link RegionStorage} files are saved as necessary.
+   */
   class RegionStorageData {
 
     private final @NotNull RegionStorage storage;
     private boolean dirty = false;
 
+    /**
+     * Construct a new {@code RegionStorageData}.
+     *
+     * @param storage the {@link RegionStorage}
+     */
     RegionStorageData(@NotNull RegionStorage storage) {
       this.storage = storage;
     }
 
+    /**
+     * Get the {@link RegionStorage} stored.
+     *
+     * @return the {@code RegionStorage}
+     */
     public @NotNull RegionStorage getStorage() {
       return storage;
     }
 
+    /**
+     * Check if the {@link RegionStorage} has unsaved changes.
+     *
+     * @return true if the {@code RegionStorage} needs to be saved
+     */
     boolean isDirty() {
       if (dirty) {
         return true;
@@ -359,11 +455,18 @@ public class EnchantableBlockManager {
       return dirty;
     }
 
+    /**
+     * Flag the {@link RegionStorage} as having unsaved changes.
+     */
     public void setDirty() {
       this.dirty = true;
     }
 
-    public void clean() {
+    /**
+     * Mark the {@link RegionStorage} and all contained {@link EnchantableBlock EnchantableBlocks}
+     * as having been saved since last modification.
+     */
+    void clean() {
       this.dirty = false;
       final String worldName = storage.getRegion().worldName();
       this.storage.getRegion().forEachChunk((chunkX, chunkZ) ->

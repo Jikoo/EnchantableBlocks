@@ -14,6 +14,9 @@ import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * A {@link BiPredicate} used to periodically save data and determine if it is still in use.
+ */
 record RegionInUseCheck(@NotNull Logger logger)
     implements BiPredicate<@NotNull Region, @Nullable RegionStorageData> {
 
