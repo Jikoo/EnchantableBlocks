@@ -15,7 +15,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>16</maven.compiler.source>
     <maven.compiler.target>16</maven.compiler.target>
-    <versions.fastutil>8.5.4</versions.fastutil>
+    <versions.fastutil>8.5.6</versions.fastutil>
   </properties>
 
   <profiles>
@@ -110,7 +110,7 @@
     <dependency>
       <groupId>com.github.seeseemelk</groupId>
       <artifactId>MockBukkit-v1.17</artifactId>
-      <version>1.10.3</version>
+      <version>1.10.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
