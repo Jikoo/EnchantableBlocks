@@ -19,9 +19,10 @@ final class EnchantDataReflection {
    * @return the rarity or UNKNOWN if unable to fetch
    */
   static Rarity getRarity(Enchantment enchantment) {
-    // NMSREF net.minecraft.world.item.enchantment.Enchantment#getRarity()
     return nmsHandler(enchantment, nmsEnchant -> {
+      // NMSREF net.minecraft.world.item.enchantment.Enchantment#getRarity()
       Object enchantmentRarity = nmsEnchant.getClass().getDeclaredMethod("d").invoke(nmsEnchant);
+      // NMSREF net.minecraft.world.item.enchantment.Enchantment$Rarity#getWeight()
       int weight = (int) enchantmentRarity.getClass().getDeclaredMethod("a")
           .invoke(enchantmentRarity);
       return Rarity.of(weight);

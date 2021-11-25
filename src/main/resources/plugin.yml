@@ -3,7 +3,7 @@ name: EnchantableBlocks
 main: com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin
 version: ${project.version}
 author: Jikoo
-api-version: "1.17"
+api-version: "1.18"
 libraries:
  - it.unimi.dsi:fastutil:${versions.fastutil}
 

@@ -33,7 +33,7 @@ public final class AnvilUtil {
   public static void setRepairCount(@NotNull AnvilInventory inventory, int repairCount)
       throws ReflectiveOperationException {
     Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
-    // NMSREF net.minecraft.world.inventory.AnvilMenu.repairItemCountCost
+    // NMSREF \nnet\.minecraft\.world\.inventory\.AnvilMenu(.|\n)*?int repairItemCountCost
     Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("u");
     fieldRepairCount.setAccessible(true);
     fieldRepairCount.set(containerAnvil, repairCount);

@@ -107,10 +107,10 @@ public final class EnchantingTableUtil {
 
     try {
       Class<?> clazzRegistry = Class.forName("net.minecraft.core.IRegistry");
-      // NMSREF net.minecraft.core.Registry.ENCHANTMENT
-      Object enchantmentRegistry = clazzRegistry.getDeclaredField("X").get(null);
-      // NMSREF net.minecraft.core.Registry#getId - N.B. Spigot appears to deobf, do not trust mapping
-      Method methodRegistryGetId = clazzRegistry.getDeclaredMethod("getId", Object.class);
+      // NMSREF \nnet\.minecraft\.core\.Registry(.|\n)*?net\.minecraft\.core\.Registry ENCHANTMENT
+      Object enchantmentRegistry = clazzRegistry.getDeclaredField("Y").get(null);
+      // NMSREF \nnet\.minecraft\.core\.Registry(.|\n)*?int getId\(java\.lang\.Object\)
+      Method methodRegistryGetId = clazzRegistry.getDeclaredMethod("a", Object.class);
 
       Method getHandle = enchantment.getClass().getDeclaredMethod("getHandle");
 

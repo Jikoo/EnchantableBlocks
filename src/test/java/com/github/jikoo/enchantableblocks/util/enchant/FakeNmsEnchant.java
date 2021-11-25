@@ -5,7 +5,6 @@ import java.util.function.IntUnaryOperator;
 import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("unused") // Used in reflection tests.
 class FakeNmsEnchant extends EnchantmentMock {
 
   private final int rarityWeight;
@@ -20,19 +19,22 @@ class FakeNmsEnchant extends EnchantmentMock {
     this.maxQuality = maxQuality;
   }
 
-  // NMSREF net.minecraft.world.item.enchantment.Enchantment
   public Object getHandle() {
     return new Object() {
 
+      // NMSREF \nnet\.minecraft\.world\.item\.enchantment\.Enchantment(.|\n)*?int getMinCost\(int\)
       public int a(int value) {
         return minQuality.applyAsInt(value);
       }
 
+      // NMSREF \nnet\.minecraft\.world\.item\.enchantment\.Enchantment(.|\n)*?int getMaxCost\(int\)
       public int b(int value) {
         return maxQuality.applyAsInt(value);
       }
 
+      // NMSREF \nnet\.minecraft\.world\.item\.enchantment\.Enchantment(.|\n)*?net\.minecraft\.world\.item\.enchantment\.Enchantment\$Rarity getRarity\(\)
       public Object d() {
+        // NMSREF \nnet\.minecraft\.world\.item\.enchantment\.Enchantment\$Rarity(.|\n)*?int getWeight\(\)
         return new Object() {
 
           public int a() {
