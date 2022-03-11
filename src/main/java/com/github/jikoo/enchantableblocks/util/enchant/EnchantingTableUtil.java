@@ -108,7 +108,7 @@ public final class EnchantingTableUtil {
     try {
       Class<?> clazzRegistry = Class.forName("net.minecraft.core.IRegistry");
       // NMSREF \nnet\.minecraft\.core\.Registry(.|\n)*?net\.minecraft\.core\.Registry ENCHANTMENT
-      Object enchantmentRegistry = clazzRegistry.getDeclaredField("Y").get(null);
+      Object enchantmentRegistry = clazzRegistry.getDeclaredField("V").get(null);
       // NMSREF \nnet\.minecraft\.core\.Registry(.|\n)*?int getId\(java\.lang\.Object\)
       Method methodRegistryGetId = clazzRegistry.getDeclaredMethod("a", Object.class);
 
