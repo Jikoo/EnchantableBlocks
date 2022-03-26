@@ -102,6 +102,7 @@ public final class EnchantingTableUtil {
     // Re-obtain from registry to ensure we have the internal enchantment.
     enchantment = Enchantment.getByKey(enchantment.getKey());
     if (enchantment == null) {
+      // If the enchantment isn't registered, it won't have an ID anyway.
       return 0;
     }
 
@@ -116,8 +117,18 @@ public final class EnchantingTableUtil {
 
       return (int) methodRegistryGetId.invoke(enchantmentRegistry, getHandle.invoke(enchantment));
     } catch (ReflectiveOperationException | ClassCastException e) {
-      return 0;
+      // Fall through to using declaration order.
+      // Bukkit does match Minecraft's declaration order, but it's not safe to rely on.
+      Enchantment[] enchantments = Enchantment.values();
+      for (int i = 0; i < enchantments.length; i++) {
+        if (enchantments[i].getKey().equals(enchantment.getKey())) {
+          return i;
+        }
+      }
     }
+
+    // Default for unknown values.
+    return 0;
   }
 
   /**
