@@ -79,6 +79,10 @@ class EnchantableBlockManagerTest {
 
   @AfterAll
   void tearDown() {
+    ServerMock server = MockBukkit.getMock();
+    for (Plugin plugin : server.getPluginManager().getPlugins()) {
+      server.getScheduler().cancelTasks(plugin);
+    }
     MockBukkit.unmock();
   }
 

@@ -9,7 +9,8 @@ import org.jetbrains.annotations.Nullable;
 public class AnvilInventoryMock extends InventoryMock implements AnvilInventory {
 
   private @Nullable String renameText;
-  private int repairCost;
+  private int repairCost = 0;
+  private int repairCostAmount = 0;
   private int maxRepairCost = 40;
 
   public AnvilInventoryMock(@Nullable InventoryHolder holder) {
@@ -23,6 +24,16 @@ public class AnvilInventoryMock extends InventoryMock implements AnvilInventory 
   @Override
   public @Nullable String getRenameText() {
     return renameText;
+  }
+
+  @Override
+  public int getRepairCostAmount() {
+    return repairCostAmount;
+  }
+
+  @Override
+  public void setRepairCostAmount(int amount) {
+    this.repairCostAmount = amount;
   }
 
   @Override

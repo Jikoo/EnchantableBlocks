@@ -35,6 +35,7 @@ class RegionLoadFunctionTest {
 
   @AfterAll
   void afterAll() {
+    plugin.getServer().getScheduler().cancelTasks(plugin);
     MockBukkit.unmock();
   }
 

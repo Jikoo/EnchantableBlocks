@@ -41,6 +41,7 @@ class EnchantableBlocksPluginTest {
   @DisplayName("Plugin has no-arg constructor.")
   @Test
   void testNoArgConstructor() {
+    assertDoesNotThrow(this::loadPlugin);
     assertThrows(IllegalStateException.class, EnchantableBlocksPlugin::new);
   }
 

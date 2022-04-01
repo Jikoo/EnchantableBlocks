@@ -109,8 +109,8 @@
     </dependency>
     <dependency>
       <groupId>com.github.seeseemelk</groupId>
-      <artifactId>MockBukkit-v1.17</artifactId>
-      <version>1.10.0</version>
+      <artifactId>MockBukkit-v1.18</artifactId>
+      <version>1.24.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

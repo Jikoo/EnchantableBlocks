@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.inventory.ChestInventoryMock;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
@@ -31,6 +32,7 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,6 +73,10 @@ class FurnaceListenerTest {
 
   @AfterAll
   void tearDownAll() {
+    ServerMock server = MockBukkit.getMock();
+    for (Plugin plugin : server.getPluginManager().getPlugins()) {
+      server.getScheduler().cancelTasks(plugin);
+    }
     MockBukkit.unmock();
   }
 

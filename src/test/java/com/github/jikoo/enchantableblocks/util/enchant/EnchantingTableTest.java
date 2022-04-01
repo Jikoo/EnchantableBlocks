@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
 import be.seeseemelk.mockbukkit.scheduler.BukkitSchedulerMock;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.inventory.InventoryView;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -162,6 +164,10 @@ class EnchantingTableTest {
 
   @AfterAll
   void afterAll() {
+    ServerMock server = MockBukkit.getMock();
+    for (Plugin plugin : server.getPluginManager().getPlugins()) {
+      server.getScheduler().cancelTasks(plugin);
+    }
     MockBukkit.unmock();
   }
 

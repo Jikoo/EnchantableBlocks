@@ -63,6 +63,7 @@ class AnvilEnchanterTest {
 
   @AfterAll
   void tearDownAll() {
+    plugin.getServer().getScheduler().cancelTasks(plugin);
     MockBukkit.unmock();
   }
 
