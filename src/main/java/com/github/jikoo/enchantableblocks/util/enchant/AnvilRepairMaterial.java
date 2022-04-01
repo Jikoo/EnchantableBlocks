@@ -1,7 +1,7 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -13,7 +13,8 @@ import org.bukkit.inventory.RecipeChoice;
  */
 public final class AnvilRepairMaterial {
 
-  private static final Map<Material, RecipeChoice> MATERIALS_TO_REPAIRABLE = new EnumMap<>(Material.class);
+  private static final Map<Material, RecipeChoice> MATERIALS_TO_REPAIRABLE
+      = new EnumMap<>(Material.class);
 
   static {
     String[] armor = new String[] { "_HELMET", "_CHESTPLATE", "_LEGGINGS", "_BOOTS" };
@@ -50,7 +51,7 @@ public final class AnvilRepairMaterial {
 
   private static RecipeChoice singleChoice(Material material) {
     // RecipeChoice.ExactChoice is a full meta match, which isn't what we want.
-    return new RecipeChoice.MaterialChoice(Collections.singletonList(material));
+    return new RecipeChoice.MaterialChoice(List.of(material));
   }
 
   /**

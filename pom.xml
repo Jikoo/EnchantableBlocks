@@ -79,7 +79,7 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.18-R0.1-SNAPSHOT</version>
+      <version>1.18.2-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -121,13 +121,6 @@
     </dependency>
   </dependencies>
 
-  <pluginRepositories>
-    <pluginRepository>
-      <id>maven-snapshots</id>
-      <url>https://repository.apache.org/content/repositories/snapshots/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <finalName>${project.name}</finalName>
 
@@ -152,7 +145,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.3.0-SNAPSHOT</version>
+        <version>3.3.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -163,7 +156,7 @@
               <!--
                 ~ Unfortunately, the minimizeJar option actually breaks build.
                 ~ As a (hopefully temporary) workaround, explicitly declare classes used.
-                ~ Watch MSHADE-394 for a fix.
+                ~ Watch MSHADE-366 for a fix.
                -->
               <filters>
                 <filter>

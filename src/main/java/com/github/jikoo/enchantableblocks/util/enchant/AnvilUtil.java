@@ -1,13 +1,11 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -22,25 +20,11 @@ public final class AnvilUtil {
 
   private static final AnvilResult EMPTY = new AnvilResult();
 
-  /**
-   * Set the repair count of an anvil inventory. The repair count is the number of
-   * items that will be consumed from the second slot when the result is removed.
-   *
-   * @param inventory the anvil inventory
-   * @param repairCount the repair count
-   * @throws ReflectiveOperationException if the repair count field has changed
-   */
-  public static void setRepairCount(@NotNull AnvilInventory inventory, int repairCount)
-      throws ReflectiveOperationException {
-    Object containerAnvil = inventory.getClass().getDeclaredMethod("getHandle").invoke(inventory);
-    // NMSREF \nnet\.minecraft\.world\.inventory\.AnvilMenu(.|\n)*?int repairItemCountCost
-    Field fieldRepairCount = containerAnvil.getClass().getDeclaredField("u");
-    fieldRepairCount.setAccessible(true);
-    fieldRepairCount.set(containerAnvil, repairCount);
-  }
-
   static @NotNull AnvilResult combine(
-      @NotNull ItemStack base, @NotNull ItemStack addition, @NotNull AnvilOperation operation) {
+      @NotNull ItemStack base,
+      @NotNull ItemStack addition,
+      @NotNull AnvilOperation operation) {
+
     ItemMeta baseMeta = base.getItemMeta();
     ItemMeta additionMeta = addition.getItemMeta();
 

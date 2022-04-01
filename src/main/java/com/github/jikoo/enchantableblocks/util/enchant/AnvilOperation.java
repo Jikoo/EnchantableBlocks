@@ -18,7 +18,8 @@ public class AnvilOperation {
    */
   public static final AnvilOperation VANILLA = new AnvilOperation() {
 
-    private static final String MESSAGE_UNSUPPORTED = "AnvilOperation for vanilla behavior is not manipulable.";
+    private static final String MESSAGE_UNSUPPORTED =
+        "AnvilOperation for vanilla behavior is not manipulable.";
 
     @Override
     public void setCombineEnchants(boolean combineEnchants) {
@@ -31,7 +32,8 @@ public class AnvilOperation {
     }
 
     @Override
-    public void setEnchantConflicts(@NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {
+    public void setEnchantConflicts(
+        @NotNull BiPredicate<Enchantment, Enchantment> enchantConflicts) {
       throw new UnsupportedOperationException(MESSAGE_UNSUPPORTED);
     }
 
