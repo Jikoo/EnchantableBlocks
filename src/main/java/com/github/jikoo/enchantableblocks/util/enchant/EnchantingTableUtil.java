@@ -1,5 +1,6 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
+import com.github.jikoo.planarenchanting.enchant.EnchantData;
 import com.github.jikoo.planarwrappers.util.WeightedRandom;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -245,10 +246,10 @@ public final class EnchantingTableUtil {
     for (int i = enchant.getEnchantment().getMaxLevel();
         i >= enchant.getEnchantment().getStartLevel();
         --i) {
-      if (enchant.getMaxEffectiveLevel(i) < enchantQuality) {
+      if (enchant.getMaxEnchantCost(i) < enchantQuality) {
         return 0;
       }
-      if (enchant.getMinEffectiveLevel(i) <= enchantQuality) {
+      if (enchant.getMinEnchantCost(i) <= enchantQuality) {
         return i;
       }
     }

@@ -13,7 +13,6 @@ import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentHelper;
 import com.github.jikoo.enchantableblocks.util.mock.AnvilInventoryMock;
 import java.util.Set;
-import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -86,11 +85,11 @@ class AnvilEnchanterTest {
   }
 
   @Test
-  void testStackedAdditionItemsInvalid() {
+  void testStackedAdditionItemsValid() {
     var base = itemStack.clone();
     var addition = itemStack.clone();
     addition.setAmount(64);
-    assertThat("Items are invalid", enchanter.areItemsInvalid(base, addition));
+    assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
   }
 
   @Test
@@ -123,18 +122,6 @@ class AnvilEnchanterTest {
     additionItem.setItemMeta(additionMeta);
     inventory.setItem(1, additionItem);
     player.openInventory(inventory);
-  }
-
-  @Test
-  void testCreativePrepareAnvil() {
-    prepareEvent(true);
-    player.setGameMode(GameMode.CREATIVE);
-    var view = player.getOpenInventory();
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    assertThat(
-        "Result must be unchanged for creative player",
-        event.getResult(), is(nullValue()));
   }
 
   @Test

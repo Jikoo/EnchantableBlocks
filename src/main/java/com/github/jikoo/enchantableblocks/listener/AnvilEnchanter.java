@@ -1,14 +1,14 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
-import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
-import com.github.jikoo.enchantableblocks.util.enchant.AnvilOperation;
-import java.util.ArrayList;
-import org.bukkit.GameMode;
+import com.github.jikoo.enchantableblocks.util.ItemStackHelper;
+import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvilOperation;
+import com.github.jikoo.planarenchanting.anvil.AnvilResult;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -36,23 +36,14 @@ public class AnvilEnchanter implements Listener {
     this.registry = registry;
   }
 
-  @EventHandler
+  @EventHandler(priority = EventPriority.HIGH)
   @VisibleForTesting
   void onPrepareAnvil(@NotNull PrepareAnvilEvent event) {
     var clicker = event.getView().getPlayer();
+    var inventory = event.getInventory();
+    var base = inventory.getItem(0);
+    var addition = inventory.getItem(1);
 
-    // Players in creative use vanilla's creative override, allowing any book to be applied to any
-    // object. Allowing this to override guarantees that even if the anvil system breaks down,
-    // admin functions still work.
-    if (clicker.getGameMode() == GameMode.CREATIVE) {
-      return;
-    }
-
-    AnvilInventory inventory = event.getInventory();
-    ItemStack base = inventory.getItem(0);
-    ItemStack addition = inventory.getItem(1);
-
-    // Validate stacks - must be single items.
     if (areItemsInvalid(base, addition)) {
       return;
     }
@@ -64,65 +55,38 @@ public class AnvilEnchanter implements Listener {
       return;
     }
 
-    var operation = getOperation(
-        registration,
-        clicker.getWorld().getName(),
-        inventory.getRenameText());
+    var operation = new BlockAnvilOperation(registration, clicker.getWorld().getName());
+    final var result = operation.apply(inventory);
 
-    var anvilResult = operation.apply(base, addition);
+    if (result == AnvilResult.EMPTY) {
+      return;
+    }
 
-    final ItemStack resultItem = anvilResult.getResult();
+    final var input = base.clone();
+    final var input2 = addition.clone();
+    final var resultItem = result.item();
 
     event.setResult(resultItem);
 
-    final int repairCost = anvilResult.getCost();
-    final ItemStack input = base.clone();
-    final ItemStack input2 = addition.clone();
-
     plugin.getServer().getScheduler().runTask(plugin, () -> {
+      // Ensure inputs have not been modified since our calculations.
       if (!input.equals(inventory.getItem(0)) || !input2.equals(inventory.getItem(1))) {
         return;
       }
 
+      // Set result again - overrides bad enchantment plugins that always write result.
       inventory.setItem(2, resultItem);
-      inventory.setRepairCost(repairCost);
-      clicker.setWindowProperty(InventoryView.Property.REPAIR_COST, repairCost);
+      // Set repair cost. As vanilla has no result for our combinations, this is always set to 0
+      // after the event has completed and needs to be set again.
+      inventory.setRepairCost(result.levelCost());
+      // Update level cost window property again just to be safe.
+      clicker.setWindowProperty(InventoryView.Property.REPAIR_COST, result.levelCost());
     });
   }
 
   /**
-   * Set up operation for the given parameters.
-   *
-   * @param registration the {@link EnchantableRegistration} in use
-   * @param worldName the name of the world
-   * @param renameText the name being applied by the operation
-   * @return the fully set up operation
-   */
-  private AnvilOperation getOperation(
-      @NotNull EnchantableRegistration registration,
-      @NotNull String worldName,
-      @Nullable String renameText) {
-    var operation = new AnvilOperation();
-    operation.setMaterialRepairs((a, b) -> false);
-    operation.setMergeRepairs(false);
-
-    var enchantments = new ArrayList<>(registration.getEnchants());
-    var config = registration.getConfig();
-    enchantments.removeAll(config.anvilDisabledEnchants.get(worldName));
-    operation.setEnchantApplies(((enchantment, itemStack) -> enchantments.contains(enchantment)));
-
-    var enchantConflicts = config.anvilEnchantmentConflicts.get(worldName);
-    operation.setEnchantConflicts((enchantment, enchantment2) ->
-        enchantConflicts.get(enchantment).contains(enchantment2)
-            || enchantConflicts.get(enchantment2).contains(enchantment));
-
-    operation.setRenameText(renameText);
-
-    return operation;
-  }
-
-  /**
-   * Ensure base and addition both are single stacked items.
+   * Ensure base and addition both eligible. Base must be a single item, unstacked. Addition must
+   * either be an enchanted book or the same material as the base item.
    *
    * @param base the base item
    * @param addition the additional item
@@ -133,7 +97,10 @@ public class AnvilEnchanter implements Listener {
   boolean areItemsInvalid(
       @Nullable ItemStack base,
       @Nullable ItemStack addition) {
-    return base == null || addition == null || base.getAmount() > 1 || addition.getAmount() > 1;
+    return ItemStackHelper.isEmpty(base)
+        || base.getAmount() != 1
+        || ItemStackHelper.isEmpty(addition)
+        || (addition.getType() != Material.ENCHANTED_BOOK && addition.getType() != base.getType());
   }
 
 }

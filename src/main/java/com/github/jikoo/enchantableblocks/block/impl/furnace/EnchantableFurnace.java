@@ -119,7 +119,6 @@ class EnchantableFurnace extends EnchantableBlock {
    *
    * @return true if the furnace can pause
    */
-  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean canPause() {
     return this.canPause;
   }
@@ -138,14 +137,14 @@ class EnchantableFurnace extends EnchantableBlock {
     Furnace furnace = getFurnaceTile();
 
     if (furnace == null) {
-      // Null furnace tile means no handling. Shouldn't happen, but rare edge cases with tile entity differences occur.
+      // Null furnace tile means no handling. Shouldn't happen, but rare edge cases occur.
       return false;
     }
 
     ItemStack input;
     ItemStack result;
     if (event instanceof FurnaceSmeltEvent smeltEvent) {
-      // Special case FurnaceSmeltEvent - since smelt has not completed, input and result are slightly different.
+      // Special case FurnaceSmeltEvent: smelt has not completed, input and result are different.
       // Decrease input for post-smelt
       input = smeltEvent.getSource().clone();
       input.setAmount(input.getAmount() - 1);
@@ -162,8 +161,8 @@ class EnchantableFurnace extends EnchantableBlock {
   }
 
   /**
-   * Get whether the furnace should pause based on the input and result items. Note that depending on the event
-   * occurring, the input and result items may not match the current furnace contents.
+   * Get whether the furnace should pause based on the input and result items. Note that depending
+   * on the event occurring, the input and result items may not match the current furnace contents.
    *
    * @param furnace the furnace
    * @param input the input item
@@ -205,7 +204,9 @@ class EnchantableFurnace extends EnchantableBlock {
 
     // Verify that the smelting item cannot produce a result
     return !recipe.getInputChoice().test(input)
-        || (result != null && result.getType() != Material.AIR && !recipe.getResult().isSimilar(result));
+        || (result != null
+        && result.getType() != Material.AIR
+        && !recipe.getResult().isSimilar(result));
 
   }
 
@@ -249,7 +250,8 @@ class EnchantableFurnace extends EnchantableBlock {
 
     // Is the output full?
     ItemStack result = furnaceInv.getResult();
-    if (!ItemStackHelper.isEmpty(result) && result.getAmount() == result.getType().getMaxStackSize()) {
+    if (!ItemStackHelper.isEmpty(result)
+        && result.getAmount() == result.getType().getMaxStackSize()) {
       return false;
     }
 
@@ -333,7 +335,8 @@ class EnchantableFurnace extends EnchantableBlock {
    */
   public short applyCookTimeModifiers(double totalCookTime) {
     // Invert sign of cook modifier to invert sigmoid.
-    return MathHelper.clampPositiveShort(MathHelper.sigmoid(totalCookTime, -getCookModifier(), 2.0));
+    return MathHelper.clampPositiveShort(
+        MathHelper.sigmoid(totalCookTime, -getCookModifier(), 2.0));
   }
 
   /**
@@ -357,12 +360,12 @@ class EnchantableFurnace extends EnchantableBlock {
 
   @Override
   public String toString() {
-    return "EnchantableFurnace{" +
-        "block=" + getBlock() +
-        "itemStack=" + getItemStack() +
-        "canPause=" + canPause +
-        "frozenTicks=" + frozenTicks +
-        '}';
+    return "EnchantableFurnace{"
+        + "block=" + getBlock()
+        + "itemStack=" + getItemStack()
+        + "canPause=" + canPause
+        + "frozenTicks=" + frozenTicks
+        + '}';
   }
 
   /**
@@ -394,7 +397,8 @@ class EnchantableFurnace extends EnchantableBlock {
     enchantableFurnace.updating = true;
 
     plugin.getServer().getScheduler().runTask(plugin, () -> {
-      boolean shouldPause = enchantableFurnace.shouldPause(furnace, inventory.getSmelting(), inventory.getResult());
+      boolean shouldPause =
+          enchantableFurnace.shouldPause(furnace, inventory.getSmelting(), inventory.getResult());
       if (enchantableFurnace.isPaused() == shouldPause) {
         enchantableFurnace.updating = false;
         return;
