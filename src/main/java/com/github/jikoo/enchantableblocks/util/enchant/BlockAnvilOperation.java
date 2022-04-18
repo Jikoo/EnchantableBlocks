@@ -30,7 +30,7 @@ public class BlockAnvilOperation extends AnvilOperation {
     var enchantments = new ArrayList<>(registration.getEnchants());
     var config = registration.getConfig();
     enchantments.removeAll(config.anvilDisabledEnchants.get(worldName));
-    this.setEnchantApplies(((enchantment, itemStack) -> enchantments.contains(enchantment)));
+    this.setEnchantApplies((enchantment, itemStack) -> enchantments.contains(enchantment));
     // Set world enchantment conflicts.
     var enchantConflicts = config.anvilEnchantmentConflicts.get(worldName);
     this.setEnchantsConflict((enchantment, enchantment2) ->

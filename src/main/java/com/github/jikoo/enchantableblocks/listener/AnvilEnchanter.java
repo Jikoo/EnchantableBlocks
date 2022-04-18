@@ -1,9 +1,9 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
-import com.github.jikoo.enchantableblocks.util.ItemStackHelper;
 import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvilOperation;
 import com.github.jikoo.planarenchanting.anvil.AnvilResult;
+import com.github.jikoo.planarenchanting.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -97,9 +97,9 @@ public class AnvilEnchanter implements Listener {
   boolean areItemsInvalid(
       @Nullable ItemStack base,
       @Nullable ItemStack addition) {
-    return ItemStackHelper.isEmpty(base)
+    return ItemUtil.isEmpty(base)
         || base.getAmount() != 1
-        || ItemStackHelper.isEmpty(addition)
+        || ItemUtil.isEmpty(addition)
         || (addition.getType() != Material.ENCHANTED_BOOK && addition.getType() != base.getType());
   }
 

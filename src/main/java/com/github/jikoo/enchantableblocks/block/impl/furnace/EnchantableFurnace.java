@@ -2,8 +2,8 @@ package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import com.github.jikoo.enchantableblocks.util.ItemStackHelper;
 import com.github.jikoo.enchantableblocks.util.MathHelper;
+import com.github.jikoo.planarenchanting.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -188,7 +188,7 @@ class EnchantableFurnace extends EnchantableBlock {
     }
 
     // Is the result slot too full for more product?
-    if (!ItemStackHelper.isEmpty(result)) {
+    if (!ItemUtil.isEmpty(result)) {
       int stack = result.getType().getMaxStackSize();
       if (result.getAmount() >= stack) {
         return true;
@@ -244,13 +244,13 @@ class EnchantableFurnace extends EnchantableBlock {
 
     // Is there an input?
     FurnaceInventory furnaceInv = furnace.getInventory();
-    if (ItemStackHelper.isEmpty(furnaceInv.getSmelting())) {
+    if (ItemUtil.isEmpty(furnaceInv.getSmelting())) {
       return false;
     }
 
     // Is the output full?
     ItemStack result = furnaceInv.getResult();
-    if (!ItemStackHelper.isEmpty(result)
+    if (!ItemUtil.isEmpty(result)
         && result.getAmount() == result.getType().getMaxStackSize()) {
       return false;
     }
@@ -262,7 +262,7 @@ class EnchantableFurnace extends EnchantableBlock {
     }
 
     // Ensure result matches current output
-    if (!ItemStackHelper.isEmpty(result) && !recipe.getResult().isSimilar(result)) {
+    if (!ItemUtil.isEmpty(result) && !recipe.getResult().isSimilar(result)) {
       return false;
     }
 
