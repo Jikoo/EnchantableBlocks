@@ -1,13 +1,13 @@
 package com.github.jikoo.enchantableblocks.config;
 
 import com.github.jikoo.enchantableblocks.config.data.EnchantMaxLevelMapping;
+import com.github.jikoo.enchantableblocks.config.data.EnchantabilitySetting;
 import com.github.jikoo.enchantableblocks.config.data.MultimapEnchantEnchantSetting;
 import com.github.jikoo.enchantableblocks.config.data.SetEnchantSetting;
-import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
+import com.github.jikoo.planarenchanting.table.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;
 import com.github.jikoo.planarwrappers.config.Setting;
 import com.github.jikoo.planarwrappers.config.impl.BooleanSetting;
-import com.github.jikoo.planarwrappers.config.impl.EnumSetting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Set;
@@ -34,7 +34,7 @@ public abstract class EnchantableBlockConfig {
     this.section = configurationSection;
 
     this.enabled = new BooleanSetting(section, "enabled", true);
-    this.tableEnchantability = new EnumSetting<>(
+    this.tableEnchantability = new EnchantabilitySetting(
         section,
         "tableEnchantability",
         Enchantability.STONE);

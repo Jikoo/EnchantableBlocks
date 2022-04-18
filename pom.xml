@@ -7,7 +7,7 @@
   <groupId>com.github.jikoo</groupId>
   <artifactId>enchantableblocks</artifactId>
   <name>EnchantableBlocks</name>
-  <version>3.1.2-SNAPSHOT</version>
+  <version>4.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -92,7 +92,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>planarenchanting</artifactId>
-      <version>ac875e076e</version>
+      <version>fadf55e2a1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

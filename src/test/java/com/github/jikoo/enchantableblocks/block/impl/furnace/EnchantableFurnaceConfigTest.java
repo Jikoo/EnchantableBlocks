@@ -12,7 +12,7 @@ import be.seeseemelk.mockbukkit.MockBukkit;
 import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.util.PluginHelper;
-import com.github.jikoo.enchantableblocks.util.enchant.Enchantability;
+import com.github.jikoo.planarenchanting.table.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;
 import com.github.jikoo.planarwrappers.config.Setting;
 import com.google.common.collect.Multimap;
