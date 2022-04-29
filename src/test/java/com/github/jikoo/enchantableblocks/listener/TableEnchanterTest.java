@@ -18,8 +18,6 @@ import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentHelper;
 import com.github.jikoo.planarwrappers.util.StringConverters;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -29,18 +27,14 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventException;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.RegisteredListener;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,7 +65,7 @@ class TableEnchanterTest {
   }
 
   @BeforeEach
-  void setUp() throws ReflectiveOperationException {
+  void setUp() {
     if (plugin != null) {
       HandlerList.unregisterAll(plugin);
     }
@@ -97,66 +91,15 @@ class TableEnchanterTest {
 
     listener = new TableEnchanter(plugin, registry);
 
-    // Manually register events - MockBukkit doesn't seem capable of finding private methods.
-    // CB is very capable of this, locates event handlers on the classloader level.
-    registerReflective(PrepareItemEnchantEvent.class, listener, "onPrepareItemEnchant", plugin);
-    registerReflective(EnchantItemEvent.class, listener, "onEnchantItem", plugin);
-    registerReflective(EnchantItemEvent.class, listener, "afterAnyEnchant", plugin);
+    server.getPluginManager().registerEvents(listener, plugin);
 
     // Default item
     itemStack = new ItemStack(ENCHANTABLE_MATERIAL);
   }
 
-  private static <T extends Event> void registerReflective(
-      Class<T> eventClass,
-      Listener listener,
-      String methodName,
-      Plugin plugin) throws ReflectiveOperationException {
-    Method method = null;
-    Class<?> searchedClass = listener.getClass();
-    do {
-      try {
-        method = searchedClass.getDeclaredMethod(methodName, eventClass);
-      } catch (NoSuchMethodException error) {
-        searchedClass = searchedClass.getSuperclass();
-      }
-    } while (method == null && searchedClass != null);
-
-    if (method == null) {
-      throw new NoSuchMethodException(
-          String.format(
-              "No such method %s#%s(%s)",
-              listener.getClass().getName(),
-              methodName,
-              eventClass.getName()));
-    }
-
-    method.setAccessible(true);
-
-    EventHandler eventHandler = method.getAnnotation(EventHandler.class);
-    if (eventHandler == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Method %s#%s(%s) missing EventHandler annotation",
-              listener.getClass().getName(),
-              methodName,
-              eventClass.getName()));
-    }
-
-    Method getHandlerList = eventClass.getDeclaredMethod("getHandlerList");
-
-    final Method finalMethod = method;
-    ((HandlerList) getHandlerList.invoke(null)).register(new RegisteredListener(listener,
-        (listener1, event) -> {
-          try {
-            finalMethod.invoke(listener1, event);
-          } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new EventException(e);
-          }
-        },
-        eventHandler.priority(),
-        plugin,
-        eventHandler.ignoreCancelled()));
+  @AfterEach
+  void afterEach() {
+    server.getPluginManager().clearPlugins();
   }
 
   @AfterAll

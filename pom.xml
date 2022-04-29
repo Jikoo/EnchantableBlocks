@@ -92,7 +92,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>planarenchanting</artifactId>
-      <version>fadf55e2a1</version>
+      <version>ccbd060b6b</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
