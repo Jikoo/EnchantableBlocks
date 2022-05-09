@@ -7,7 +7,7 @@
   <groupId>com.github.jikoo</groupId>
   <artifactId>enchantableblocks</artifactId>
   <name>EnchantableBlocks</name>
-  <version>4.0.0</version>
+  <version>4.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
