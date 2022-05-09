@@ -27,7 +27,6 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.inventory.ItemStack;
@@ -66,9 +65,6 @@ class TableEnchanterTest {
 
   @BeforeEach
   void setUp() {
-    if (plugin != null) {
-      HandlerList.unregisterAll(plugin);
-    }
     player = new PlayerMock(server, "sampletext") {
       @Override
       public boolean hasPermission(String name) {
