@@ -30,9 +30,11 @@ public record Region(String worldName, int x, int z) {
   public boolean anyChunkMatch(BiPredicate<Integer, Integer> chunkPredicate) {
     int minChunkX = Coords.regionToChunk(x);
     int minChunkZ = Coords.regionToChunk(z);
+    int maxChunkX = Coords.regionToChunk(x + 1);
+    int maxChunkZ = Coords.regionToChunk(z + 1);
 
-    for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
-      for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
+    for (int chunkX = minChunkX; chunkX < maxChunkX; ++chunkX) {
+      for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; ++chunkZ) {
         if (chunkPredicate.test(chunkX, chunkZ)) {
           return true;
         }
@@ -50,9 +52,11 @@ public record Region(String worldName, int x, int z) {
   public void forEachChunk(BiConsumer<Integer, Integer> chunkConsumer) {
     int minChunkX = Coords.regionToChunk(x);
     int minChunkZ = Coords.regionToChunk(z);
+    int maxChunkX = Coords.regionToChunk(x + 1);
+    int maxChunkZ = Coords.regionToChunk(z + 1);
 
-    for (int chunkX = minChunkX, maxChunkX = minChunkX + 32; chunkX < maxChunkX; ++chunkX) {
-      for (int chunkZ = minChunkZ, maxChunkZ = minChunkZ + 32; chunkZ < maxChunkZ; ++chunkZ) {
+    for (int chunkX = minChunkX; chunkX < maxChunkX; ++chunkX) {
+      for (int chunkZ = minChunkZ; chunkZ < maxChunkZ; ++chunkZ) {
         chunkConsumer.accept(chunkX, chunkZ);
       }
     }
