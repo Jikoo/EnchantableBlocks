@@ -6,6 +6,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
@@ -16,6 +18,7 @@ import be.seeseemelk.mockbukkit.scheduler.BukkitSchedulerMock;
 import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
 import com.github.jikoo.enchantableblocks.listener.WorldListener.DropReplacement;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
+import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -31,6 +34,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
@@ -39,8 +43,10 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
@@ -71,6 +77,21 @@ class WorldListenerTest {
             entity -> boundingBox.contains(entity.getLocation().toVector()))
             .collect(Collectors.toList());
       }
+
+      @Override
+      public @NotNull ItemEntityMock dropItem(@NotNull Location loc, @NotNull ItemStack item, @Nullable Consumer<Item> function) {
+        Preconditions.checkNotNull(loc, "The provided location must not be null.");
+        Preconditions.checkNotNull(item, "Cannot drop items that are null.");
+        Preconditions.checkArgument(!item.getType().isAir(), "Cannot drop air.");
+        ItemEntityMock entity = new ItemEntityMock(serverMock, UUID.randomUUID(), item);
+        entity.setLocation(loc);
+        if (function != null) {
+          function.accept(entity);
+        }
+
+        serverMock.registerEntity(entity);
+        return entity;
+      }
     };
     world.setName("world");
     serverMock.addWorld(world);
@@ -100,7 +121,10 @@ class WorldListenerTest {
   @BeforeEach
   void setUp() {
     var server = MockBukkit.getMock();
-    player = server.addPlayer("sampletext");
+    PlayerInventory inventory = mock(PlayerInventory.class);
+    when(inventory.getItemInMainHand()).thenReturn(new ItemStack(Material.DIAMOND_PICKAXE));
+    player = mock(Player.class);
+    when(player.getInventory()).thenReturn(inventory);
     scheduler = server.getScheduler();
     var plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
     manager = new EnchantableBlockManager(plugin);

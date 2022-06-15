@@ -7,6 +7,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
@@ -31,7 +33,9 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
@@ -67,8 +71,14 @@ class FurnaceListenerTest {
         new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200);
     server.addRecipe(recipe);
 
+    PlayerInventory inventory = mock(PlayerInventory.class);
+    when(inventory.getSize()).thenReturn(41);
+    when(inventory.getItemInMainHand()).thenReturn(new ItemStack(Material.AIR));
+    InventoryView viewMock = mock(InventoryView.class);
+    when(viewMock.getTopInventory()).thenReturn(inventory);
     // Add a player for events
-    player = MockBukkit.getMock().addPlayer("sampletext");
+    player = mock(Player.class);
+    when(player.getOpenInventory()).thenReturn(viewMock);
   }
 
   @AfterAll
