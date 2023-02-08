@@ -26,6 +26,7 @@ public class TableEnchanter extends TableEnchantListener {
     super(plugin);
     this.registry = registry;
   }
+
   @Override
   protected boolean isIneligible(@NotNull Player player, @NotNull ItemStack itemStack) {
     // Basic checks already ensure item is unstacked and unenchanted.

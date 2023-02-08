@@ -1,36 +1,49 @@
 package com.github.jikoo.enchantableblocks.registry;
 
-import static com.github.jikoo.enchantableblocks.util.matcher.IsSimilarMatcher.isSimilar;
+import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.isSimilar;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.ServerMock;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
-import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
+import com.github.jikoo.planarwrappers.util.Coords;
+import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.ArgumentCaptor;
 
 @DisplayName("Feature: Manage enchantable blocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -50,15 +63,25 @@ class EnchantableBlockManagerTest {
 
   @BeforeAll
   void setUp() {
-    ServerMock serverMock = MockBukkit.mock();
-    block = serverMock.addSimpleWorld(NORMAL_WORLD_NAME).getBlockAt(0, 0, 0);
-    blockDisabledWorld = serverMock.addSimpleWorld(DISABLED_WORLD_NAME).getBlockAt(0, 0, 0);
+    var server = BukkitServer.newServer();
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
+    Bukkit.setServer(server);
+
+    block = WorldMocks.newWorld(NORMAL_WORLD_NAME).getBlockAt(0, 0, 0);
+    blockDisabledWorld = WorldMocks.newWorld(DISABLED_WORLD_NAME).getBlockAt(0, 0, 0);
   }
 
   @BeforeEach
   void setUpEach() {
     // New fake plugin and manager
-    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    var dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
+    when(plugin.getDataFolder()).thenReturn(dataFolder);
+    var logger = mock(Logger.class);
+    when(plugin.getLogger()).thenReturn(logger);
+    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
     manager = new EnchantableBlockManager(plugin);
 
     // Disable dummy in disabled world
@@ -75,15 +98,6 @@ class EnchantableBlockManagerTest {
     // Reset block types
     block.setType(Material.DIRT);
     blockDisabledWorld.setType(Material.DIRT);
-  }
-
-  @AfterAll
-  void tearDown() {
-    ServerMock server = MockBukkit.getMock();
-    for (Plugin plugin : server.getPluginManager().getPlugins()) {
-      server.getScheduler().cancelTasks(plugin);
-    }
-    MockBukkit.unmock();
   }
 
   @Test
@@ -250,7 +264,8 @@ class EnchantableBlockManagerTest {
     Region region = new Region(chunk);
     RegionStorage storage = Objects.requireNonNull(manager.saveFileCache.get(region)).getStorage();
     chunkBad = block.getWorld().getChunkAt(chunk.getX() + 1, chunk.getZ() + 1);
-    storage.set(EnchantableBlockManager.getChunkPath(chunkBad.getBlock(0, 0, 0)), null);
+    var blockBad = block.getWorld().getBlockAt(Coords.chunkToBlock(chunkBad.getX()), 0, Coords.chunkToBlock(chunkBad.getZ()));
+    storage.set(EnchantableBlockManager.getChunkPath(blockBad), null);
     var section = storage.getConfigurationSection(EnchantableBlockManager.getChunkPath(block));
     if (section == null) {
       section = storage.createSection(EnchantableBlockManager.getChunkPath(block));
@@ -271,25 +286,27 @@ class EnchantableBlockManagerTest {
   void testLoadChunkBlocks() {
     setUpChunks();
 
-    var invalidConfigSection = new PatternCountHandler("Invalid ConfigurationSection .*");
-    plugin.getLogger().addHandler(invalidConfigSection);
-    var unparseableCoordinates = new PatternCountHandler("Unparseable coordinates .*");
-    plugin.getLogger().addHandler(unparseableCoordinates);
-    var invalidSave = new PatternCountHandler("Removed invalid save .*");
-    plugin.getLogger().addHandler(invalidSave);
+    ArgumentCaptor<Supplier<String>> captor = ArgumentCaptor.forClass(Supplier.class);
+    Logger logger = plugin.getLogger();
+    doNothing().when(logger).warning(captor.capture());
+
     manager.loadChunkBlocks(chunk);
+    verify(logger, times(6)).warning(any(Supplier.class));
+
+    List<String> warnings = captor.getAllValues().stream().map(Supplier::get).toList();
     assertThat(
         "Expected 2 non-ConfigurationSetting values",
-        invalidConfigSection.getMatches(),
-        is(2));
+        warnings.stream().filter(value -> value.startsWith("Invalid ConfigurationSection")).count(),
+        is(2L));
     assertThat(
         "Expected 2 unparseable coordinates",
-        unparseableCoordinates.getMatches(),
-        is(2));
+        warnings.stream().filter(value -> value.startsWith("Unparseable coordinates")).count(),
+        is(2L));
     assertThat(
         "Expected 2 invalid items or blocks",
-        invalidSave.getMatches(),
-        is(2));
+        warnings.stream().filter(value -> value.startsWith("Removed invalid save")).count(),
+        is(2L));
+
     var enchantableBlock = manager.getBlock(this.block);
     assertThat("Block must be loaded", enchantableBlock, is(notNullValue()));
     assertDoesNotThrow(() -> manager.loadChunkBlocks(chunkBad));

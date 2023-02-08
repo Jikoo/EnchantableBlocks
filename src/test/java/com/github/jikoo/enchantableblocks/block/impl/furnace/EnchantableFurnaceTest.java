@@ -7,24 +7,41 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.world.BlockMocks;
+import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
 import com.github.jikoo.planarwrappers.util.StringConverters;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Furnace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,42 +62,63 @@ class EnchantableFurnaceTest {
   private EnchantableBlockManager manager;
   private EnchantableFurnaceRegistration registration;
   private Block block;
-  private FurnaceMock tile;
+  private Furnace tile;
   private ItemStack itemStack;
   private ConfigurationSection storage;
 
   @BeforeAll
-  void setUpAll() {
-    MockBukkit.mock();
-  }
+  void beforeAll() {
+    var server = BukkitServer.newServer();
+    Bukkit.setServer(server);
 
-  @AfterAll
-  void tearDownAll() {
-    plugin.getServer().getScheduler().cancelTasks(plugin);
-    MockBukkit.unmock();
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
+    var pluginManager = mock(PluginManager.class);
+    when(server.getPluginManager()).thenReturn(pluginManager);
   }
 
   @BeforeEach
-  void setUp() {
-    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+  void beforeEach() {
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    var dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
+    when(plugin.getDataFolder()).thenReturn(dataFolder);
+    Server server = Bukkit.getServer();
+    when(plugin.getServer()).thenReturn(server);
+    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
+    var logger = mock(Logger.class);
+    when(plugin.getLogger()).thenReturn(logger);
     manager = new EnchantableBlockManager(plugin);
     registration = new EnchantableFurnaceRegistration(plugin, manager);
     manager.getRegistry().register(registration);
-    var server = MockBukkit.getMock();
-    server.getScheduler().performOneTick();
 
     // Add mock furnace recipe dirt -> coarse dirt
-    server.addRecipe(new FurnaceRecipe(
+    List<Recipe> recipes = List.of(new FurnaceRecipe(
         Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
         new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200));
+    when(server.recipeIterator()).thenReturn(recipes.iterator());
 
     // Set up block and state
-    var world = server.addSimpleWorld("world");
-    var blockMock = world.getBlockAt(0, 0, 0);
-    blockMock.setType(Material.FURNACE);
-    tile = new FurnaceMock(blockMock);
-    blockMock.setState(tile);
-    block = blockMock;
+    var world = WorldMocks.newWorld("world");
+    block = world.getBlockAt(0, 0, 0);
+    BlockMocks.mockType(block);
+    block.setType(Material.FURNACE);
+    tile = mock(Furnace.class);
+    when(block.getState()).thenReturn(tile);
+    var inventory = InventoryMocks.newFurnaceMock();
+    when(tile.getInventory()).thenReturn(inventory);
+    AtomicInteger burnTime = new AtomicInteger();
+    when(tile.getBurnTime()).thenAnswer(invocation -> (short) burnTime.get());
+    doAnswer(invocation -> {
+      burnTime.set(invocation.getArgument(0, Short.class));
+      return null;
+    }).when(tile).setBurnTime(anyShort());
+    AtomicInteger cookTimeTotal = new AtomicInteger();
+    when(tile.getCookTimeTotal()).thenAnswer(invocation -> cookTimeTotal.get());
+    doAnswer(invocation -> {
+      cookTimeTotal.set(invocation.getArgument(0));
+      return null;
+    }).when(tile).setCookTimeTotal(anyInt());
 
     // Create default item and storage
     itemStack = new ItemStack(Material.FURNACE);
@@ -230,9 +268,6 @@ class EnchantableFurnaceTest {
     assertThat(pauseSituation.reason(), enchantableFurnace.resume(), is(not(pauseSituation.pauseExpected())));
 
     if (!pauseSituation.pauseExpected()) {
-      // Reassign state - updating furnace assigns new state.
-      tile = (FurnaceMock) block.getState();
-
       assertThat("Resumed furnace may not have frozen ticks",
           enchantableFurnace.getFrozenTicks(), is((short) 0));
       assertThat("Resumed time must be greater than pre-resume",
@@ -371,8 +406,6 @@ class EnchantableFurnaceTest {
     manager.createBlock(this.block, itemStack);
     var inventory = tile.getInventory();
     assertDoesNotThrow(() -> EnchantableFurnace.update(plugin, manager, inventory));
-    var scheduler = MockBukkit.getMock().getScheduler();
-    assertDoesNotThrow(scheduler::performOneTick);
     manager.destroyBlock(block);
   }
 

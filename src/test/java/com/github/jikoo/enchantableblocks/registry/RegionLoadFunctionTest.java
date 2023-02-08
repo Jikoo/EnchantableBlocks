@@ -4,18 +4,22 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.MockPlugin;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
-import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.Region;
-import com.github.jikoo.enchantableblocks.util.logging.PatternCountHandler;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,22 +32,16 @@ class RegionLoadFunctionTest {
   private Plugin plugin;
   private RegionLoadFunction loadFunction;
 
-  @BeforeAll
-  void beforeAll() {
-    MockBukkit.mock();
-  }
-
-  @AfterAll
-  void afterAll() {
-    plugin.getServer().getScheduler().cancelTasks(plugin);
-    MockBukkit.unmock();
-  }
-
   @BeforeEach
-  void setUp() throws NoSuchFieldException, IllegalAccessException {
-    MockPlugin fakePlugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    PluginHelper.setDataDir(fakePlugin);
-    plugin = fakePlugin;
+  void setUp() {
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    var dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
+    when(plugin.getDataFolder()).thenReturn(dataFolder);
+    var config = YamlConfiguration.loadConfiguration(new File(dataFolder, "config.yml"));
+    when(plugin.getConfig()).thenReturn(config);
+    var logger = mock(Logger.class);
+    when(plugin.getLogger()).thenReturn(logger);
     EnchantableBlockManager manager = new EnchantableBlockManager(plugin);
     loadFunction = new RegionLoadFunction(plugin, manager);
   }
@@ -61,22 +59,23 @@ class RegionLoadFunctionTest {
     assertThat("Nonexistent data must not be created if not set to", storageData, is(nullValue()));
     storageData = loadFunction.apply(region, true);
     assertThat("Nonexistent data must be created if set to", storageData, is(notNullValue()));
+
+    Files.deleteIfExists(storageData.getStorage().getDataFile().toPath());
   }
 
   @DisplayName("Invalid data should be handled gracefully.")
   @Test
   void testLoadInvalid() {
-    PatternCountHandler handler = new PatternCountHandler("while scanning for the next token");
-    plugin.getLogger().addHandler(handler);
+    var logger = plugin.getLogger();
     Region region = new Region("world", -1, -1);
 
     RegionStorageData storageData = loadFunction.apply(region, true);
     assertThat("Invalid data should load blank file", storageData, is(notNullValue()));
+    verify(logger).log(any(Level.class), any(Throwable.class), any());
 
     storageData = loadFunction.apply(region, false);
     assertThat("Invalid data should still load if not creating", storageData, is(notNullValue()));
-
-    assertThat("Expected 2 attempts to load invalid yaml", handler.getMatches(), is(2));
+    verify(logger, times(2)).log(any(Level.class), any(Throwable.class), any());
   }
 
   @DisplayName("Valid data should always load.")

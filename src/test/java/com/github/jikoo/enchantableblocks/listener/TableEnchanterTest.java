@@ -10,30 +10,33 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.ServerMock;
-import be.seeseemelk.mockbukkit.entity.PlayerMock;
 import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
-import com.github.jikoo.enchantableblocks.util.enchant.EnchantmentHelper;
-import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.Set;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.Plugin;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,29 +52,39 @@ class TableEnchanterTest {
   private static final Material UNREGISTERED_MATERIAL = Material.ACACIA_BOAT;
   private static final Enchantment VALID_ENCHANT = Enchantment.DIG_SPEED;
 
-  private ServerMock server;
   private Plugin plugin;
   private EnchantableBlockRegistry registry;
   private Player player;
   private TableEnchanter listener;
   private ItemStack itemStack;
+  private Block block;
 
   @BeforeAll
   void setUpAll() {
-    server = MockBukkit.mock();
-    server.addSimpleWorld("world");
-    EnchantmentHelper.setupToolEnchants();
+    EnchantmentMocks.init();
+
+    var server = BukkitServer.newServer();
+    Bukkit.setServer(server);
+
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
+    var scheduler = mock(BukkitScheduler.class);
+    when(server.getScheduler()).thenReturn(scheduler);
   }
 
   @BeforeEach
   void setUp() {
-    player = new PlayerMock(server, "sampletext") {
-      @Override
-      public boolean hasPermission(String name) {
-        return true;
-      }
-    };
-    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
+    player = mock(Player.class);
+    when(player.hasPermission(any(String.class))).thenReturn(true);
+    var world = WorldMocks.newWorld("world");
+    when(player.getWorld()).thenReturn(world);
+    when(player.getEnchantmentSeed()).thenReturn(0);
+    var pdc = mock(PersistentDataContainer.class);
+    when(player.getPersistentDataContainer()).thenReturn(pdc);
+
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
     registry = new EnchantableBlockRegistry(plugin);
 
     // Add dummy registrations for valid and invalid materials.
@@ -87,20 +100,10 @@ class TableEnchanterTest {
 
     listener = new TableEnchanter(plugin, registry);
 
-    server.getPluginManager().registerEvents(listener, plugin);
-
     // Default item
     itemStack = new ItemStack(ENCHANTABLE_MATERIAL);
-  }
 
-  @AfterEach
-  void afterEach() {
-    server.getPluginManager().clearPlugins();
-  }
-
-  @AfterAll
-  void tearDownAll() {
-    MockBukkit.unmock();
+    block = WorldMocks.newWorld("world").getBlockAt(0, 0, 0);
   }
 
   @Test
@@ -116,25 +119,15 @@ class TableEnchanterTest {
   }
 
   @Test
-  void testMainPermUnableToEnchant() {
-    player = new PlayerMock(server, "sampletext") {
-      @Override
-      public boolean hasPermission(String name) {
-        return "enchantableblocks.enchant.table".equals(name);
-      }
-    };
+  void testMainPermAbleToEnchant() {
+    when(player.hasPermission("enchantableblocks.enchant.table")).thenReturn(true);
     assertThat("Player with main permission can enchant", listener.getTable(player, itemStack), is(notNullValue()));
   }
 
   @Test
-  void testSpecificPermUnableToEnchant() {
-    player = new PlayerMock(server, "sampletext") {
-      @Override
-      public boolean hasPermission(String name) {
-        return "enchantableblocks.enchant.table.dummyenchantableblock".equals(name);
-      }
-    };
-    assertThat("Player with main permission can enchant", listener.getTable(player, itemStack), is(notNullValue()));
+  void testSpecificPermAbleToEnchant() {
+    when(player.hasPermission("enchantableblocks.enchant.table.dummyenchantableblock")).thenReturn(true);
+    assertThat("Player with specific permission can enchant", listener.getTable(player, itemStack), is(notNullValue()));
   }
 
   @Test
@@ -167,9 +160,13 @@ class TableEnchanterTest {
   void testUnablePrepareItemEnchant() {
     itemStack.setType(UNREGISTERED_MATERIAL);
     var event = new PrepareItemEnchantEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, new EnchantmentOffer[3], 0);
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onPrepareItemEnchant(event));
+    assertThat(
+        "Offers must be unset",
+        Arrays.asList(event.getOffers()),
+        everyItem(is(nullValue())));
   }
 
   @Test
@@ -179,9 +176,9 @@ class TableEnchanterTest {
     registry.reload();
 
     var event = new PrepareItemEnchantEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, new EnchantmentOffer[3], 0);
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onPrepareItemEnchant(event));
     assertThat(
         "Offers must be unset",
         Arrays.asList(event.getOffers()),
@@ -191,13 +188,9 @@ class TableEnchanterTest {
   @Test
   void testPrepareItemEnchant() {
     var event = new PrepareItemEnchantEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, new EnchantmentOffer[3], 30);
-    player.getPersistentDataContainer().set(
-        Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:enchanting_table_seed")),
-        PersistentDataType.LONG, 0L
-    );
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onPrepareItemEnchant(event));
     assertThat(
         "Offers must be set",
         Arrays.asList(event.getOffers()),
@@ -211,22 +204,18 @@ class TableEnchanterTest {
     registry.reload();
 
     var event = new EnchantItemEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, 30, new HashMap<>(), 0);
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onEnchantItem(event));
     assertThat("Enchantments must be empty", event.getEnchantsToAdd(), is(anEmptyMap()));
   }
 
   @Test
   void testEnchantItem() {
     var event = new EnchantItemEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, 30, new HashMap<>(), 2);
-    player.getPersistentDataContainer().set(
-        Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:enchanting_table_seed")),
-        PersistentDataType.LONG, 0L
-    );
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onEnchantItem(event));
     assertThat("Enchantments must not be empty", event.getEnchantsToAdd(), is(aMapWithSize(greaterThan(0))));
   }
 
@@ -234,13 +223,9 @@ class TableEnchanterTest {
   void testEnchantedUnableToEnchant() {
     itemStack.addUnsafeEnchantment(VALID_ENCHANT, 10);
     var event = new EnchantItemEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, 30, new HashMap<>(), 2);
-    player.getPersistentDataContainer().set(
-        Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:enchanting_table_seed")),
-        PersistentDataType.LONG, 0L
-    );
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onEnchantItem(event));
     assertThat("Enchanted item cannot be enchanted", event.getEnchantsToAdd(), is(anEmptyMap()));
   }
 
@@ -248,13 +233,9 @@ class TableEnchanterTest {
   void testStackUnableToEnchant() {
     itemStack.setAmount(2);
     var event = new EnchantItemEvent(
-        player, player.getOpenInventory(), player.getLocation().getBlock(),
+        player, player.getOpenInventory(), block,
         itemStack, 30, new HashMap<>(), 2);
-    player.getPersistentDataContainer().set(
-        Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:enchanting_table_seed")),
-        PersistentDataType.LONG, 0L
-    );
-    assertDoesNotThrow(() -> plugin.getServer().getPluginManager().callEvent(event));
+    assertDoesNotThrow(() -> listener.onEnchantItem(event));
     assertThat("Stacked item cannot be enchanted", event.getEnchantsToAdd(), is(anEmptyMap()));
   }
 

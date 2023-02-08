@@ -1,26 +1,35 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import static com.github.jikoo.enchantableblocks.util.matcher.IsSimilarMatcher.isSimilar;
+import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.isSimilar;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.ServerMock;
-import be.seeseemelk.mockbukkit.inventory.ChestInventoryMock;
-import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.world.BlockMocks;
+import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
+import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Furnace;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -31,14 +40,18 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.InventoryType.SlotType;
+import org.bukkit.inventory.CookingRecipe;
+import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterAll;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,72 +66,102 @@ class FurnaceListenerTest {
 
   private static final short BURN_TIME = 1600;
 
-  private FurnaceListener listener;
+  private EnchantableFurnace enchantableFurnace;
   private EnchantableBlockManager manager;
-  private FurnaceRecipe recipe;
+  private FurnaceListener listener;
+  private CookingRecipe<?> recipe;
   private Player player;
   private Block block;
-  private FurnaceMock tile;
+  private Furnace tile;
   private ItemStack itemStack;
 
   @BeforeAll
   void setUpAll() {
-    var server = MockBukkit.mock();
+    Server server = BukkitServer.newServer();
+    Bukkit.setServer(server);
 
-    // Add mock furnace recipe dirt -> coarse dirt
+    // Set up item factory for ItemMeta generation and comparison.
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
+
+    // Add furnace recipe dirt -> coarse dirt
     recipe = new FurnaceRecipe(
         Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
         new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200);
-    server.addRecipe(recipe);
+    // Set up recipe iterator
+    when(server.recipeIterator()).thenAnswer(invocation -> Set.of((Recipe) recipe).iterator());
 
-    PlayerInventory inventory = mock(PlayerInventory.class);
-    when(inventory.getSize()).thenReturn(41);
-    when(inventory.getItemInMainHand()).thenReturn(new ItemStack(Material.AIR));
-    InventoryView viewMock = mock(InventoryView.class);
-    when(viewMock.getTopInventory()).thenReturn(inventory);
-    // Add a player for events
-    player = mock(Player.class);
-    when(player.getOpenInventory()).thenReturn(viewMock);
-  }
-
-  @AfterAll
-  void tearDownAll() {
-    ServerMock server = MockBukkit.getMock();
-    for (Plugin plugin : server.getPluginManager().getPlugins()) {
-      server.getScheduler().cancelTasks(plugin);
-    }
-    MockBukkit.unmock();
+    // Set up scheduler to run tasks immediately.
+    BukkitScheduler scheduler = mock(BukkitScheduler.class);
+    when(scheduler.runTask(any(Plugin.class), any(Runnable.class))).thenAnswer(invocation -> {
+      invocation.getArgument(1, Runnable.class).run();
+      return null;
+    });
+    when(server.getScheduler()).thenReturn(scheduler);
   }
 
   @BeforeEach
   void setUp() {
-    var plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    manager = new EnchantableBlockManager(plugin);
-    manager.getRegistry().register(new EnchantableFurnaceRegistration(plugin, manager));
+    Server server = Bukkit.getServer();
+
+    Plugin plugin = mock(Plugin.class);
+    when(plugin.getServer()).thenReturn(server);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    manager = mock(EnchantableBlockManager.class);
     listener = new FurnaceListener(plugin, manager);
 
-    // Set up block and state
-    var server = MockBukkit.getMock();
-    var world = server.addSimpleWorld("world");
-    var blockMock = world.getBlockAt(0, 0, 0);
-    blockMock.setType(Material.FURNACE);
-    tile = new FurnaceMock(blockMock);
-    blockMock.setState(tile);
-    block = blockMock;
+    // Set up world and block
+    World world = WorldMocks.newWorld("world");
+    block = world.getBlockAt(0, 0, 0);
+    BlockMocks.mockType(block);
+    block.setType(Material.FURNACE);
 
-    // Create default item and storage
+    // Set up state and inventory
+    tile = mock(Furnace.class);
+    when(block.getState()).thenReturn(tile);
+    when(tile.getBlock()).thenReturn(block);
+    when(tile.getWorld()).thenReturn(world);
+    FurnaceInventory inventory = InventoryMocks.newFurnaceMock();
+    when(tile.getInventory()).thenReturn(inventory);
+
+    // Set up manager and registry
+    EnchantableBlockRegistry registry = mock(EnchantableBlockRegistry.class);
+    when(manager.getRegistry()).thenReturn(registry);
+    EnchantableFurnaceRegistration registration = mock(EnchantableFurnaceRegistration.class);
+    when(registry.get(any(Material.class))).thenReturn(registration);
+    when(registration.getFurnaceRecipe(any())).thenAnswer(invocation -> recipe);
+    var config = new EnchantableFurnaceConfig(new YamlConfiguration());
+    when(registration.getConfig()).thenReturn(config);
     itemStack = new ItemStack(Material.FURNACE);
-  }
+    enchantableFurnace = spy(new EnchantableFurnace(registration, block, itemStack, new YamlConfiguration()));
+    // Input item is cloned during creation.
+    itemStack = enchantableFurnace.getItemStack();
+    when(manager.getBlock(block)).thenReturn(enchantableFurnace);
 
-  private @Nullable EnchantableBlock newBlock() {
-    return manager.createBlock(block, itemStack);
+    // Add a player for events
+    player = mock(Player.class);
+    InventoryView viewMock = mock(InventoryView.class);
+    when(player.getOpenInventory()).thenReturn(viewMock);
+
+    PlayerInventory playerInventory = InventoryMocks.newMock(PlayerInventory.class, InventoryType.PLAYER, 41);
+    when(playerInventory.getItemInMainHand()).thenReturn(new ItemStack(Material.AIR));
+    when(viewMock.getTopInventory()).thenReturn(playerInventory);
+
+    // Set up open/close for modifications.
+    when(player.openInventory(any(Inventory.class))).thenAnswer(invocation -> {
+      when(viewMock.getTopInventory()).thenReturn(playerInventory);
+      return viewMock;
+    });
+    doAnswer(invocation -> {
+      when(viewMock.getTopInventory()).thenReturn(playerInventory);
+      return null;
+    }).when(player).closeInventory();
   }
 
   @DisplayName("Invalid furnaces do not modify FurnaceBurnEvents.")
   @Test
   void testInvalidFurnaceConsumeFuel() {
-    var enchantableBlock = newBlock();
-    assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
+    when(manager.getBlock(block)).thenReturn(null);
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
     assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Invalid block must be ignored", !event.isCancelled());
@@ -128,9 +171,8 @@ class FurnaceListenerTest {
   @DisplayName("Paused furnaces cancel FurnaceBurnEvents and resume.")
   @Test
   void testPausedFurnaceConsumeFuel() {
-    itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 200);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    enchantableFurnace.setFrozenTicks((short) 200);
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
     assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Resume must cancel event", event.isCancelled());
@@ -140,8 +182,6 @@ class FurnaceListenerTest {
   @Test
   void testFurnaceConsumeFuel() {
     itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, 10);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceBurnEvent(block, new ItemStack(Material.COAL), BURN_TIME);
     assertDoesNotThrow(() -> listener.onFurnaceBurn(event));
     assertThat("Non-resume event is not cancelled", !event.isCancelled());
@@ -151,8 +191,6 @@ class FurnaceListenerTest {
   @DisplayName("Invalid furnaces do not modify FurnaceStartSmeltEvents.")
   @Test
   void testInvalidFurnaceStartSmelt() {
-    var enchantableBlock = newBlock();
-    assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceStartSmeltEvent(block, recipe.getInput(), recipe);
     assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
     assertThat(
@@ -165,8 +203,6 @@ class FurnaceListenerTest {
   @Test
   void testValidFurnaceStartSmelt() {
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 10);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceStartSmeltEvent(block, recipe.getInput(), recipe);
     assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
     assertThat(
@@ -178,8 +214,6 @@ class FurnaceListenerTest {
   @DisplayName("Invalid furnaces do not modify FurnaceSmeltEvents.")
   @Test
   void testInvalidFurnaceSmelt() {
-    var enchantableBlock = newBlock();
-    assertThat("Unenchanted item yields invalid block", enchantableBlock, is(nullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
     assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
@@ -190,8 +224,6 @@ class FurnaceListenerTest {
   @Test
   void testInvalidTileFurnaceSmelt() {
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 10);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     block.setType(Material.DIRT);
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
     assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
@@ -204,8 +236,6 @@ class FurnaceListenerTest {
   void testBoringFurnaceSmelt() {
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 10);
     itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, 10);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
     assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
@@ -216,8 +246,6 @@ class FurnaceListenerTest {
   @Test
   void testFortuneFurnaceSmelt() {
     itemStack.addUnsafeEnchantment(Enchantment.LOOT_BONUS_BLOCKS, 10);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
     assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
     assertThat("Event is never cancelled", !event.isCancelled());
@@ -251,9 +279,8 @@ class FurnaceListenerTest {
   @DisplayName("Silk touch furnaces do not cancel FurnaceSmeltEvents.")
   @Test
   void testSilkFurnaceSmelt() {
+    when(enchantableFurnace.canPause()).thenReturn(true);
     itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     ItemStack input = recipe.getInput();
     input.setAmount(2);
     var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
@@ -264,25 +291,21 @@ class FurnaceListenerTest {
   @DisplayName("Silk touch furnaces pause during tick completion.")
   @Test
   void testPauseSilkFurnaceSmelt() {
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    when(enchantableFurnace.shouldPause(any())).thenReturn(true);
     tile.setBurnTime(BURN_TIME);
-    itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    var enchantableBlock = newBlock();
-    assertThat("Block must be valid", enchantableBlock, is(notNullValue()));
     var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
     assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
-    assertDoesNotThrow(() -> MockBukkit.getMock().getScheduler().performOneTick());
     assertThat("Event is never cancelled", !event.isCancelled());
+    verify(enchantableFurnace).pause();
   }
 
   @DisplayName("Non-furnace clicks are ignored.")
   @Test
   void onInventoryClick() {
-    // Work around Mockbukkit issue - base InventoryView returns null improperly for getTopInventory
-    player.openInventory(new ChestInventoryMock(null, 9));
     var event = new InventoryClickEvent(player.getOpenInventory(), SlotType.CONTAINER, 0,
         ClickType.LEFT, InventoryAction.PICKUP_ALL);
     assertDoesNotThrow(() -> listener.onInventoryClick(event));
-    player.closeInventory();
   }
 
   @DisplayName("Furnace clicks are handled appropriately.")
@@ -292,16 +315,16 @@ class FurnaceListenerTest {
     var event = new InventoryClickEvent(player.getOpenInventory(), SlotType.CONTAINER, 0,
         ClickType.LEFT, InventoryAction.PICKUP_ALL);
     assertDoesNotThrow(() -> listener.onInventoryClick(event));
-    player.closeInventory();
+    // TODO this should call #verify on #update
   }
 
   @DisplayName("Non-furnace item movements are ignored.")
   @Test
   void onInventoryMoveItem() {
-    player.closeInventory();
     var event = new InventoryMoveItemEvent(player.getInventory(), new ItemStack(Material.DIRT),
         player.getInventory(), true);
     assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
+    // TODO this should call #verify on #update
   }
 
   @DisplayName("Item movements from a furnace are handled appropriately.")
@@ -311,27 +334,25 @@ class FurnaceListenerTest {
     var event = new InventoryMoveItemEvent(tile.getInventory(), new ItemStack(Material.DIRT),
         player.getInventory(), false);
     assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
-    player.closeInventory();
+    // TODO this should call #verify on #update
   }
 
   @DisplayName("Item movements to a furnace are handled appropriately.")
   @Test
   void onFurnaceAcceptInventoryMoveItem() {
-    player.closeInventory();
     var event = new InventoryMoveItemEvent(player.getInventory(), new ItemStack(Material.DIRT),
         tile.getInventory(), true);
     assertDoesNotThrow(() -> listener.onInventoryMoveItem(event));
+    // TODO this should call #verify on #update
   }
 
   @DisplayName("Non-furnace drags are ignored.")
   @Test
   void onInventoryDrag() {
-    // Work around Mockbukkit issue - base InventoryView returns null improperly for getTopInventory
-    player.openInventory(new ChestInventoryMock(null, 9));
     var event = new InventoryDragEvent(player.getOpenInventory(), new ItemStack(Material.AIR),
         new ItemStack(Material.DIRT), false, Map.of(0, new ItemStack(Material.DIRT)));
     assertDoesNotThrow(() -> listener.onInventoryDrag(event));
-    player.closeInventory();
+    // TODO this should call #verify on #update
   }
 
   @DisplayName("Furnace drags are handled appropriately.")
@@ -341,7 +362,7 @@ class FurnaceListenerTest {
     var event = new InventoryDragEvent(player.getOpenInventory(), new ItemStack(Material.AIR),
         new ItemStack(Material.DIRT), false, Map.of(0, new ItemStack(Material.DIRT)));
     assertDoesNotThrow(() -> listener.onInventoryDrag(event));
-    player.closeInventory();
+    // TODO this should call #verify on #update
   }
 
 }

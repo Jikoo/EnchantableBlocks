@@ -1,30 +1,36 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
+import static com.github.jikoo.enchantableblocks.mock.matcher.EnchantMatchers.enchant;
+import static com.github.jikoo.enchantableblocks.mock.matcher.EnchantMatchers.enchantSet;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.util.PluginHelper;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.planarenchanting.table.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;
 import com.github.jikoo.planarwrappers.config.Setting;
 import com.google.common.collect.Multimap;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,13 +48,13 @@ class EnchantableFurnaceConfigTest {
   private EnchantableFurnaceConfig config;
 
   @BeforeAll
-  void beforeAll() throws NoSuchFieldException, IllegalAccessException {
-    MockBukkit.mock();
-    EnchantableBlocksPlugin plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    PluginHelper.setDataDir(plugin);
-    plugin.getBlockManager().getRegistry().reload();
-    EnchantableBlockConfig config = Objects.requireNonNull(plugin.getBlockManager().getRegistry().get(Material.FURNACE)).getConfig();
-    this.config = (EnchantableFurnaceConfig) config;
+  void beforeAll() {
+    EnchantmentMocks.init();
+
+    File configFile = Path.of(".", "src", "test", "resources", "EnchantableBlocks", "config.yml").toFile();
+    YamlConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
+    ConfigurationSection blockStorage = configuration.getConfigurationSection("blocks.EnchantableFurnace");
+    this.config = new EnchantableFurnaceConfig(Objects.requireNonNull(blockStorage));
   }
 
   @DisplayName("Nonexistent configuration sections should be handled gracefully.")
@@ -74,6 +80,8 @@ class EnchantableFurnaceConfigTest {
   @DisplayName("Fortune list should be customizable per-world.")
   @Test
   void testFortuneList() {
+    Bukkit.setServer(BukkitServer.newServer());
+
     Setting<Set<Material>> fortuneList = config.fortuneList;
     Collection<Material> value = EnumSet.of(Material.WET_SPONGE, Material.STONE_BRICKS);
     assertThat("Materials should be set in default settings",
@@ -88,6 +96,8 @@ class EnchantableFurnaceConfigTest {
         Material.NETHER_QUARTZ_ORE, Material.NETHER_GOLD_ORE);
     assertThat("Materials should be overridden", fortuneList.get(ORE_WORLD),
         both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
+
+    BukkitServer.unsetBukkitServer();
   }
 
   @DisplayName("Block enchantablity should be customizable per-world.")
@@ -108,9 +118,10 @@ class EnchantableFurnaceConfigTest {
 
     assertThat("Conflicts should default to empty set",
         disabledEnchants.get(INVALID_WORLD).isEmpty());
-    Collection<Enchantment> value = Collections.singleton(Enchantment.DURABILITY);
-    assertThat("Conflicts should be overridden properly", disabledEnchants.get(VANILLA_WORLD),
-        both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
+    Set<Enchantment> value = Set.of(Enchantment.DURABILITY);
+    assertThat("Conflicts should be overridden properly",
+        disabledEnchants.get(VANILLA_WORLD),
+        is(enchantSet(value)));
   }
 
   @DisplayName("Block enchantment conflicts should be customizable per-world.")
@@ -120,8 +131,11 @@ class EnchantableFurnaceConfigTest {
 
     Multimap<Enchantment, Enchantment> defaultConflicts = conflicts.get(INVALID_WORLD);
     assertThat("Conflicts should default to a single entry", defaultConflicts.size(), is(1));
-    assertThat("Conflict should be silk touch and fortune",
-        defaultConflicts.containsEntry(Enchantment.SILK_TOUCH, Enchantment.LOOT_BONUS_BLOCKS));
+    Optional<Entry<Enchantment, Collection<Enchantment>>> entryOptional = defaultConflicts.asMap().entrySet().stream().findFirst();
+    assertThat("Conflict entry must exist", entryOptional.isPresent());
+    Entry<Enchantment, Collection<Enchantment>> entry = entryOptional.get();
+    assertThat("Conflict must contain silk touch", entry.getKey(), is(enchant(Enchantment.SILK_TOUCH)));
+    assertThat("Conflict must contain fortune", entry.getValue(), contains(enchant(Enchantment.LOOT_BONUS_BLOCKS)));
 
     assertThat("Conflicts should be overridden properly",
         conflicts.get(POWER_WORLD).isEmpty());
@@ -152,12 +166,6 @@ class EnchantableFurnaceConfigTest {
     enchantment = Enchantment.LOOT_BONUS_BLOCKS;
     assertThat("Invalid values should fall through to defaults",
         enchantmentMax.get(INVALID_WORLD, enchantment), is(enchantment.getMaxLevel()));
-
-  }
-
-  @AfterAll
-  void afterAll() {
-    MockBukkit.unmock();
   }
 
 }

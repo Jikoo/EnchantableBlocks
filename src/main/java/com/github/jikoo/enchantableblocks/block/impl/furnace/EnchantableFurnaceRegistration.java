@@ -23,6 +23,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
@@ -122,9 +123,9 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
 
     // Obtain cache for holder type.
     Map<Integer, CookingRecipe<?>> recipes;
-    if (inventory.getHolder() instanceof BlastFurnace) {
+    if (inventory.getType() == InventoryType.BLAST_FURNACE) {
       recipes = blastFurnaceCache;
-    } else if (inventory.getHolder() instanceof Smoker) {
+    } else if (inventory.getType() == InventoryType.SMOKER) {
       recipes = smokerCache;
     } else {
       recipes = furnaceCache;
@@ -160,7 +161,7 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
     while (iterator.hasNext()) {
       Recipe next = iterator.next();
 
-      if (!(next instanceof CookingRecipe nextCooking) || isIneligibleRecipe(holder, next)) {
+      if (!(next instanceof CookingRecipe<?> nextCooking) || isIneligibleRecipe(holder, next)) {
         continue;
       }
 

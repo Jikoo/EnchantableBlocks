@@ -22,6 +22,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * Listener for block loading, unloading, creation, and destruction.
@@ -42,23 +43,28 @@ public class WorldListener implements Listener {
     this.plugin = plugin;
     this.manager = manager;
   }
+
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onChunkLoad(@NotNull ChunkLoadEvent event) {
+  @VisibleForTesting
+  void onChunkLoad(@NotNull ChunkLoadEvent event) {
     plugin.getServer().getScheduler().runTask(plugin, () -> manager.loadChunkBlocks(event.getChunk()));
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onChunkUnload(@NotNull ChunkUnloadEvent event) {
+  @VisibleForTesting
+  void onChunkUnload(@NotNull ChunkUnloadEvent event) {
     manager.unloadChunkBlocks(event.getChunk());
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-  private void onBlockPlace(@NotNull BlockPlaceEvent event) {
+  @VisibleForTesting
+  void onBlockPlace(@NotNull BlockPlaceEvent event) {
     manager.createBlock(event.getBlock(), event.getItemInHand());
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-  private void onBlockBreak(@NotNull BlockBreakEvent event) {
+  @VisibleForTesting
+  void onBlockBreak(@NotNull BlockBreakEvent event) {
     Block block = event.getBlock();
     ItemStack drop = manager.destroyBlock(block);
 

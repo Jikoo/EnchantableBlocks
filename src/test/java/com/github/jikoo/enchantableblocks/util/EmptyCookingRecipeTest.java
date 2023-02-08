@@ -2,18 +2,21 @@ package com.github.jikoo.enchantableblocks.util;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
-import org.junit.jupiter.api.AfterAll;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,16 +34,14 @@ class EmptyCookingRecipeTest {
 
   @BeforeAll
   void beforeAll() {
-    MockBukkit.mock();
-  }
-
-  @AfterAll
-  void afterAll() {
-    MockBukkit.unmock();
+    var server = BukkitServer.newServer();
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
+    Bukkit.setServer(server);
   }
 
   @BeforeEach
-  void setUp() {
+  void beforeEach() {
     recipe = new EmptyCookingRecipe(Objects.requireNonNull(StringConverters.toNamespacedKey("key")));
   }
 
@@ -57,14 +58,13 @@ class EmptyCookingRecipeTest {
   @ParameterizedTest
   @MethodSource("getMethods")
   void testMethods(
-      Function<EmptyCookingRecipe, Object> getter,
-      BiConsumer<EmptyCookingRecipe, Object> setter,
+      @NotNull Function<EmptyCookingRecipe, Object> getter,
+      @NotNull BiConsumer<EmptyCookingRecipe, Object> setter,
       Object setValue) {
     Object value = getter.apply(recipe);
     boolean useSetterReturn = false;
     Object setterReturn = null;
     if (setter instanceof BiFunction biFunction) {
-      //noinspection unchecked
       setterReturn = biFunction.apply(recipe, setValue);
       useSetterReturn = true;
     } else {

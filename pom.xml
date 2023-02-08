@@ -7,7 +7,7 @@
   <groupId>com.github.jikoo</groupId>
   <artifactId>enchantableblocks</artifactId>
   <name>EnchantableBlocks</name>
-  <version>4.0.1-SNAPSHOT</version>
+  <version>4.1.0</version>
   <packaging>jar</packaging>
 
   <properties>
@@ -22,8 +22,8 @@
     <profile>
       <id>sonarcloud</id>
       <properties>
-        <maven.compiler.source>16</maven.compiler.source>
-        <maven.compiler.target>16</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <sonar.projectKey>Jikoo_EnchantableBlocks</sonar.projectKey>
         <sonar.organization>jikoo</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -78,13 +78,13 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>23.0.0</version>
+      <version>24.0.0</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.19-R0.1-SNAPSHOT</version>
+      <version>1.19.3-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -97,19 +97,19 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>planarenchanting</artifactId>
-      <version>1.0.1</version>
+      <version>1.1.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>PlanarWrappers</artifactId>
-      <version>2.2.4</version>
+      <version>3.0.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.8.2</version>
+      <version>5.9.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -121,13 +121,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>4.6.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.seeseemelk</groupId>
-      <artifactId>MockBukkit-v1.19</artifactId>
-      <version>2.73.0</version>
+      <version>5.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -158,6 +152,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.0.0-M7</version>
+        <configuration>
+          <forkCount>2</forkCount>
+          <reuseForks>false</reuseForks>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

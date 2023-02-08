@@ -1,4 +1,4 @@
-package com.github.jikoo.enchantableblocks.util.matcher;
+package com.github.jikoo.enchantableblocks.mock.matcher;
 
 import org.bukkit.inventory.ItemStack;
 import org.hamcrest.BaseMatcher;

@@ -2,22 +2,26 @@ package com.github.jikoo.enchantableblocks.registry;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.MockPlugin;
-import be.seeseemelk.mockbukkit.ServerMock;
-import be.seeseemelk.mockbukkit.WorldMock;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
-import com.github.jikoo.enchantableblocks.util.PluginHelper;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.stream.Stream;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -32,35 +36,60 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RegionInUseCheckTest {
 
+  private Collection<LoadedStateWorld> worlds;
   private Plugin plugin;
   private EnchantableBlockManager manager;
   private RegionInUseCheck inUseCheck;
 
   @BeforeAll
   void beforeAll() {
-    ServerMock server = MockBukkit.mock();
-    server.addWorld(new LoadedStateWorld(true));
-    server.addWorld(new LoadedStateWorld(false));
-  }
+    var server = BukkitServer.newServer();
 
-  @AfterAll
-  void afterAll() {
-    MockBukkit.unmock();
+    worlds = new ArrayList<>();
+    for (boolean loaded : new boolean[] { true, false }) {
+      var world = mock(LoadedStateWorld.class);
+      String name = "loaded_" + loaded;
+      when(world.getName()).thenReturn(name);
+      when(world.isChunkLoaded(any())).thenReturn(loaded);
+      when(world.isChunkLoaded(anyInt(), anyInt())).thenReturn(loaded);
+      when(world.getLoadedState()).thenReturn(loaded);
+
+      when(server.getWorld(name)).thenReturn(world);
+
+      worlds.add(world);
+    }
+
+    Bukkit.setServer(server);
   }
 
   @BeforeEach
-  void setUp() throws NoSuchFieldException, IllegalAccessException {
-    MockPlugin fakePlugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    PluginHelper.setDataDir(fakePlugin);
-    plugin = fakePlugin;
+  void setUp() {
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    File dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
+    when(plugin.getDataFolder()).thenReturn(dataFolder);
+    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
     manager = new EnchantableBlockManager(plugin);
     inUseCheck = new RegionInUseCheck(plugin.getLogger());
+  }
+
+  @AfterAll
+  void afterAll() throws IOException {
+    try (Stream<Path> files = Files.walk(plugin.getDataFolder().toPath())) {
+      files.sorted(Comparator.reverseOrder()).forEach(file -> {
+        try {
+          Files.delete(file);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
   }
 
   @DisplayName("Null value is never in use.")
   @ParameterizedTest
   @MethodSource("getWorlds")
-  void testNullRegion(LoadedStateWorld world) {
+  void testNullRegion(@NotNull World world) {
     Region key = new Region(world.getName(), 0, 0);
 
     assertThat("Null value is never in use", inUseCheck.test(key, null), is(false));
@@ -69,7 +98,7 @@ class RegionInUseCheckTest {
   @DisplayName("Clean regions do nothing.")
   @ParameterizedTest
   @MethodSource("getWorlds")
-  void testCleanRegion(LoadedStateWorld world) {
+  void testCleanRegion(@NotNull LoadedStateWorld world) {
     Region key = new Region(world.getName(), 0, 0);
     RegionStorageData value = manager.new RegionStorageData(new RegionStorage(plugin, key));
 
@@ -82,7 +111,7 @@ class RegionInUseCheckTest {
   @DisplayName("Empty data deletes from disk during check.")
   @ParameterizedTest
   @MethodSource("getWorlds")
-  void testDirtyEmptyRegion(LoadedStateWorld world) throws IOException {
+  void testDirtyEmptyRegion(@NotNull LoadedStateWorld world) throws IOException {
     Region key = new Region(world.getName(), 0, 0);
     RegionStorageData value = manager.new RegionStorageData(new RegionStorage(plugin, key));
 
@@ -102,7 +131,7 @@ class RegionInUseCheckTest {
   @DisplayName("Valid data writes to disk during check.")
   @ParameterizedTest
   @MethodSource("getWorlds")
-  void testDirtyRegion(LoadedStateWorld world) throws IOException {
+  void testDirtyRegion(@NotNull LoadedStateWorld world) throws IOException {
     Region key = new Region(world.getName(), 0, 0);
     RegionStorageData value = manager.new RegionStorageData(new RegionStorage(plugin, key));
 
@@ -123,32 +152,14 @@ class RegionInUseCheckTest {
     Files.deleteIfExists(path);
   }
 
-  static @NotNull Stream<World> getWorlds() {
-    return Stream.of(Bukkit.getWorld("loaded"), Bukkit.getWorld("unloaded"));
+  @NotNull Collection<LoadedStateWorld> getWorlds() {
+    return worlds;
   }
 
-  private static class LoadedStateWorld extends WorldMock {
-    private final boolean loaded;
+  interface LoadedStateWorld extends World {
 
-    private LoadedStateWorld(boolean loaded) {
-      super();
-      this.loaded = loaded;
-      setName(this.loaded ? "loaded" : "unloaded");
-    }
+    boolean getLoadedState();
 
-    @Override
-    public boolean isChunkLoaded(@NotNull Chunk chunk) {
-      return isChunkLoaded(chunk.getX(), chunk.getZ());
-    }
-
-    @Override
-    public boolean isChunkLoaded(int x, int z) {
-      return this.loaded;
-    }
-
-    public boolean getLoadedState() {
-      return this.loaded;
-    }
   }
 
 }

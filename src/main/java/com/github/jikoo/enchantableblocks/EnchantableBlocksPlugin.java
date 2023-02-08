@@ -68,9 +68,8 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
         this.blockManager.loadChunkBlocks(chunk);
       }
     }
-    getLogger().info(() ->
-        "Loaded all active blocks in "
-            + ((System.nanoTime() - startTime) / 1_000_000_000D) + " seconds");
+    double elapsed = (System.nanoTime() - startTime) / 1_000_000_000D;
+    getLogger().info(() -> "Loaded all active blocks in " + elapsed + " seconds");
   }
 
   @Override

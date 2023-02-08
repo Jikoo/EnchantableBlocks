@@ -9,31 +9,38 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import be.seeseemelk.mockbukkit.ServerMock;
-import be.seeseemelk.mockbukkit.WorldMock;
+import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import com.github.jikoo.enchantableblocks.util.mock.BlastFurnaceMock;
-import com.github.jikoo.enchantableblocks.util.mock.FurnaceMock;
-import com.github.jikoo.enchantableblocks.util.mock.SmokerMock;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Furnace;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CampfireRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
 import org.bukkit.plugin.Plugin;
-import org.junit.jupiter.api.AfterAll;
+import org.bukkit.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -46,58 +53,62 @@ class EnchantableFurnaceRegistrationTest {
 
   private Plugin plugin;
   private EnchantableFurnaceRegistration registration;
-  private Furnace[] furnaces;
+  private FurnaceInventory[] furnaces;
 
   @BeforeAll
   void beforeAll() {
-    ServerMock server = MockBukkit.mock();
-    plugin = MockBukkit.createMockPlugin("EnchantableBlocks");
-    var manager = new EnchantableBlockManager(plugin);
-    registration = new EnchantableFurnaceRegistration(plugin, manager);
+    var server = BukkitServer.newServer();
+    Bukkit.setServer(server);
 
-    WorldMock world = server.addSimpleWorld("world");
+    var pluginManager = mock(PluginManager.class);
+    when(server.getPluginManager()).thenReturn(pluginManager);
 
-    Block block = world.getBlockAt(0, 0, 0);
-    block.setType(Material.FURNACE);
-    Furnace furnace = new FurnaceMock(block);
+    var factory = ItemFactoryMocks.mockFactory();
+    when(server.getItemFactory()).thenReturn(factory);
 
-    block = block.getRelative(BlockFace.UP);
-    block.setType(Material.BLAST_FURNACE);
-    Furnace blastFurnace = new BlastFurnaceMock(block);
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
+    when(plugin.getServer()).thenReturn(server);
+    var logger = mock(Logger.class);
+    when(plugin.getLogger()).thenReturn(logger);
 
-    block = block.getRelative(BlockFace.UP);
-    block.setType(Material.SMOKER);
-    Furnace smoker = new SmokerMock(block);
-
-    furnaces = new Furnace[] { furnace, blastFurnace, smoker };
+    furnaces = new FurnaceInventory[] {
+        InventoryMocks.newFurnaceMock(),
+        InventoryMocks.newFurnaceMock(InventoryType.BLAST_FURNACE),
+        InventoryMocks.newFurnaceMock(InventoryType.SMOKER)
+    };
 
     // Add some sample recipes to ensure tests actually cover code
-    server.addRecipe(new FurnaceRecipe(new NamespacedKey(plugin, "furnace1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
-    server.addRecipe(new FurnaceRecipe(new NamespacedKey(plugin, "furnace2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
-    server.addRecipe(new FurnaceRecipe(new NamespacedKey(plugin, "furnace3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
+    List<Recipe> recipes = new ArrayList<>();
+    recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
+    recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
+    recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
 
-    server.addRecipe(new BlastingRecipe(new NamespacedKey(plugin, "blast1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
-    server.addRecipe(new BlastingRecipe(new NamespacedKey(plugin, "blast2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
-    server.addRecipe(new BlastingRecipe(new NamespacedKey(plugin, "blast3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
+    recipes.add(new BlastingRecipe(new NamespacedKey(plugin, "blast1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
+    recipes.add(new BlastingRecipe(new NamespacedKey(plugin, "blast2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
+    recipes.add(new BlastingRecipe(new NamespacedKey(plugin, "blast3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
 
-    server.addRecipe(new SmokingRecipe(new NamespacedKey(plugin, "smoke1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
-    server.addRecipe(new SmokingRecipe(new NamespacedKey(plugin, "smoke2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
-    server.addRecipe(new SmokingRecipe(new NamespacedKey(plugin, "smoke3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
+    recipes.add(new SmokingRecipe(new NamespacedKey(plugin, "smoke1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
+    recipes.add(new SmokingRecipe(new NamespacedKey(plugin, "smoke2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
+    recipes.add(new SmokingRecipe(new NamespacedKey(plugin, "smoke3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
 
-    server.addRecipe(new CampfireRecipe(new NamespacedKey(plugin, "smores1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
-    server.addRecipe(new CampfireRecipe(new NamespacedKey(plugin, "hotdog2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
-    server.addRecipe(new CampfireRecipe(new NamespacedKey(plugin, "beancan3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
+    recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "smores1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
+    recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "hotdog2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
+    recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "beancan3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
+    when(server.recipeIterator()).thenAnswer(invocation -> recipes.iterator());
   }
 
-  @AfterAll
-  void afterAll() {
-    MockBukkit.unmock();
+  @BeforeEach
+  void beforeEach() {
+    var manager = new EnchantableBlockManager(plugin);
+    registration = new EnchantableFurnaceRegistration(plugin, manager);
   }
 
   @DisplayName("Registration must create EnchantableFurnace instances.")
   @Test
   void testNewBlock() {
-    WorldMock world = MockBukkit.getMock().addSimpleWorld("world");
+    World world = WorldMocks.newWorld("world");
     Block block = world.getBlockAt(0, 0, 0);
     ItemStack itemStack = new ItemStack(Material.FURNACE);
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 5);
@@ -111,7 +122,6 @@ class EnchantableFurnaceRegistrationTest {
     assertThat("New block must create new instance",
         registration.newBlock(block, itemStack, section),
         is(both(instanceOf(EnchantableFurnace.class)).and(not(enchantableFurnace))));
-
   }
 
   @DisplayName("Registration creates EnchantableFurnaceConfig instances.")
@@ -152,13 +162,13 @@ class EnchantableFurnaceRegistrationTest {
   @MethodSource("getModernMaterials")
   void testGetFurnaceRecipe(ItemStack item) {
     // Try each furnace type
-    for (Furnace furnace : furnaces) {
-      FurnaceInventory inventory = furnace.getInventory();
-      inventory.setSmelting(item);
+    for (FurnaceInventory furnace : furnaces) {
+      furnace.setSmelting(item);
 
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(inventory));
+      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
       // Again to hit cache
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(inventory));
+      // TODO use verify
+      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
     }
   }
 
@@ -181,11 +191,10 @@ class EnchantableFurnaceRegistrationTest {
   @Test
   void testGetFurnaceRecipeNull() {
     // Try each furnace type
-    for (Furnace furnace : furnaces) {
-      FurnaceInventory inventory = furnace.getInventory();
-      inventory.setSmelting(null);
+    for (FurnaceInventory furnace : furnaces) {
+      furnace.setSmelting(null);
 
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(inventory));
+      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
     }
   }
 

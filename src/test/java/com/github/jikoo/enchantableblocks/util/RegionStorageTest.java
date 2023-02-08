@@ -2,13 +2,17 @@ package com.github.jikoo.enchantableblocks.util;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import be.seeseemelk.mockbukkit.MockBukkit;
-import com.github.jikoo.enchantableblocks.EnchantableBlocksPlugin;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -19,14 +23,28 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RegionStorageTest {
 
-  private JavaPlugin plugin;
+  private Plugin plugin;
   private final String world = "world";
 
   @BeforeAll
-  void beforeAll() throws NoSuchFieldException, IllegalAccessException {
-    MockBukkit.mock();
-    plugin = MockBukkit.load(EnchantableBlocksPlugin.class);
-    PluginHelper.setDataDir(plugin);
+  void beforeAll() {
+    plugin = mock(Plugin.class);
+    when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    File dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
+    when(plugin.getDataFolder()).thenReturn(dataFolder);
+  }
+
+  @AfterAll
+  void afterAll() throws IOException {
+    try (Stream<Path> files = Files.walk(plugin.getDataFolder().toPath())) {
+      files.sorted(Comparator.reverseOrder()).forEach(file -> {
+        try {
+          Files.delete(file);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+    }
   }
 
   @DisplayName("Saving should write to disk.")
@@ -56,11 +74,6 @@ class RegionStorageTest {
     stored.load();
     assertThat("Stored value must equal expected value.", stored.get(path),
         is(areYouAwareOfMyMonstrosity));
-  }
-
-  @AfterAll
-  void afterAll() {
-    MockBukkit.unmock();
   }
 
 }
