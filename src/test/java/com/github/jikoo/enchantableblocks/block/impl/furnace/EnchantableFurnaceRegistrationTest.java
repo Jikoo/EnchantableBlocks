@@ -9,7 +9,11 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.mock.BukkitServer;
@@ -25,17 +29,22 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.block.BlastFurnace;
 import org.bukkit.block.Block;
+import org.bukkit.block.Furnace;
+import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CampfireRecipe;
+import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.SmokingRecipe;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -62,7 +71,6 @@ class EnchantableFurnaceRegistrationTest {
 
     var pluginManager = mock(PluginManager.class);
     when(server.getPluginManager()).thenReturn(pluginManager);
-
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
 
@@ -73,14 +81,10 @@ class EnchantableFurnaceRegistrationTest {
     var logger = mock(Logger.class);
     when(plugin.getLogger()).thenReturn(logger);
 
-    furnaces = new FurnaceInventory[] {
-        InventoryMocks.newFurnaceMock(),
-        InventoryMocks.newFurnaceMock(InventoryType.BLAST_FURNACE),
-        InventoryMocks.newFurnaceMock(InventoryType.SMOKER)
-    };
-
     // Add some sample recipes to ensure tests actually cover code
     List<Recipe> recipes = new ArrayList<>();
+    recipes.add(new ShapelessRecipe(new NamespacedKey(plugin, "amorphous1"), new ItemStack(Material.DIRT)).addIngredient(Material.COAL));
+
     recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
     recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
     recipes.add(new FurnaceRecipe(new NamespacedKey(plugin, "furnace3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
@@ -103,6 +107,18 @@ class EnchantableFurnaceRegistrationTest {
   void beforeEach() {
     var manager = new EnchantableBlockManager(plugin);
     registration = new EnchantableFurnaceRegistration(plugin, manager);
+
+    var furnaceInventory = InventoryMocks.newFurnaceMock();
+    var furnace = mock(Furnace.class);
+    when(furnaceInventory.getHolder()).thenReturn(furnace);
+    var blastFurnaceInventory = InventoryMocks.newFurnaceMock(InventoryType.BLAST_FURNACE);
+    var blastFurnace = mock(BlastFurnace.class);
+    when(blastFurnaceInventory.getHolder()).thenReturn(blastFurnace);
+    var smokerInventory = InventoryMocks.newFurnaceMock(InventoryType.SMOKER);
+    var smoker = mock(Smoker.class);
+    when(smokerInventory.getHolder()).thenReturn(smoker);
+
+    furnaces = new FurnaceInventory[] { furnaceInventory, blastFurnaceInventory, smokerInventory };
   }
 
   @DisplayName("Registration must create EnchantableFurnace instances.")
@@ -157,34 +173,39 @@ class EnchantableFurnaceRegistrationTest {
     assertDoesNotThrow(() -> registration.reload());
   }
 
-  @DisplayName("Recipe lookup functions.")
+  @DisplayName("Recipe lookup uses cache.")
   @ParameterizedTest
-  @MethodSource("getModernMaterials")
+  @MethodSource("getModernItems")
   void testGetFurnaceRecipe(ItemStack item) {
     // Try each furnace type
     for (FurnaceInventory furnace : furnaces) {
       furnace.setSmelting(item);
+      var spiedReg = spy(registration);
 
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
+      assertDoesNotThrow(() -> spiedReg.getFurnaceRecipe(furnace));
+      verify(spiedReg).locateRecipe(any(), any());
       // Again to hit cache
-      // TODO use verify
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
+      assertDoesNotThrow(() -> spiedReg.getFurnaceRecipe(furnace));
+      verify(spiedReg).locateRecipe(any(), any());
     }
   }
 
-  static Stream<ItemStack> getModernMaterials() {
+  static Stream<ItemStack> getModernItems() {
     return Stream.of(Material.values())
-        .filter(material -> !material.name().startsWith("LEGACY_"))
-        .map(ItemStack::new)
-        // Filter MockBukkit's missing meta implementations
-        .filter(itemStack -> {
-          try {
-            itemStack.getItemMeta();
-          } catch (UnsupportedOperationException e) {
-            return false;
-          }
-          return true;
-        });
+        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR && material.isItem())
+        .map(ItemStack::new);
+  }
+
+  @DisplayName("Recipe lookup ignores null tile.")
+  @Test
+  void testGetFurnaceRecipeNullTile() {
+    var inventory = InventoryMocks.newFurnaceMock();
+    inventory.setSmelting(new ItemStack(Material.DIAMOND));
+    var spiedReg = spy(registration);
+
+    CookingRecipe<?> recipe = spiedReg.getFurnaceRecipe(inventory);
+    assertThat("Recipe must be null for null holder", recipe, is(nullValue()));
+    verify(spiedReg, times(0)).locateRecipe(any(), any());
   }
 
   @DisplayName("Recipe lookup functions for null input.")
@@ -194,7 +215,26 @@ class EnchantableFurnaceRegistrationTest {
     for (FurnaceInventory furnace : furnaces) {
       furnace.setSmelting(null);
 
-      assertDoesNotThrow(() -> registration.getFurnaceRecipe(furnace));
+      var spiedReg = spy(registration);
+
+      CookingRecipe<?> recipe = spiedReg.getFurnaceRecipe(furnace);
+      assertThat("Recipe must be null for null holder", recipe, is(nullValue()));
+      verify(spiedReg, times(0)).locateRecipe(any(), any());
+    }
+  }
+
+  @DisplayName("Recipe lookup functions for air input.")
+  @Test
+  void testGetFurnaceRecipeAir() {
+    // Try each furnace type
+    for (FurnaceInventory furnace : furnaces) {
+      furnace.setSmelting(new ItemStack(Material.AIR));
+
+      var spiedReg = spy(registration);
+
+      CookingRecipe<?> recipe = spiedReg.getFurnaceRecipe(furnace);
+      assertThat("Recipe must be null for null holder", recipe, is(nullValue()));
+      verify(spiedReg, times(0)).locateRecipe(any(), any());
     }
   }
 

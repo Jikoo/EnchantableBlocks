@@ -76,6 +76,12 @@ public class InventoryMocks {
       items.set(index, invocation.getArgument(1));
       return null;
     }).when(inventory).setItem(ArgumentMatchers.anyInt(), ArgumentMatchers.any());
+    doAnswer(invocation -> {
+      for (int i = 0; i < slots; ++i) {
+        items.set(i, null);
+      }
+      return null;
+    }).when(inventory).clear();
 
     return inventory;
   }

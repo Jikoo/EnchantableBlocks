@@ -23,7 +23,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
@@ -35,6 +34,7 @@ import org.bukkit.inventory.SmokingRecipe;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * EnchantableRegistration for furnace variants.
@@ -117,15 +117,20 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
    */
   public @Nullable CookingRecipe<?> getFurnaceRecipe(@NotNull FurnaceInventory inventory) {
     ItemStack smelting = inventory.getSmelting();
-    if (smelting == null) {
+    if (smelting == null || smelting.getType() == Material.AIR) {
+      return null;
+    }
+
+    Furnace holder = inventory.getHolder();
+    if (holder == null) {
       return null;
     }
 
     // Obtain cache for holder type.
     Map<Integer, CookingRecipe<?>> recipes;
-    if (inventory.getType() == InventoryType.BLAST_FURNACE) {
+    if (holder instanceof BlastFurnace) {
       recipes = blastFurnaceCache;
-    } else if (inventory.getType() == InventoryType.SMOKER) {
+    } else if (holder instanceof Smoker) {
       recipes = smokerCache;
     } else {
       recipes = furnaceCache;
@@ -137,7 +142,7 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
     cacheData.setAmount(1);
     Integer cacheId = cacheData.hashCode();
     CookingRecipe<?> recipe = recipes.computeIfAbsent(cacheId,
-        key -> locateRecipe(inventory.getHolder(), smelting));
+        key -> locateRecipe(holder, smelting));
 
     if (!recipe.getInputChoice().test(smelting)) {
       return null;
@@ -154,8 +159,9 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
    * @param smelting the recipe input
    * @return the {@link CookingRecipe} or a default invalid recipe if no match was found
    */
-  private CookingRecipe<?> locateRecipe(
-      @Nullable InventoryHolder holder,
+  @VisibleForTesting
+  CookingRecipe<?> locateRecipe(
+      @NotNull Furnace holder,
       @NotNull ItemStack smelting) {
     Iterator<Recipe> iterator = Bukkit.recipeIterator();
     while (iterator.hasNext()) {
@@ -174,20 +180,20 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
   }
 
   /**
-   * Check if an {@link InventoryHolder} is eligible to use a certain {@link Recipe}.
+   * Check if a {@link Furnace} is eligible to use a certain {@link Recipe}.
    *
-   * @param holder the inventory holder
+   * @param holder the furnace
    * @param recipe the recipe
    * @return true if the holder is allowed to use the recipe
    */
-  private boolean isIneligibleRecipe(@Nullable InventoryHolder holder, @NotNull Recipe recipe) {
+  private boolean isIneligibleRecipe(@NotNull Furnace holder, @NotNull Recipe recipe) {
     if (holder instanceof BlastFurnace) {
       return !(recipe instanceof BlastingRecipe);
     }
     if (holder instanceof Smoker) {
       return !(recipe instanceof SmokingRecipe);
     }
-    return holder instanceof Furnace && (!(recipe instanceof FurnaceRecipe));
+    return !(recipe instanceof FurnaceRecipe);
   }
 
 }

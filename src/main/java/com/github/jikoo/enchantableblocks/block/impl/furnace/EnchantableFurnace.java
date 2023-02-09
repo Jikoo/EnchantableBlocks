@@ -182,8 +182,15 @@ class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
+    return isFreezableState(furnace.getInventory(), input, result);
+  }
+
+  private boolean isFreezableState(
+      final @NotNull FurnaceInventory inventory,
+      final @Nullable ItemStack input,
+      final @Nullable ItemStack result) {
     // Is there no input?
-    if (input == null || input.getAmount() <= 0) {
+    if (ItemUtil.isEmpty(input)) {
       return true;
     }
 
@@ -195,7 +202,7 @@ class EnchantableFurnace extends EnchantableBlock {
       }
     }
 
-    CookingRecipe<?> recipe = getRegistration().getFurnaceRecipe(furnace.getInventory());
+    CookingRecipe<?> recipe = getRegistration().getFurnaceRecipe(inventory);
 
     // Does the current smelting item not have a recipe?
     if (recipe == null) {
@@ -207,7 +214,6 @@ class EnchantableFurnace extends EnchantableBlock {
         || (result != null
         && result.getType() != Material.AIR
         && !recipe.getResult().isSimilar(result));
-
   }
 
   /**
@@ -236,52 +242,28 @@ class EnchantableFurnace extends EnchantableBlock {
    * @return whether the furnace is unpaused
    */
   public boolean resume() {
-    Furnace furnace = this.getFurnaceTile();
-    // Is furnace unfrozen already?
-    if (furnace == null || !this.isPaused()) {
-      return false;
-    }
-
-    // Is there an input?
-    FurnaceInventory furnaceInv = furnace.getInventory();
-    if (ItemUtil.isEmpty(furnaceInv.getSmelting())) {
-      return false;
-    }
-
-    // Is the output full?
-    ItemStack result = furnaceInv.getResult();
-    if (!ItemUtil.isEmpty(result)
-        && result.getAmount() == result.getType().getMaxStackSize()) {
-      return false;
-    }
-
-    CookingRecipe<?> recipe = getRegistration().getFurnaceRecipe(furnaceInv);
-
-    if (recipe == null) {
-      return false;
-    }
-
-    // Ensure result matches current output
-    if (!ItemUtil.isEmpty(result) && !recipe.getResult().isSimilar(result)) {
-      return false;
-    }
-
-    furnace.setBurnTime(
-        MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
-    furnace.update(true);
-    this.setFrozenTicks((short) 0);
-    this.updateStorage();
-    return true;
+    return resume(true);
   }
 
-  public boolean forceResume() {
-    if (!this.canPause() || this.getFrozenTicks() < 1) {
+  /**
+   * Attempt to unpause the furnace, ignoring its current inventory contents.
+   *
+   * @param checkState whether inventory contents are to be checked
+   * @return whether the furnace is unpaused
+   */
+  public boolean resume(boolean checkState) {
+    // Is furnace unfrozen already?
+    if (!this.isPaused()) {
       return false;
     }
 
     Furnace furnace = this.getFurnaceTile();
-
     if (furnace == null) {
+      return false;
+    }
+
+    FurnaceInventory inventory = furnace.getInventory();
+    if (checkState && isFreezableState(inventory, inventory.getSmelting(), inventory.getResult())) {
       return false;
     }
 
@@ -352,9 +334,7 @@ class EnchantableFurnace extends EnchantableBlock {
   public short applyBurnTimeModifiers(int burnTime) {
     // Apply burn time modifiers.
     double baseTicks = MathHelper.sigmoid(burnTime, getBurnModifier(), 3.0);
-    // Round up so that the same number of items are likely to be able to smelt.
-    baseTicks += 0.5;
-    // Apply cook speed reduction
+    // Apply cook speed reduction.
     return applyCookTimeModifiers(baseTicks);
   }
 

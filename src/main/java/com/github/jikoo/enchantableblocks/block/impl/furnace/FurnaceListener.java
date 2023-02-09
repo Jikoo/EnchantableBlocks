@@ -16,7 +16,6 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -42,7 +41,7 @@ class FurnaceListener implements Listener {
       return;
     }
 
-    if (enchantableFurnace.forceResume()) {
+    if (enchantableFurnace.resume(false)) {
       event.setCancelled(true);
       return;
     }
@@ -93,21 +92,16 @@ class FurnaceListener implements Listener {
     }
 
     if (enchantableFurnace.shouldPause(event)) {
-      new BukkitRunnable() {
-        @Override
-        public void run() {
-          enchantableFurnace.pause();
-        }
-      }.runTask(this.plugin);
+      plugin.getServer().getScheduler().runTask(plugin, enchantableFurnace::pause);
     }
   }
 
-  private static void applyFortune(final @NotNull FurnaceSmeltEvent event, final int fortune) {
-    applyFortune(event, () -> FurnaceListener.getFortuneResult(fortune));
+  private void applyFortune(final @NotNull FurnaceSmeltEvent event, final int fortune) {
+    applyFortune(event, () -> getFortuneResult(fortune));
   }
 
   @VisibleForTesting
-  static void applyFortune(
+  void applyFortune(
       @NotNull FurnaceSmeltEvent event,
       @NotNull IntSupplier bonusCalculator) {
     ItemStack result = event.getResult();
@@ -131,7 +125,7 @@ class FurnaceListener implements Listener {
   }
 
   @VisibleForTesting
-  static int getFortuneResult(int maxBonus) {
+  int getFortuneResult(int maxBonus) {
     // Fortune result quantities are weighted - 0 bonus has 2 weight, any other number has 1 weight.
     // For simplicity, generate a number between -1 inclusive and fortune level + 1 exclusive.
     return ThreadLocalRandom.current().nextInt(-1, maxBonus + 1);

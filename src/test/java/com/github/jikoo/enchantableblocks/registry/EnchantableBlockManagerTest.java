@@ -1,6 +1,6 @@
 package com.github.jikoo.enchantableblocks.registry;
 
-import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.isSimilar;
+import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.similar;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -145,7 +145,7 @@ class EnchantableBlockManagerTest {
     assertThat(
         "Item should match creation stack",
         enchantableBlock.getItemStack(),
-        isSimilar(stack));
+        similar(stack));
   }
 
   @Test
@@ -232,7 +232,7 @@ class EnchantableBlockManagerTest {
     assertThat(
         "Invalid save data should still return in-memory item if available",
         manager.destroyBlock(block),
-        isSimilar(stack));
+        similar(stack));
   }
 
   @Test
@@ -256,7 +256,7 @@ class EnchantableBlockManagerTest {
     assertThat(
         "Valid block should return creation item",
         manager.destroyBlock(block),
-        isSimilar(stack));
+        similar(stack));
   }
 
   private void setUpChunks() {

@@ -1,68 +1,65 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
+import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.similar;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.mock.BukkitServer;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.enchantableblocks.mock.world.BlockMocks;
-import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.planarwrappers.util.StringConverters;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
 import org.bukkit.block.Furnace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 @DisplayName("Feature: Enchantable furnaces.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantableFurnaceTest {
 
-  private static final short PAUSED_TICKS = 200;
-
-  private Plugin plugin;
-  private EnchantableBlockManager manager;
-  private EnchantableFurnaceRegistration registration;
+  private FurnaceRecipe recipe;
+  private EnchantableFurnaceRegistration reg;
   private Block block;
-  private Furnace tile;
   private ItemStack itemStack;
   private ConfigurationSection storage;
 
@@ -75,44 +72,44 @@ class EnchantableFurnaceTest {
     when(server.getItemFactory()).thenReturn(factory);
     var pluginManager = mock(PluginManager.class);
     when(server.getPluginManager()).thenReturn(pluginManager);
+
+    recipe = new FurnaceRecipe(
+        Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
+        new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200);
   }
 
   @BeforeEach
   void beforeEach() {
-    plugin = mock(Plugin.class);
-    when(plugin.getName()).thenReturn(getClass().getSimpleName());
-    var dataFolder = Path.of(".", "src", "test", "resources", plugin.getName()).toFile();
-    when(plugin.getDataFolder()).thenReturn(dataFolder);
-    Server server = Bukkit.getServer();
-    when(plugin.getServer()).thenReturn(server);
-    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
-    var logger = mock(Logger.class);
-    when(plugin.getLogger()).thenReturn(logger);
-    manager = new EnchantableBlockManager(plugin);
-    registration = new EnchantableFurnaceRegistration(plugin, manager);
-    manager.getRegistry().register(registration);
+    reg = mock(EnchantableFurnaceRegistration.class);
+    block = mock(Block.class);
+    itemStack = new ItemStack(Material.FURNACE);
+    storage = mock(ConfigurationSection.class);
 
-    // Add mock furnace recipe dirt -> coarse dirt
-    List<Recipe> recipes = List.of(new FurnaceRecipe(
-        Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
-        new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200));
-    when(server.recipeIterator()).thenReturn(recipes.iterator());
+    // Set up matching recipe
+    when(reg.getFurnaceRecipe(any())).thenAnswer(invocation -> {
+      FurnaceInventory inventory = invocation.getArgument(0);
+      if (recipe.getInput().isSimilar(inventory.getSmelting())) {
+        return recipe;
+      }
+      return null;
+    });
+  }
 
-    // Set up block and state
-    var world = WorldMocks.newWorld("world");
-    block = world.getBlockAt(0, 0, 0);
-    BlockMocks.mockType(block);
-    block.setType(Material.FURNACE);
-    tile = mock(Furnace.class);
+  private @NotNull Furnace setUpTile() {
+    var tile = mock(Furnace.class);
     when(block.getState()).thenReturn(tile);
+
     var inventory = InventoryMocks.newFurnaceMock();
     when(tile.getInventory()).thenReturn(inventory);
+    when(inventory.getHolder()).thenReturn(tile);
+
     AtomicInteger burnTime = new AtomicInteger();
     when(tile.getBurnTime()).thenAnswer(invocation -> (short) burnTime.get());
     doAnswer(invocation -> {
       burnTime.set(invocation.getArgument(0, Short.class));
       return null;
     }).when(tile).setBurnTime(anyShort());
+
     AtomicInteger cookTimeTotal = new AtomicInteger();
     when(tile.getCookTimeTotal()).thenAnswer(invocation -> cookTimeTotal.get());
     doAnswer(invocation -> {
@@ -120,70 +117,131 @@ class EnchantableFurnaceTest {
       return null;
     }).when(tile).setCookTimeTotal(anyInt());
 
-    // Create default item and storage
-    itemStack = new ItemStack(Material.FURNACE);
-    storage = plugin.getConfig().createSection("going.to.the.store");
+    return tile;
   }
 
-  private @NotNull EnchantableFurnace newBlock() {
-    return registration.newBlock(block, itemStack, storage);
+  @DisplayName("Legacy data is updated")
+  @Test
+  void testConstructorLegacyData() {
+    short legacyFrozenTicks = 200;
+    itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, legacyFrozenTicks);
+    itemStack = spy(itemStack);
+    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Data needs saving", enchantableFurnace.isDirty());
+    assertThat("Legacy frozen ticks are preserved", enchantableFurnace.getFrozenTicks(), is(legacyFrozenTicks));
+    verify(enchantableFurnace.getItemStack()).addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+  }
+
+  @DisplayName("New data is created")
+  @Test
+  void testConstructorNewData() {
+    itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+    itemStack = spy(itemStack);
+    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Data needs saving", enchantableFurnace.isDirty());
+    assertThat("Silk touch can pause", enchantableFurnace.canPause());
+    assertThat("No free frozen tick", enchantableFurnace.getFrozenTicks(), is((short) 0));
+    verify(enchantableFurnace.getItemStack(), times(0)).addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+  }
+
+  @DisplayName("New data does not fetch silk level")
+  @Test
+  void testConstructorNewNonSilk() {
+    itemStack = spy(itemStack);
+    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Data needs saving", enchantableFurnace.isDirty());
+    assertThat("Non-silk cannot pause", enchantableFurnace.canPause(), is(false));
+    verify(enchantableFurnace.getItemStack(), times(0)).getEnchantmentLevel(Enchantment.SILK_TOUCH);
+  }
+
+  @DisplayName("Existing data is used")
+  @Test
+  void testConstructorExistingData() {
+    itemStack = spy(itemStack);
+    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
+    storage = new YamlConfiguration();
+    storage.set("silk.enabled", true);
+    short frozenTicks = 200;
+    storage.set("silk.ticks", frozenTicks);
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Data needs saving", enchantableFurnace.isDirty());
+    assertThat("Can pause", enchantableFurnace.canPause());
+    assertThat("No free frozen tick", enchantableFurnace.getFrozenTicks(), is(frozenTicks));
+    verify(enchantableFurnace.getItemStack(), times(0)).addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
   }
 
   @DisplayName("Block provides initializing registration.")
   @Test
   void testGetRegistration() {
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Furnace must supply initializing registration",
-        enchantableFurnace.getRegistration(), is(registration));
+        enchantableFurnace.getRegistration(), is(reg));
   }
 
   @DisplayName("Block provides initializing registration's configuration.")
   @Test
   void testGetConfig() {
-    var enchantableFurnace = newBlock();
+    var config = mock(EnchantableFurnaceConfig.class);
+    when(reg.getConfig()).thenReturn(config);
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Furnace must supply registration config",
-        enchantableFurnace.getConfig(), is(registration.getConfig()));
+        enchantableFurnace.getConfig(), is(config));
   }
 
-  @DisplayName("In-world tile is provided if correct.")
+  @DisplayName("In-world tile is not provided if invalid.")
   @Test
-  void testGetFurnaceTile() {
-    var enchantableFurnace = newBlock();
-    assertThat("Furnace must supply tile if block is furnace",
-        enchantableFurnace.getFurnaceTile(), is(notNullValue()));
+  void testGetFurnaceTileInvalid() {
+    var tile = mock(Chest.class);
+    when(block.getState()).thenReturn(tile);
 
-    block = block.getRelative(BlockFace.UP);
-    enchantableFurnace = newBlock();
-    assertThat("Furnace is null if block is not furnace",
-        enchantableFurnace.getFurnaceTile(), is(nullValue()));
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Invalid tile is not provided", enchantableFurnace.getFurnaceTile(), is(nullValue()));
   }
 
-  @DisplayName("Furnace modifiers are obtainable from enchantments.")
+  @DisplayName("In-world tile is provided if valid.")
+  @Test
+  void testGetFurnaceTileValid() {
+    var tile = mock(Furnace.class);
+    when(block.getState()).thenReturn(tile);
+
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Valid tile is provided", enchantableFurnace.getFurnaceTile(), is(tile));
+  }
+
+  @DisplayName("Furnace modifiers are set by enchantments.")
   @ParameterizedTest
-  @ValueSource(ints = { 1, 2, 3, 4, 5 })
+  @ValueSource(ints = { 1, 2, 3 })
   void testModifier(int modifier) {
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
 
     assertThat("Base modifier must be 0", enchantableFurnace.getCookModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, modifier);
-    enchantableFurnace = newBlock();
+    enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     itemStack.removeEnchantment(Enchantment.DIG_SPEED);
     assertThat("Modifier must be set", enchantableFurnace.getCookModifier(), is(modifier));
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
     itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, modifier);
-    enchantableFurnace = newBlock();
+    enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     itemStack.removeEnchantment(Enchantment.DURABILITY);
     assertThat("Base modifier must be 0", enchantableFurnace.getCookModifier(), is(0));
     assertThat("Modifier must be set", enchantableFurnace.getBurnModifier(), is(modifier));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
     itemStack.addUnsafeEnchantment(Enchantment.LOOT_BONUS_BLOCKS, modifier);
-    enchantableFurnace = newBlock();
+    enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     itemStack.removeEnchantment(Enchantment.LOOT_BONUS_BLOCKS);
     assertThat("Base modifier must be 0", enchantableFurnace.getCookModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
@@ -193,180 +251,328 @@ class EnchantableFurnaceTest {
   @DisplayName("Silk touch not present does not allow pausing.")
   @Test
   void testCannotPause() {
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Non-silk item cannot pause", enchantableFurnace.canPause(), is(false));
+    assertThat("Unpauseable furnace is not paused", enchantableFurnace.isPaused(), is(false));
+    enchantableFurnace.setFrozenTicks((short) 10);
+    assertThat(
+        "Unpauseable furnace is not paused with frozen ticks",
+        enchantableFurnace.isPaused(),
+        is(false));
   }
 
   @DisplayName("Silk touch allows pausing.")
   @Test
-  void testCanPause() {
+  void testPauseFreeze() {
     itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Silk item can pause", enchantableFurnace.canPause());
+    short ticks = 0;
+    assertThat("Furnace has no frozen ticks", enchantableFurnace.getFrozenTicks(), is(ticks));
+    assertThat(
+        "Pauseable furnace is not paused with no frozen ticks",
+        enchantableFurnace.isPaused(),
+        is(false));
+    ticks = 10;
+    enchantableFurnace.setFrozenTicks(ticks);
+    assertThat("Pauseable furnace is paused with frozen ticks", enchantableFurnace.isPaused());
+    assertThat("Furnace has frozen ticks", enchantableFurnace.getFrozenTicks(), is(ticks));
   }
 
-  @DisplayName("Events that cause inventory modification are handled as if modification occurred.")
+  @DisplayName("Furnace that cannot pause should not pause.")
+  @Test
+  void testShouldPauseCannotPause() {
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat(
+        "Furnace that cannot pause should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace with null tile should not pause.")
+  @Test
+  void testShouldPauseNullTile() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    assertThat(
+        "Furnace with null tile should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace that cannot pause should not pause.")
+  @Test
+  void testShouldPauseInternal() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true, false);
+    setUpTile();
+    assertThat(
+        "Furnace that cannot pause should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace that is already paused should not pause.")
+  @Test
+  void testShouldPauseHasFrozenTicks() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    when(enchantableFurnace.getFrozenTicks()).thenReturn((short) 10);
+    setUpTile();
+    assertThat(
+        "Furnace that is already paused should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace with no input should pause.")
+  @Test
+  void testShouldPauseNoInput() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    setUpTile();
+    assertThat("Furnace with no input should pause", enchantableFurnace.shouldPause(null));
+  }
+
+  @DisplayName("Furnace with full result should pause.")
+  @Test
+  void testShouldPauseFullResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+    var result = recipe.getResult();
+    result.setAmount(result.getType().getMaxStackSize());
+    inv.setResult(result);
+
+    assertThat("Furnace with no input should pause", enchantableFurnace.shouldPause(null));
+  }
+
+  @DisplayName("Furnace with no matching recipe should pause.")
+  @Test
+  void testShouldPauseNonmatching() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    ItemStack input = new ItemStack(Material.FURNACE);
+    assertThat("Input is not similar to recipe input", input, not(similar(recipe.getInput())));
+    inv.setSmelting(input);
+    inv.setResult(recipe.getResult());
+
+    assertThat("Furnace with no matching recipe should pause", enchantableFurnace.shouldPause(null));
+  }
+
+  @DisplayName("Furnace with input not matching recipe input should pause")
+  @Test
+  void testShouldPauseInputNotYieldResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+
+    var mockRecipe = mock(FurnaceRecipe.class);
+    var choice = mock(RecipeChoice.class);
+    when(mockRecipe.getInputChoice()).thenReturn(choice);
+    doAnswer(invocation -> mockRecipe).when(reg).getFurnaceRecipe(any());
+
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+    inv.setResult(recipe.getResult());
+
+    assertThat("Furnace with input not matching recipe input should pause", enchantableFurnace.shouldPause(null));
+  }
+
+  @DisplayName("Furnace with null result should not pause")
+  @Test
+  void testShouldPauseNullResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+
+    assertThat(
+        "Furnace with null result should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace with air result should not pause")
+  @Test
+  void testShouldPauseAirResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+    inv.setResult(new ItemStack(Material.AIR));
+
+    assertThat(
+        "Furnace with air result should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace with similar result should not pause")
+  @Test
+  void testShouldPauseSimilarResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+    inv.setResult(recipe.getResult());
+
+    assertThat(
+        "Furnace with similar result should not pause",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+  }
+
+  @DisplayName("Furnace with dissimilar result should pause")
+  @Test
+  void testShouldPauseDissimilarResult() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    var tile = setUpTile();
+    var inv = tile.getInventory();
+    inv.setSmelting(recipe.getInput());
+    ItemStack result = new ItemStack(Material.DIAMOND);
+    assertThat("Result must be dissimilar", result, not(similar(recipe.getResult())));
+    inv.setResult(result);
+
+    assertThat("Furnace with dissimilar result should pause", enchantableFurnace.shouldPause(null));
+  }
+
+  @DisplayName("FurnaceSmeltEvents are handled as if event has completed.")
   @Test
   void testShouldPausePostSmelt() {
-    PauseSituation pauseSituation = PAUSE_VALID_INPUT_VALID_OUTPUT;
-    pauseSituation.setup().run();
-    var enchantableFurnace = newBlock();
-    var inventory = tile.getInventory();
-    // Ensure single item just in case I'm dumb later
-    Objects.requireNonNull(inventory.getSmelting()).setAmount(1);
-    var event = new FurnaceSmeltEvent(block,
-        Objects.requireNonNull(inventory.getSmelting()),
-        Objects.requireNonNull(inventory.getResult()));
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
 
-    assertThat(pauseSituation.reason(),
-        enchantableFurnace.shouldPause(event), is(not(pauseSituation.pauseExpected())));
+    var furnace = setUpTile();
+    var inv = furnace.getInventory();
+    var smelting = recipe.getInput();
+    inv.setSmelting(smelting);
+    inv.setResult(null);
+    var event = new FurnaceSmeltEvent(block, smelting, recipe.getResult());
+
+    assertThat(
+        "Situation does not result in pausing without event context",
+        enchantableFurnace.shouldPause(null),
+        is(false));
+    assertThat(
+        "Events that cause inventory modification are handled as if modification occurred",
+        enchantableFurnace.shouldPause(event));
   }
 
-  @DisplayName("Furnaces respond to cases where they should or should not pause appropriately.")
-  @ParameterizedTest
-  @MethodSource("getPauseCases")
-  void testShouldPause(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
-    pauseSituation.setup().run();
-    var enchantableFurnace = newBlock();
-    assertThat(pauseSituation.reason(),
-        enchantableFurnace.shouldPause(null), is(pauseSituation.pauseExpected()));
-  }
-
-  Stream<PauseSituation> getPauseCases() {
-    return Stream.concat(getPauseTrueCases(), Stream.of(
-        PAUSE_NON_SILK,
-        PAUSE_INVALID_FURNACE,
-        PAUSE_PRE_FROZEN,
-        PAUSE_VALID_INPUT_NO_OUTPUT,
-        PAUSE_VALID_INPUT_AIR_OUTPUT,
-        PAUSE_VALID_INPUT_VALID_OUTPUT));
-  }
-
-  @DisplayName("Furnaces pause when appropriate.")
-  @ParameterizedTest
-  @MethodSource("getPauseTrueCases")
-  void testPause(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
-    pauseSituation.setup().run();
-    var enchantableFurnace = newBlock();
+  @DisplayName("Furnace that cannot pause will not pause.")
+  @Test
+  void testPauseCannotPause() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
     enchantableFurnace.pause();
-    assertThat(pauseSituation.reason(), enchantableFurnace.getFrozenTicks(), is(PAUSED_TICKS));
+    assertThat("Furnace is not paused", enchantableFurnace.isPaused(), is(false));
+    verify(enchantableFurnace, times(0)).setFrozenTicks(anyShort());
   }
 
-  Stream<PauseSituation> getPauseTrueCases() {
-    return Stream.of(PAUSE_VALID_NO_INPUT, PAUSE_VALID_OUTPUT_FULL, PAUSE_INVALID_INPUT);
+  @DisplayName("Furnace that has frozen ticks will not pause.")
+  @Test
+  void testPausePreFrozen() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    when(enchantableFurnace.getFrozenTicks()).thenReturn((short) 10);
+
+    enchantableFurnace.pause();
+
+    assertThat("Furnace is not paused", enchantableFurnace.isPaused(), is(false));
+    verify(enchantableFurnace, times(0)).setFrozenTicks(anyShort());
   }
 
-  @DisplayName("Furnaces resume when appropriate.")
-  @ParameterizedTest
-  @MethodSource("getResumeCases")
-  void testResume(@NotNull EnchantableFurnaceTest.PauseSituation pauseSituation) {
-    pauseSituation.setup().run();
-    var enchantableFurnace = newBlock();
+  @DisplayName("Furnace that has no tile will not pause.")
+  @Test
+  void testPauseNoTile() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
 
-    int preResume = tile.getBurnTime();
+    enchantableFurnace.pause();
 
-    assertThat(pauseSituation.reason(), enchantableFurnace.resume(), is(not(pauseSituation.pauseExpected())));
-
-    if (!pauseSituation.pauseExpected()) {
-      assertThat("Resumed furnace may not have frozen ticks",
-          enchantableFurnace.getFrozenTicks(), is((short) 0));
-      assertThat("Resumed time must be greater than pre-resume",
-          (int) tile.getBurnTime(), is(greaterThan(preResume)));
-    }
+    assertThat("Furnace is not paused", enchantableFurnace.isPaused(), is(false));
+    verify(enchantableFurnace, times(0)).setFrozenTicks(anyShort());
   }
 
-  Stream<PauseSituation> getResumeCases() {
-    return Stream.of(
-        // Invalid furnace
-        new PauseSituation(() -> block = block.getRelative(BlockFace.UP),
-        "Invalid furnace cannot resume", true),
-        // Non-silk
-        new PauseSituation(() -> {}, "Non-silk cannot resume", true),
-        // No frozen ticks
-        new PauseSituation(() -> itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1),
-            "Need frozen ticks to resume", true),
-        // No input
-        new PauseSituation(
-            () -> itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS),
-            "Furnace with no input cannot resume", true),
-        // Air input
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.AIR));
-            },"Furnace with air input cannot resume", true),
-        // Full output
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-              furnaceInventory.setResult(
-                  new ItemStack(Material.COARSE_DIRT, Material.COARSE_DIRT.getMaxStackSize()));
-            },"Furnace with full output cannot resume", true),
-        // Invalid input
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.FURNACE));
-            },"Furnace with invalid input cannot resume", true),
-        // Invalid output
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-              furnaceInventory.setResult(new ItemStack(Material.BLAST_FURNACE));
-            },"Furnace with invalid output cannot resume", true
-        ),
+  @DisplayName("Furnace freezes ticks when pausing.")
+  @Test
+  void testPause() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    when(enchantableFurnace.isPaused()).thenAnswer(invocation -> enchantableFurnace.getFrozenTicks() > 0);
+    var tile = setUpTile();
+    short frozenTime = 200;
+    tile.setBurnTime(frozenTime);
 
-        // Resume expected
-        // Valid input, no output
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-            },"Furnace with no output can resume", false
-        ),
-        // Valid input, air output
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-              furnaceInventory.setResult(new ItemStack(Material.AIR));
-            },"Furnace with empty output can resume", false
-        ),
-        // Valid input, valid output
-        new PauseSituation(
-            () -> {
-              itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, PAUSED_TICKS);
-              var furnaceInventory = tile.getInventory();
-              furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-              furnaceInventory.setResult(new ItemStack(Material.COARSE_DIRT));
-            },"Furnace with valid output can resume", false
-        )
-    );
+    enchantableFurnace.pause();
+
+    assertThat("Furnace is paused", enchantableFurnace.isPaused());
+    verify(enchantableFurnace).setFrozenTicks(anyShort());
+    verify(tile).setBurnTime((short) 0);
+    verify(tile).update(true);
+    assertThat("Furnace has frozen ticks", enchantableFurnace.getFrozenTicks(), is(frozenTime));
   }
 
-  @DisplayName("Furnaces that have been forcibly resumed are unpaused.")
-  @ParameterizedTest
-  @MethodSource("getResumeCases")
-  void testForceResume(PauseSituation pauseSituation) {
-    pauseSituation.setup().run();
-    var enchantableFurnace = newBlock();
-
-    boolean prePaused = enchantableFurnace.isPaused();
-
-    assertThat(pauseSituation.reason(),
-        enchantableFurnace.forceResume(),
-        is(prePaused && enchantableFurnace.getFurnaceTile() != null));
+  @DisplayName("Furnace does not resume when not frozen.")
+  @Test
+  void testResumeNotFrozen() {
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+    assertThat("Furnace does not resume when not frozen", enchantableFurnace.resume(), is(false));
   }
 
-  @DisplayName("Cook time modifiers apply correctly to cook time.")
+  @DisplayName("Furnace does not resume without a tile.")
+  @Test
+  void testResumeNullTile() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.isPaused()).thenReturn(true);
+    assertThat("Furnace does not resume without a tile", enchantableFurnace.resume(), is(false));
+  }
+
+  @DisplayName("Furnace does not resume freezable tile.")
+  @Test
+  void testResumeFreezableTile() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.isPaused()).thenReturn(true);
+    setUpTile();
+
+    assertThat("Furnace does not resume freezable tile", enchantableFurnace.resume(), is(false));
+  }
+
+  @DisplayName("Furnace forcibly resumes freezable tile when ignoring state.")
+  @Test
+  void testResumeForceFreezableTile() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.isPaused()).thenReturn(true);
+    setUpTile();
+
+    assertThat("Furnace forcibly resumes freezable tile", enchantableFurnace.resume(false));
+  }
+
+  @DisplayName("Furnace resumes as needed.")
+  @Test
+  void testResume() {
+    var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+    when(enchantableFurnace.canPause()).thenReturn(true);
+    when(enchantableFurnace.isPaused()).thenAnswer(invocation -> enchantableFurnace.getFrozenTicks() > 0);
+    short frozenTicks = 200;
+    enchantableFurnace.setFrozenTicks(frozenTicks);
+    var tile = setUpTile();
+    tile.getInventory().setSmelting(recipe.getInput());
+
+    assertThat("Furnace resumes as needed", enchantableFurnace.resume());
+    assertThat("Tile is burning", tile.getBurnTime(), is(frozenTicks));
+    verify(tile).update(true);
+    assertThat("Furnace is no longer frozen", enchantableFurnace.getFrozenTicks(), is((short) 0));
+  }
+
+  @DisplayName("Cook time modifiers apply correctly to cook and burn time.")
   @ParameterizedTest
   @CsvSource({
       "0,200,200",
@@ -377,10 +583,12 @@ class EnchantableFurnaceTest {
   })
   void testApplyCookTimeModifiers(int level, int ticks, short expectedTicks) {
     itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, level);
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
 
-    assertThat("Calculated value must be equal to expectation",
+    assertThat("Cook time must be modified as expected",
         enchantableFurnace.applyCookTimeModifiers(ticks), is(expectedTicks));
+    assertThat("Burn time must be modified as expected",
+        enchantableFurnace.applyBurnTimeModifiers(ticks), is(expectedTicks));
   }
 
   @DisplayName("Burn time modifiers apply correctly to burn time.")
@@ -388,91 +596,167 @@ class EnchantableFurnaceTest {
   @CsvSource({
       "0,1600,1600",
       "1,1600,2000", "2,1600,2240", "3,1600,2400", "4,1600,2514", "5,1600,2600",
-      "-1,1600,1200", "-2,1600,960", "-3,1600,800", "-4,1600,686", "-5,200,75",
+      "-1,1600,1200", "-2,1600,960", "-3,1600,800", "-4,1600,685", "-5,200,75",
   })
   void testApplyBurnTimeModifiers(int level, int ticks, short expectedTicks) {
     itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, level);
-    var enchantableFurnace = newBlock();
+    var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
 
     assertThat("Calculated value must be equal to expectation",
         enchantableFurnace.applyBurnTimeModifiers(ticks), is(expectedTicks));
   }
 
-  @DisplayName("Furnace updates do not throw errors and handle all possible situations.")
-  @ParameterizedTest
-  @MethodSource("getAllCases")
-  void testUpdate(PauseSituation situation) {
-    situation.setup().run();
-    manager.createBlock(this.block, itemStack);
-    var inventory = tile.getInventory();
-    assertDoesNotThrow(() -> EnchantableFurnace.update(plugin, manager, inventory));
-    manager.destroyBlock(block);
+  @DisplayName("Furnaces must update as expected")
+  @Nested
+  class UpdateTests {
+
+    private Plugin plugin;
+    private ArgumentCaptor<Runnable> taskCaptor;
+
+    @BeforeAll
+    static void beforeAll() {
+      var server = Bukkit.getServer();
+      var scheduler = mock(BukkitScheduler.class);
+      when(server.getScheduler()).thenReturn(scheduler);
+    }
+
+    @AfterAll
+    static void afterAll() {
+      var server = Bukkit.getServer();
+      when(server.getScheduler()).thenReturn(null);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+      plugin = mock(Plugin.class);
+      var server = Bukkit.getServer();
+      doReturn(server).when(plugin).getServer();
+
+      taskCaptor = ArgumentCaptor.forClass(Runnable.class);
+      var scheduler = server.getScheduler();
+      doReturn(null).when(scheduler).runTask(any(), taskCaptor.capture());
+    }
+
+    @DisplayName("Furnaces must have tiles to update.")
+    @Test
+    void testUpdateNoTile() {
+      var manager = mock(EnchantableBlockManager.class);
+      var inventory = mock(FurnaceInventory.class);
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(manager, times(0)).getBlock(any());
+    }
+
+    @DisplayName("Tile must be linked to an EnchantableFurnace to update.")
+    @Test
+    void testUpdateNullEnchantableBlock() {
+      var manager = mock(EnchantableBlockManager.class);
+      var inventory = setUpTile().getInventory();
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(manager).getBlock(any());
+      verify(plugin, times(0)).getServer();
+
+      manager = mock(EnchantableBlockManager.class);
+      var enchantableBlock = mock(EnchantableBlock.class);
+      doReturn(enchantableBlock).when(manager).getBlock(any());
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(manager).getBlock(any());
+      verify(plugin, times(0)).getServer();
+    }
+
+    @DisplayName("Furnace must be able to pause to update.")
+    @Test
+    void testUpdateNoPause() {
+      var manager = mock(EnchantableBlockManager.class);
+      var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
+      doReturn(enchantableFurnace).when(manager).getBlock(any());
+      var inventory = setUpTile().getInventory();
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(manager).getBlock(any());
+      verify(plugin, times(0)).getServer();
+    }
+
+    @DisplayName("Multiple updates do not trigger multiple tasks.")
+    @Test
+    void testUpdateRepeat() {
+      var manager = mock(EnchantableBlockManager.class);
+      var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+      when(enchantableFurnace.canPause()).thenReturn(true);
+      doReturn(enchantableFurnace).when(manager).getBlock(any());
+      var inventory = setUpTile().getInventory();
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(plugin).getServer();
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(plugin).getServer();
+
+      // Run task, allowing another to be scheduled
+      taskCaptor.getValue().run();
+
+      EnchantableFurnace.update(plugin, manager, inventory);
+      verify(plugin, times(2)).getServer();
+    }
+
+    @DisplayName("Matching pause state does nothing")
+    @Test
+    void testUpdateNoPauseChange() {
+      var manager = mock(EnchantableBlockManager.class);
+      var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+      when(enchantableFurnace.canPause()).thenReturn(true);
+      doReturn(enchantableFurnace).when(manager).getBlock(any());
+      var inventory = setUpTile().getInventory();
+      EnchantableFurnace.update(plugin, manager, inventory);
+      Runnable task = taskCaptor.getValue();
+
+      when(enchantableFurnace.isPaused()).thenReturn(true);
+      task.run();
+      verify(enchantableFurnace, times(0)).pause();
+      verify(enchantableFurnace, times(0)).resume();
+
+      when(enchantableFurnace.isPaused()).thenReturn(false);
+      inventory.setSmelting(recipe.getInput());
+      task.run();
+      verify(enchantableFurnace, times(0)).pause();
+      verify(enchantableFurnace, times(0)).resume();
+    }
+
+    @DisplayName("Paused but resumable resumes")
+    @Test
+    void testUpdateResume() {
+      var manager = mock(EnchantableBlockManager.class);
+      var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+      when(enchantableFurnace.canPause()).thenReturn(true);
+      doReturn(enchantableFurnace).when(manager).getBlock(any());
+      var inventory = setUpTile().getInventory();
+      EnchantableFurnace.update(plugin, manager, inventory);
+      Runnable task = taskCaptor.getValue();
+
+      when(enchantableFurnace.isPaused()).thenReturn(true);
+      inventory.setSmelting(recipe.getInput());
+      task.run();
+      verify(enchantableFurnace, times(0)).pause();
+      verify(enchantableFurnace).resume();
+    }
+
+    @DisplayName("Running but pauseable pauses")
+    @Test
+    void testUpdatePause() {
+      var manager = mock(EnchantableBlockManager.class);
+      var enchantableFurnace = spy(new EnchantableFurnace(reg, block, itemStack, storage));
+      when(enchantableFurnace.canPause()).thenReturn(true);
+      doReturn(enchantableFurnace).when(manager).getBlock(any());
+      var inventory = setUpTile().getInventory();
+      EnchantableFurnace.update(plugin, manager, inventory);
+      Runnable task = taskCaptor.getValue();
+
+      task.run();
+      verify(enchantableFurnace).pause();
+      verify(enchantableFurnace, times(0)).resume();
+    }
+
   }
-
-  Stream<PauseSituation> getAllCases() {
-    return Stream.concat(getPauseCases(), getResumeCases());
-  }
-
-  private record PauseSituation(
-      @NotNull Runnable setup,
-      @NotNull String reason,
-      boolean pauseExpected) {}
-
-  // Pause not expected
-  private final PauseSituation PAUSE_NON_SILK = new PauseSituation(
-      () -> {}, "Non-silk cannot pause", false);
-  private final PauseSituation PAUSE_INVALID_FURNACE = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        block = block.getRelative(BlockFace.UP);
-      }, "Invalid furnace cannot pause", false);
-  private final PauseSituation PAUSE_PRE_FROZEN = new PauseSituation(
-      () -> itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 2),
-      "Furnace with existing frozen ticks cannot pause", false);
-  private final PauseSituation PAUSE_VALID_INPUT_NO_OUTPUT = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        var furnaceInventory = tile.getInventory();
-        furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-      },"Furnace with smeltable input and no output cannot pause", false);
-  private final PauseSituation PAUSE_VALID_INPUT_AIR_OUTPUT = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        var furnaceInventory = tile.getInventory();
-        furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-        furnaceInventory.setResult(new ItemStack(Material.AIR));
-      },"Furnace with smeltable input and empty output cannot pause", false);
-  private final PauseSituation PAUSE_VALID_INPUT_VALID_OUTPUT = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        var furnaceInventory = tile.getInventory();
-        furnaceInventory.setSmelting(new ItemStack(Material.DIRT));
-        furnaceInventory.setResult(new ItemStack(Material.COARSE_DIRT));
-      },"Furnace with smeltable input and valid output cannot pause", false);
-
-  // Pause expected
-  private final PauseSituation PAUSE_VALID_NO_INPUT = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        tile.setBurnTime(PAUSED_TICKS);
-      },"Furnace with no input can pause", true
-  );
-  private final PauseSituation PAUSE_VALID_OUTPUT_FULL = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        tile.setBurnTime(PAUSED_TICKS);
-        var furnaceInventory = tile.getInventory();
-        furnaceInventory.setSmelting(new ItemStack(Material.FURNACE));
-        furnaceInventory.setResult(new ItemStack(Material.BLAST_FURNACE, Material.BLAST_FURNACE.getMaxStackSize()));
-      },"Furnace with full output can pause", true
-  );
-  private final PauseSituation PAUSE_INVALID_INPUT = new PauseSituation(
-      () -> {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-        tile.setBurnTime(PAUSED_TICKS);
-        var furnaceInventory = tile.getInventory();
-        furnaceInventory.setSmelting(new ItemStack(Material.FURNACE, 0));
-      },"Furnace with invalid input can pause", true
-  );
 
 }

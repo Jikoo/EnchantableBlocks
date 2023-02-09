@@ -34,7 +34,7 @@ public class IsSimilarMatcher extends BaseMatcher<ItemStack> {
    * @param other the matchable item
    * @return the resulting matcher
    */
-  public static @NotNull IsSimilarMatcher isSimilar(@NotNull ItemStack other) {
+  public static @NotNull IsSimilarMatcher similar(@NotNull ItemStack other) {
     return new IsSimilarMatcher(other);
   }
 
