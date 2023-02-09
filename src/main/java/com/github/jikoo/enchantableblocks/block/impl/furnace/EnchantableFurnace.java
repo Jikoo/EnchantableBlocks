@@ -57,9 +57,9 @@ class EnchantableFurnace extends EnchantableBlock {
       this.frozenTicks = 0;
       // Convert legacy furnaces - silk enchant level used for frozen ticks.
       if (this.canPause && itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH) != 1) {
-        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
         this.frozenTicks = MathHelper.clampPositiveShort(
             itemStack.getEnchantmentLevel(Enchantment.SILK_TOUCH));
+        itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
       }
       storage.set(PATH_CAN_PAUSE, canPause);
       storage.set(PATH_FROZEN_TICKS, frozenTicks);
