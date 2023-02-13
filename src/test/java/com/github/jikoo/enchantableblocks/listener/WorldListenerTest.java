@@ -127,6 +127,10 @@ class WorldListenerTest {
       ItemStack tool = invocation.getArgument(0);
       return tool == null ? Set.of() : Set.of(new ItemStack(block.getType()));
     });
+    when(block.isPreferredTool(any())).thenAnswer(invocation -> {
+        ItemStack tool = invocation.getArgument(0);
+        return tool != null;
+    });
 
     player = mock(Player.class);
     when(player.getWorld()).thenReturn(world);

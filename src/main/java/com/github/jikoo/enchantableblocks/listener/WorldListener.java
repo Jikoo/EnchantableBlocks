@@ -73,16 +73,8 @@ public class WorldListener implements Listener {
       return;
     }
 
-    // Paper adds inventory contents to the block drop list.
-    // That's fine and all, but it means that drops for containers with contents are not empty even
-    // if an improper tool is used.
-    // May consider instead adding a method to get proper break tools from the EnchantableBlock
-    // implementation as this is not a particularly graceful way to detect it. Some blocks have
-    // variable drop results. Would need breaking changes to destroyBlock method, unfortunately.
     Player player = event.getPlayer();
-    int noToolDrops = block.getDrops().size();
-    int toolDrops = block.getDrops(player.getInventory().getItemInMainHand()).size();
-    if (noToolDrops == toolDrops || toolDrops == 0) {
+    if (!block.isPreferredTool(player.getInventory().getItemInMainHand())) {
       return;
     }
 
