@@ -271,7 +271,6 @@ class EnchantableFurnace extends EnchantableBlock {
         MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
     furnace.update(true);
     this.setFrozenTicks((short) 0);
-    this.updateStorage();
     return true;
   }
 
