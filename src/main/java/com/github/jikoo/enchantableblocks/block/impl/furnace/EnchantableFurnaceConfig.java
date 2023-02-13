@@ -4,7 +4,6 @@ import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.planarwrappers.config.Setting;
 import com.github.jikoo.planarwrappers.config.impl.BooleanSetting;
 import com.github.jikoo.planarwrappers.config.impl.MaterialSetSetting;
-import java.util.EnumSet;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -29,7 +28,7 @@ class EnchantableFurnaceConfig extends EnchantableBlockConfig {
     fortuneList = new MaterialSetSetting(
         section,
         "fortuneList",
-        EnumSet.of(Material.WET_SPONGE, Material.STONE_BRICKS));
+        Set.of(Material.WET_SPONGE, Material.STONE_BRICKS));
   }
 
 }

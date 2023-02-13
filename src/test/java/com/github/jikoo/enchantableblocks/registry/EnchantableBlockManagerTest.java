@@ -24,7 +24,6 @@ import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.planarwrappers.util.Coords;
 import java.nio.file.Path;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -91,7 +90,7 @@ class EnchantableBlockManagerTest {
     DummyEnchantableRegistration registration = new DummyEnchantableRegistration(
         plugin,
         Set.of(Enchantment.DIG_SPEED),
-        EnumSet.of(Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE)
+        Set.of(Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE)
     );
     manager.getRegistry().register(registration);
 

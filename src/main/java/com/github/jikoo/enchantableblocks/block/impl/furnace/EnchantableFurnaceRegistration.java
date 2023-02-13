@@ -6,8 +6,6 @@ import com.github.jikoo.enchantableblocks.util.EmptyCookingRecipe;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +45,7 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
       Enchantment.LOOT_BONUS_BLOCKS,
       Enchantment.SILK_TOUCH);
   private static final Set<Material> MATERIALS =
-      Collections.unmodifiableSet(
-          EnumSet.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER));
+      Set.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);
   private static final CookingRecipe<?> INVALID_INPUT = new EmptyCookingRecipe(
       Objects.requireNonNull(StringConverters.toNamespacedKey("enchantableblocks:invalid_input")));
 

@@ -4,8 +4,6 @@ import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -48,7 +46,7 @@ public class DummyEnchantableBlock extends EnchantableBlock {
         @NotNull Collection<@NotNull Material> materials) {
       super(plugin, DummyEnchantableBlock.class);
       this.enchants = Set.copyOf(enchants);
-      this.materials = materials.isEmpty() ? Set.of() : Collections.unmodifiableSet(EnumSet.copyOf(materials));
+      this.materials = materials.isEmpty() ? Set.of() : Set.copyOf(materials);
     }
 
     @Override

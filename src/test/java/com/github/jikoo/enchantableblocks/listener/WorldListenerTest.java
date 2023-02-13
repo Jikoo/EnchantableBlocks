@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -157,7 +156,7 @@ class WorldListenerTest {
     var registration = new DummyEnchantableRegistration(
         plugin,
         Set.of(Enchantment.DIG_SPEED),
-        EnumSet.of(Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE)
+        Set.of(Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE)
     );
     manager.getRegistry().register(registration);
 

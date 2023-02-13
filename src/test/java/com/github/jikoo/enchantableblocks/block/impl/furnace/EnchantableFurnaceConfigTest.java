@@ -21,7 +21,6 @@ import com.google.common.collect.Multimap;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -83,7 +82,7 @@ class EnchantableFurnaceConfigTest {
     Bukkit.setServer(BukkitServer.newServer());
 
     Setting<Set<Material>> fortuneList = config.fortuneList;
-    Collection<Material> value = EnumSet.of(Material.WET_SPONGE, Material.STONE_BRICKS);
+    Collection<Material> value = Set.of(Material.WET_SPONGE, Material.STONE_BRICKS);
     assertThat("Materials should be set in default settings",
         fortuneList.get(INVALID_WORLD),
         both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
@@ -91,7 +90,7 @@ class EnchantableFurnaceConfigTest {
     // Ensure cache gets hit.
     fortuneList.get(INVALID_WORLD);
 
-    value = EnumSet.of(Material.COAL_ORE, Material.IRON_ORE, Material.GOLD_ORE,
+    value = Set.of(Material.COAL_ORE, Material.IRON_ORE, Material.GOLD_ORE,
         Material.DIAMOND_ORE, Material.REDSTONE_ORE, Material.LAPIS_ORE,
         Material.NETHER_QUARTZ_ORE, Material.NETHER_GOLD_ORE);
     assertThat("Materials should be overridden", fortuneList.get(ORE_WORLD),

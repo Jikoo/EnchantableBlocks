@@ -21,7 +21,6 @@ import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Set;
 import org.bukkit.Bukkit;
@@ -91,11 +90,10 @@ class TableEnchanterTest {
     var registration = new DummyEnchantableRegistration(
         plugin,
         Set.of(VALID_ENCHANT, Enchantment.DURABILITY),
-        EnumSet.of(ENCHANTABLE_MATERIAL)
+        Set.of(ENCHANTABLE_MATERIAL)
     );
     registry.register(registration);
-    registration = new DummyEnchantableRegistration(plugin, Set.of(), EnumSet.of(
-        UNENCHANTABLE_MATERIAL));
+    registration = new DummyEnchantableRegistration(plugin, Set.of(), Set.of(UNENCHANTABLE_MATERIAL));
     registry.register(registration);
 
     listener = new TableEnchanter(plugin, registry);
