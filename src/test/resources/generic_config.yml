@@ -1,0 +1,33 @@
+enabled: true
+tableEnchantability: STONE
+tableDisabledEnchantments: []
+tableEnchantmentConflicts:
+  silk_touch:
+    - fortune
+anvilDisabledEnchantments: []
+anvilEnchantmentConflicts:
+  silk_touch:
+    - fortune
+anvilEnchantmentMax:
+  efficiency: 4
+overrides:
+  "lame_vanilla_world":
+    enabled: false
+    anvilEnchantmentMax:
+      invalid_enchantment: 0
+    tableDisabledEnchantments:
+      - unbreaking
+  "mining_dimension":
+  "busted_endgame_bullhonkey_world":
+    tableEnchantability: GOLD_ARMOR
+    tableEnchantmentConflicts: []
+    anvilEnchantmentConflicts:
+      invalid_enchantment:
+        - fortune
+      fortune: "This isn't a list."
+      silk_touch:
+        - invalid_enchantment
+    anvilEnchantmentMax:
+      efficiency: 10
+      fortune: "Ten!"
+      invalid_enchantment: 5

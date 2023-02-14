@@ -1,0 +1,18 @@
+fortuneListIsBlacklist: true
+fortuneList:
+  - WET_SPONGE
+  - STONE_BRICKS
+overrides:
+  "lame_vanilla_world":
+  "mining_dimension":
+    fortuneListIsBlacklist: false
+    fortuneList:
+      - COAL_ORE
+      - IRON_ORE
+      - GOLD_ORE
+      - DIAMOND_ORE
+      - REDSTONE_ORE
+      - LAPIS_ORE
+      - NETHER_QUARTZ_ORE
+      - NETHER_GOLD_ORE
+      - INVALID_MATERIAL
