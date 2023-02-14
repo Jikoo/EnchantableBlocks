@@ -3,21 +3,18 @@ package com.github.jikoo.enchantableblocks.config.data;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.mock;
 
 import com.github.jikoo.planarenchanting.table.Enchantability;
-import java.util.Arrays;
-import java.util.stream.Stream;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.jetbrains.annotations.NotNull;
+import org.bukkit.configuration.ConfigurationSection;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
-@TestInstance(Lifecycle.PER_METHOD)
+@DisplayName("Config: Setting for Enchantability values.")
+@TestInstance(Lifecycle.PER_CLASS)
 class EnchantabilitySettingTest {
 
   private static final Enchantability DEFAULT_VALUE = Enchantability.GOLD_ARMOR;
@@ -26,33 +23,59 @@ class EnchantabilitySettingTest {
 
   @BeforeEach
   void beforeEach() {
-    var section = new YamlConfiguration();
-    section.set("overrides.numberValue.test", "5");
-    section.set("overrides.field.test", "STONE");
-    section.set("overrides.notField.test", "NOT_A_FIELD");
-    section.set("overrides.badField.test", "BY_MATERIAL");
-
+    var section = mock(ConfigurationSection.class);
     setting = new EnchantabilitySetting(section, "test", DEFAULT_VALUE);
   }
 
+  @DisplayName("Null yields null.")
   @Test
-  void testNullConvert() {
+  void testConvertNull() {
     assertThat("Null yields null", setting.convertString(null), is(nullValue()));
   }
 
-  @ParameterizedTest
-  @MethodSource("getSettingPaths")
-  void testValue(@NotNull String override, @NotNull Enchantability expected) {
-    assertThat("Value must be expected", setting.get(override), is(expected));
+  @DisplayName("Number yields corresponding Enchantability.")
+  @Test
+  void testConvertNumber() {
+    assertThat("Number is parsed", setting.convertString("5"), is(new Enchantability(5)));
   }
 
-  static Stream<Arguments> getSettingPaths() {
-    return Arrays.stream(new Arguments[] {
-        Arguments.of("numberValue", new Enchantability(5)),
-        Arguments.of("field", Enchantability.STONE),
-        Arguments.of("notField", DEFAULT_VALUE),
-        Arguments.of("badField", DEFAULT_VALUE)
-    });
+  @DisplayName("Numbers below zero are clamped to allowed range.")
+  @Test
+  void testConvertIllegalNumber() {
+    assertThat(
+        "Number is always at least minimum",
+        setting.convertString("0"),
+        is(new Enchantability(1)));
+  }
+
+  @DisplayName("Invalid Enchantability name yields null.")
+  @Test
+  void testConvertFieldNameMissing() {
+    assertThat(
+        "Invalid field is null",
+        setting.convertString("not a field"),
+        is(nullValue()));
+  }
+
+  @DisplayName("Enchantability can be parsed by name.")
+  @Test
+  void testConvertFieldName() {
+    assertThat(
+        "Valid field name returns field",
+        setting.convertString("STONE"),
+        is(Enchantability.STONE));
+  }
+
+  @DisplayName("Non-Enchantability fields yield null.")
+  @Test
+  void testConvertFieldNameNotEnchantability() {
+    // Note that Enchantability doesn't have any public fields that aren't Enchantability instances.
+    // Since we don't set the field accessible, we can't hit the instanceof check.
+    // This test is technically useless, but it's good to be mindful of.
+    assertThat(
+        "Valid non-Enchantability field returns null",
+        setting.convertString("BY_MATERIAL"),
+        is(nullValue()));
   }
 
 }

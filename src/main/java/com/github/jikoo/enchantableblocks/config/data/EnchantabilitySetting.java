@@ -27,7 +27,7 @@ public class EnchantabilitySetting extends ParsedSimpleSetting<Enchantability> {
       return null;
     }
     try {
-      return new Enchantability(Integer.parseInt(value));
+      return new Enchantability(Math.max(1, Integer.parseInt(value)));
     } catch (NumberFormatException ignored) {
       // Not a number, may be a field name.
     }
