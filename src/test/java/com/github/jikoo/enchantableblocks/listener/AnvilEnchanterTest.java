@@ -7,17 +7,27 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.mock.BukkitServer;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.enchantableblocks.mock.inventory.ItemMetaHelper;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
+import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -31,11 +41,16 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 @DisplayName("Feature: Enchant and combine blocks in anvils.")
@@ -43,196 +58,232 @@ import org.mockito.ArgumentCaptor;
 class AnvilEnchanterTest {
 
   private static final Enchantment ENCHANTMENT = Enchantment.DIG_SPEED;
-  public static final Material MATERIAL = Material.COAL_ORE;
+  private static final Material GOOD_MAT = Material.COAL_ORE;
+  private static final Material BAD_MAT = Material.REDSTONE_ORE;
 
   private AnvilEnchanter enchanter;
-  private ItemStack itemStack;
-  private ArgumentCaptor<Runnable> runnableCaptor;
 
   @BeforeAll
   void setUpAll() {
     EnchantmentMocks.init();
 
     var server = BukkitServer.newServer();
+    Bukkit.setServer(server);
 
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
-
-    Bukkit.setServer(server);
   }
 
-  @BeforeEach
-  void setUp() {
-    var server = Bukkit.getServer();
+  @Nested
+  class ItemsInvalidTest {
 
-    var scheduler = mock(BukkitScheduler.class);
-    runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-    when(scheduler.runTask(any(Plugin.class), runnableCaptor.capture())).thenReturn(null);
-    when(server.getScheduler()).thenReturn(scheduler);
-
-    var plugin = mock(Plugin.class);
-    when(plugin.getName()).thenReturn(getClass().getSimpleName());
-    when(plugin.getServer()).thenReturn(server);
-    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
-
-    EnchantableBlockRegistry registry = new EnchantableBlockRegistry(plugin);
-    var registration = new DummyEnchantableRegistration(
-        plugin, Set.of(ENCHANTMENT), Set.of(MATERIAL));
-    registry.register(registration);
-
-    enchanter = new AnvilEnchanter(plugin, registry);
-    itemStack = new ItemStack(MATERIAL);
-  }
-
-  @Test
-  void testNullBaseItemsInvalid() {
-    assertThat("Items are invalid", enchanter.areItemsInvalid(null, null));
-  }
-
-  @Test
-  void testNullAdditionItemsInvalid() {
-    assertThat("Items are invalid", enchanter.areItemsInvalid(itemStack, null));
-  }
-
-  @Test
-  void testStackedBaseItemsInvalid() {
-    var base = itemStack.clone();
-    base.setAmount(64);
-    var addition = itemStack.clone();
-    assertThat("Items are invalid", enchanter.areItemsInvalid(base, addition));
-  }
-
-  @Test
-  void testStackedAdditionItemsValid() {
-    var base = itemStack.clone();
-    var addition = itemStack.clone();
-    addition.setAmount(64);
-    assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
-  }
-
-  @Test
-  void testItemsValid() {
-    var base = itemStack.clone();
-    var addition = itemStack.clone();
-    assertThat("Items are valid", !enchanter.areItemsInvalid(base, addition));
-  }
-
-  private @NotNull Player prepareEventPlayer(boolean hasPermission) {
-    var player = mock(Player.class);
-    when(player.hasPermission(any(String.class))).thenReturn(hasPermission);
-    when(player.setWindowProperty(any(), anyInt())).thenReturn(true);
-    var world = WorldMocks.newWorld("world");
-    when(player.getWorld()).thenReturn(world);
-
-    var inventory = InventoryMocks.newAnvilMock();
-    inventory.setItem(0, itemStack.clone());
-    var additionItem = new ItemStack(Material.ENCHANTED_BOOK);
-    var additionMeta = additionItem.getItemMeta();
-    if (additionMeta instanceof EnchantmentStorageMeta storageMeta) {
-      storageMeta.addStoredEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
+    @BeforeEach
+    void beforeEach() {
+      var plugin = mock(Plugin.class);
+      var registry = mock(EnchantableBlockRegistry.class);
+      enchanter = new AnvilEnchanter(plugin, registry);
     }
-    additionItem.setItemMeta(additionMeta);
-    inventory.setItem(1, additionItem);
 
-    InventoryView view = mock(InventoryView.class);
-    when(view.getTopInventory()).thenReturn(inventory);
-    when(view.getPlayer()).thenReturn(player);
+    @DisplayName("Items are invalid if base is empty.")
+    @Test
+    void testNullBaseInvalid() {
+      assertThat("Items are invalid", enchanter.areItemsInvalid(null, null));
+    }
 
-    when(player.getOpenInventory()).thenReturn(view);
+    @DisplayName("Items are invalid if addition is empty.")
+    @Test
+    void testNullAdditionInvalid() {
+      var base = new ItemStack(GOOD_MAT);
+      assertThat("Items are invalid", enchanter.areItemsInvalid(base, null));
+    }
 
-    return player;
+    @DisplayName("Items are invalid if base is stacked.")
+    @Test
+    void testStackedBaseInvalid() {
+      var base = new ItemStack(GOOD_MAT);
+      base.setAmount(64);
+      var addition = new ItemStack(GOOD_MAT);
+      assertThat("Items are invalid", enchanter.areItemsInvalid(base, addition));
+    }
+
+    @DisplayName("Items are invalid base and addition do not match.")
+    @Test
+    void testDifferentAddition() {
+      var base = new ItemStack(GOOD_MAT);
+      var addition = new ItemStack(BAD_MAT);
+      assertThat("Items are valid", enchanter.areItemsInvalid(base, addition));
+    }
+
+    @DisplayName("Items are valid if base and addition match.")
+    @Test
+    void testSame() {
+      var base = new ItemStack(GOOD_MAT);
+      var addition = new ItemStack(GOOD_MAT);
+      assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
+      addition.setAmount(64);
+      assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
+    }
+
+    @DisplayName("Items are valid if addition is enchanted book.")
+    @Test
+    void testEnchantedBookAddition() {
+      var base = new ItemStack(GOOD_MAT);
+      var addition = new ItemStack(Material.ENCHANTED_BOOK);
+      assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
+    }
+
   }
 
-  @Test
-  void testInvalidItemPrepareAnvil() {
-    var player = prepareEventPlayer(true);
-    var view = player.getOpenInventory();
-    view.getTopInventory().setItem(0, null);
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    assertThat(
-        "Result must be unchanged for invalid items",
-        event.getResult(), is(nullValue()));
-  }
+  @Nested
+  class PrepareAnvilTest {
 
-  @Test
-  void testUnregisteredPrepareAnvil() {
-    var player = prepareEventPlayer(true);
-    var view = player.getOpenInventory();
-    view.getTopInventory().setItem(0, new ItemStack(Material.REDSTONE_ORE));
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    assertThat(
-        "Result must be unchanged for unregistered items",
-        event.getResult(), is(nullValue()));
-  }
+    private EnchantableBlockRegistry registry;
+    private EnchantableRegistration registration;
+    private ItemStack itemStack;
+    private ArgumentCaptor<Runnable> runnableCaptor;
 
-  @Test
-  void testNoPermissionPrepareAnvil() {
-    var player = prepareEventPlayer(false);
-    var view = player.getOpenInventory();
-    var event = new PrepareAnvilEvent(view, null);
-    assertThat(
-        "Result must be unchanged for disallowed player",
-        event.getResult(), is(nullValue()));
-  }
+    @BeforeEach
+    void beforeEach() {
+      var server = Bukkit.getServer();
 
-  @Test
-  void testChangeBasePrepareAnvil() {
-    var player = prepareEventPlayer(true);
-    var view = player.getOpenInventory();
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    var successItem = itemStack.clone();
-    ItemMetaHelper itemMeta = (ItemMetaHelper) successItem.getItemMeta();
-    assertThat("Meta is not null", itemMeta, is(notNullValue()));
-    itemMeta.setRepairCost(1);
-    itemMeta.addEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
-    successItem.setItemMeta(itemMeta);
-    assertThat("Result must be success item", event.getResult(), is(successItem));
-    view.getTopInventory().setItem(0, null);
-    Runnable task = runnableCaptor.getValue();
-    assertDoesNotThrow(task::run);
-    assertThat("Inventory result must not be set", view.getTopInventory().getItem(2), is(nullValue()));
-  }
+      var scheduler = mock(BukkitScheduler.class);
+      runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
+      when(scheduler.runTask(any(Plugin.class), runnableCaptor.capture())).thenReturn(null);
+      when(server.getScheduler()).thenReturn(scheduler);
 
-  @Test
-  void testChangeAdditionPrepareAnvil() {
-    var player = prepareEventPlayer(true);
-    var view = player.getOpenInventory();
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    var successItem = itemStack.clone();
-    ItemMetaHelper itemMeta = (ItemMetaHelper) successItem.getItemMeta();
-    assertThat("Meta is not null", itemMeta, is(notNullValue()));
-    itemMeta.setRepairCost(1);
-    itemMeta.addEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
-    successItem.setItemMeta(itemMeta);
-    assertThat("Result must be success item", event.getResult(), is(successItem));
-    view.getTopInventory().setItem(1, null);
-    Runnable task = runnableCaptor.getValue();
-    assertDoesNotThrow(task::run);
-    assertThat("Inventory result must not be set", view.getTopInventory().getItem(2), is(nullValue()));
-  }
+      var plugin = mock(Plugin.class);
+      when(plugin.getServer()).thenReturn(server);
 
-  @Test
-  void testSuccessPrepareAnvil() {
-    var player = prepareEventPlayer(true);
-    var view = player.getOpenInventory();
-    var event = new PrepareAnvilEvent(view, null);
-    assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-    var successItem = itemStack.clone();
-    ItemMetaHelper itemMeta = (ItemMetaHelper) successItem.getItemMeta();
-    assertThat("Meta is not null", itemMeta, is(notNullValue()));
-    itemMeta.setRepairCost(1);
-    itemMeta.addEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
-    successItem.setItemMeta(itemMeta);
-    assertThat("Result must be success item", event.getResult(), is(successItem));
-    Runnable task = runnableCaptor.getValue();
-    assertDoesNotThrow(task::run);
-    assertThat(
-        "Inventory result must be success item",
-        view.getTopInventory().getItem(2), is(successItem));
+      registry = mock(EnchantableBlockRegistry.class);
+      registration = mock(EnchantableRegistration.class);
+      doAnswer(invocation -> registration).when(registry).get(GOOD_MAT);
+      doReturn(Set.of(ENCHANTMENT)).when(registration).getEnchants();
+      doReturn(true).when(registration).hasEnchantPermission(notNull(), anyString());
+      // Not worth the hassle of mocking.
+      var config = new EnchantableBlockConfig(new YamlConfiguration()) {};
+      doReturn(config).when(registration).getConfig();
+
+      enchanter = new AnvilEnchanter(plugin, registry);
+      itemStack = new ItemStack(GOOD_MAT);
+    }
+
+    @AfterEach
+    void afterEach() {
+      var server = Bukkit.getServer();
+      when(server.getScheduler()).thenReturn(null);
+    }
+
+    private @NotNull Player prepareEventPlayer() {
+      var player = mock(Player.class);
+      when(player.setWindowProperty(any(), anyInt())).thenReturn(true);
+      var world = WorldMocks.newWorld("world");
+      when(player.getWorld()).thenReturn(world);
+
+      var inventory = InventoryMocks.newAnvilMock();
+      inventory.setItem(0, itemStack.clone());
+      var additionItem = new ItemStack(Material.ENCHANTED_BOOK);
+      var additionMeta = additionItem.getItemMeta();
+      if (additionMeta instanceof EnchantmentStorageMeta storageMeta) {
+        storageMeta.addStoredEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
+      }
+      additionItem.setItemMeta(additionMeta);
+      inventory.setItem(1, additionItem);
+
+      InventoryView view = mock(InventoryView.class);
+      when(view.getTopInventory()).thenReturn(inventory);
+      when(view.getPlayer()).thenReturn(player);
+
+      when(player.getOpenInventory()).thenReturn(view);
+
+      return player;
+    }
+
+    @Test
+    void testInvalidItem() {
+      var view = prepareEventPlayer().getOpenInventory();
+      view.getTopInventory().setItem(0, null);
+      var event = spy(new PrepareAnvilEvent(view, null));
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(registry, times(0)).get(any());
+      verify(event, times(0)).setResult(any());
+    }
+
+    @Test
+    void testUnregisteredMaterial() {
+      var view = prepareEventPlayer().getOpenInventory();
+      view.getTopInventory().setItem(0, new ItemStack(BAD_MAT));
+      var event = spy(new PrepareAnvilEvent(view, null));
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(registry).get(BAD_MAT);
+      verify(event, times(0)).setResult(any());
+    }
+
+    @Test
+    void testNoPermission() {
+      doReturn(false).when(registration).hasEnchantPermission(notNull(), anyString());
+      var event = spy(new PrepareAnvilEvent(prepareEventPlayer().getOpenInventory(), null));
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(registration).hasEnchantPermission(notNull(), anyString());
+      verify(event, times(0)).setResult(any());
+    }
+
+    @Test
+    void testNoChange() {
+      var view = prepareEventPlayer().getOpenInventory();
+      view.getTopInventory().setItem(1, itemStack.clone());
+      var event = spy(new PrepareAnvilEvent(view, null));
+
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(event, times(0)).setResult(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSlots")
+    void testChangePostCalculate(int... slots) {
+      var view = prepareEventPlayer().getOpenInventory();
+      var event = spy(new PrepareAnvilEvent(view, null));
+
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(event).setResult(notNull());
+      assertThat("Result is set", event.getResult(), is(notNullValue()));
+
+      var inventory = view.getTopInventory();
+      for (int slot : slots) {
+        inventory.setItem(slot, null);
+      }
+      Runnable task = runnableCaptor.getValue();
+
+      assertDoesNotThrow(task::run);
+      verify(inventory, times(0)).setItem(eq(2), any());
+      assertThat("Inventory result is unset", inventory.getItem(2), is(nullValue()));
+    }
+
+    static Collection<Arguments> getSlots() {
+      return List.of(
+          Arguments.of((Object) new int[] { 0 }),
+          Arguments.of((Object) new int[] { 1 }),
+          Arguments.of((Object) new int[] { 0, 1 })
+      );
+    }
+
+    @Test
+    void testSuccess() {
+      var view = prepareEventPlayer().getOpenInventory();
+      var event = spy(new PrepareAnvilEvent(view, null));
+
+      assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
+      verify(event).setResult(notNull());
+      assertThat("Result is set", event.getResult(), is(notNullValue()));
+
+      var result = event.getResult();
+
+      Runnable task = runnableCaptor.getValue();
+
+      assertDoesNotThrow(task::run);
+      var inventory = view.getTopInventory();
+      verify(inventory).setItem(2, result);
+    }
+
   }
 
 }

@@ -2,6 +2,7 @@ package com.github.jikoo.enchantableblocks.block;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -93,6 +94,13 @@ class EnchantableBlockTest {
     assertThat("Block is correct type", enchantableBlock.isCorrectBlockType());
     verify(block).getType();
     verify(enchantableBlock).isCorrectType(any());
+  }
+
+  @DisplayName("Block is tickable.")
+  @Test
+  void testTick() {
+    var enchantableBlock = new EnchantableBlock(registration, block, itemStack, storage) {};
+    assertDoesNotThrow(enchantableBlock::tick);
   }
 
   @DisplayName("Type is checked against registration listing.")
