@@ -15,7 +15,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <versions.fastutil>8.5.11</versions.fastutil>
+    <versions.fastutil>8.5.12</versions.fastutil>
   </properties>
 
   <profiles>
