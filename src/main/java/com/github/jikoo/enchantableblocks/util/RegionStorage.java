@@ -36,8 +36,9 @@ public class RegionStorage extends YamlConfiguration {
    *
    * @param plugin the plugin for which data is being stored
    * @param region the representation of the Minecraft region
+   * @deprecated to be dropped in favor of the more testable {@link #RegionStorage(Path, Region)}
    */
-  @Deprecated
+  @Deprecated(forRemoval = true, since = "4.1.0")
   public RegionStorage(@NotNull Plugin plugin, @NotNull Region region) {
     this.dataDir = plugin.getDataFolder().toPath().resolve("data");
     this.region = region;
