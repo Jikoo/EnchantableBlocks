@@ -166,6 +166,7 @@ class TableEnchanterTest {
     var hasConflict = listener.hasConflict(conflicts);
     assertThat("Enchantments conflict", hasConflict.test(enchant1, enchant2));
     assertThat("Inverse conflicts", hasConflict.test(enchant2, enchant1));
+    assertThat("Other enchants do not conflict", hasConflict.test(enchant1, enchant1), is(false));
   }
 
   @DisplayName("Listener performs as expected.")

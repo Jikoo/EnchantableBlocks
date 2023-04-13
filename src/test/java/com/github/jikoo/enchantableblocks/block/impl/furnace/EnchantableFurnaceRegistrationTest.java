@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -19,7 +20,6 @@ import static org.mockito.Mockito.when;
 import com.github.jikoo.enchantableblocks.mock.BukkitServer;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,14 +28,12 @@ import java.util.stream.Stream;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.block.BlastFurnace;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CampfireRecipe;
@@ -105,7 +103,7 @@ class EnchantableFurnaceRegistrationTest {
 
   @BeforeEach
   void beforeEach() {
-    var manager = new EnchantableBlockManager(plugin);
+    var manager = mock(EnchantableBlockManager.class);
     registration = new EnchantableFurnaceRegistration(plugin, manager);
 
     var furnaceInventory = InventoryMocks.newFurnaceMock();
@@ -121,15 +119,30 @@ class EnchantableFurnaceRegistrationTest {
     furnaces = new FurnaceInventory[] { furnaceInventory, blastFurnaceInventory, smokerInventory };
   }
 
+  @DisplayName("Listeners are registered as required.")
+  @Test
+  void testRegisterEvents() {
+    var server = Bukkit.getServer();
+    // Reset PluginManager so we can verify event registrations properly.
+    var pluginManager = mock(PluginManager.class);
+    when(server.getPluginManager()).thenReturn(pluginManager);
+
+    var manager = mock(EnchantableBlockManager.class);
+
+    verify(pluginManager, times(0)).registerEvents(any(FurnaceListener.class), eq(plugin));
+    var reg = new EnchantableFurnaceRegistration(plugin, manager);
+    verify(pluginManager).registerEvents(any(FurnaceListener.class), eq(plugin));
+    reg.reload();
+    verify(pluginManager, times(2)).registerEvents(any(FurnaceListener.class), eq(plugin));
+  }
+
   @DisplayName("Registration must create EnchantableFurnace instances.")
   @Test
   void testNewBlock() {
-    World world = WorldMocks.newWorld("world");
-    Block block = world.getBlockAt(0, 0, 0);
-    ItemStack itemStack = new ItemStack(Material.FURNACE);
-    itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, 5);
-    block.setType(itemStack.getType());
-    ConfigurationSection section = plugin.getConfig().createSection("new.block.section");
+    var block = mock(Block.class);
+    // EnchantableFurnace creation requires several ItemStack methods, easier to not stub.
+    var itemStack = new ItemStack(Material.FURNACE);
+    var section = mock(ConfigurationSection.class);
 
     EnchantableFurnace enchantableFurnace = registration.newBlock(block, itemStack, section);
 
@@ -142,15 +155,24 @@ class EnchantableFurnaceRegistrationTest {
 
   @DisplayName("Registration creates EnchantableFurnaceConfig instances.")
   @Test
-  void testLoadConfig() {
-    EnchantableFurnaceConfig config = registration.getConfig();
-    assertThat("Get config must return EnchantableFurnaceConfig",
-        config, is(instanceOf(EnchantableFurnaceConfig.class)));
-    ConfigurationSection section = plugin.getConfig().createSection("blocks.EnchantableFurnace");
-
-    assertThat("Load must create new instance",
+  void testConfig() {
+    ConfigurationSection section = mock(ConfigurationSection.class);
+    var loaded = registration.loadConfig(section);
+    assertThat(
+        "Load creates EnchantableFurnaceConfig",
+        loaded,
+        is(instanceOf(EnchantableFurnaceConfig.class)));
+    assertThat(
+        "Load does not cache value",
         registration.loadConfig(section),
-        is(both(instanceOf(EnchantableFurnaceConfig.class)).and(not(config))));
+        is(both(instanceOf(EnchantableFurnaceConfig.class)).and(not(loaded))));
+
+    EnchantableFurnaceConfig config = registration.getConfig();
+    assertThat(
+        "Getter returns EnchantableFurnaceConfig",
+        config,
+        is(instanceOf(EnchantableFurnaceConfig.class)));
+    assertThat("Getter caches value", registration.getConfig(), is(config));
   }
 
   @DisplayName("Registration provides enchantments.")
@@ -165,12 +187,6 @@ class EnchantableFurnaceRegistrationTest {
   void testGetMaterials() {
     assertThat("Registration must provide materials",
         registration.getMaterials(), is(not(anyOf(nullValue(), empty()))));
-  }
-
-  @DisplayName("Reload does not error.")
-  @Test
-  void testReload() {
-    assertDoesNotThrow(() -> registration.reload());
   }
 
   @DisplayName("Recipe lookup uses cache.")

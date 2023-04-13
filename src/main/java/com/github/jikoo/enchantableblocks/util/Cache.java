@@ -198,7 +198,6 @@ public class Cache<K, V> {
    * <p>N.B. If a load function is provided, it will always be used to attempt to load existing
    * values.
    *
-   *
    * @param key the key whose associated value is to be returned
    * @param create whether the load function should create a new value if none exists to be loaded
    * @return the value to which the specified key is mapped or null

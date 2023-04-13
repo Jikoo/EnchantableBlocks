@@ -17,8 +17,19 @@ import org.jetbrains.annotations.NotNull;
  */
 public class RegionStorage extends YamlConfiguration {
 
-  private final @NotNull Plugin plugin;
+  private final @NotNull Path dataDir;
   private final @NotNull Region region;
+
+  /**
+   * Construct a new {@code RegionStorage}.
+   *
+   * @param dataDir the path to the data storage
+   * @param region the representation of the Minecraft region
+   */
+  public RegionStorage(@NotNull Path dataDir, @NotNull Region region) {
+    this.dataDir = dataDir;
+    this.region = region;
+  }
 
   /**
    * Construct a new {@code RegionStorage}.
@@ -26,8 +37,9 @@ public class RegionStorage extends YamlConfiguration {
    * @param plugin the plugin for which data is being stored
    * @param region the representation of the Minecraft region
    */
+  @Deprecated
   public RegionStorage(@NotNull Plugin plugin, @NotNull Region region) {
-    this.plugin = plugin;
+    this.dataDir = plugin.getDataFolder().toPath().resolve("data");
     this.region = region;
   }
 
@@ -84,9 +96,8 @@ public class RegionStorage extends YamlConfiguration {
    * @return the location on disk
    */
   public File getDataFile() {
-    return plugin.getDataFolder().toPath()
+    return dataDir
         .resolve(Path.of(
-            "data",
             region.worldName(),
             String.format("%1$s_%2$s.yml", region.x(), region.z())
         )).toFile();

@@ -1,7 +1,8 @@
 package com.github.jikoo.enchantableblocks.registry;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 public final class EnchantableBlockRegistry {
 
   private final @NotNull Plugin plugin;
-  private final @NotNull EnumMap<Material, EnchantableRegistration> materialRegistry;
+  private final @NotNull Map<Material, EnchantableRegistration> materialRegistry;
 
   /**
    * Create a new {@code EnchantableBlockRegistry} for the given {@link Plugin}.
@@ -24,7 +25,7 @@ public final class EnchantableBlockRegistry {
   @VisibleForTesting
   public EnchantableBlockRegistry(@NotNull Plugin plugin) {
     this.plugin = plugin;
-    materialRegistry = new EnumMap<>(Material.class);
+    materialRegistry = new HashMap<>();
   }
 
   /**

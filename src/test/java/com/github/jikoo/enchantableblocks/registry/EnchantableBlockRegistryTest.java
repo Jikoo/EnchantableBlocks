@@ -92,4 +92,16 @@ class EnchantableBlockRegistryTest {
     assertDoesNotThrow(registration::getConfig, "Nonexistent sections must be handled gracefully");
   }
 
+  @Test
+  @DisplayName("Reloading registry reloads all registrations.")
+  void testReloadRegistry() {
+    var registry = new EnchantableBlockRegistry(mock(Plugin.class));
+    var registration = mock(EnchantableRegistration.class);
+    when(registration.getMaterials()).thenReturn(Set.of(Material.DIRT));
+    registry.register(registration);
+    verify(registration, times(0)).reload();
+    registry.reload();
+    verify(registration).reload();
+  }
+
 }

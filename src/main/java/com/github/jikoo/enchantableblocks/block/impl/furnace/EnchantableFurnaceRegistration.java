@@ -66,6 +66,7 @@ public class EnchantableFurnaceRegistration extends EnchantableRegistration {
       @NotNull EnchantableBlockManager manager) {
     super(plugin, EnchantableFurnace.class);
     this.listener = new FurnaceListener(plugin, manager);
+    // TODO move this to an enable/disable
     plugin.getServer().getPluginManager().registerEvents(listener, plugin);
   }
 

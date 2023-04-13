@@ -4,10 +4,11 @@ import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.Regio
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,13 +16,14 @@ import org.jetbrains.annotations.Nullable;
  * A {@link BiFunction} used to load data from disk.
  */
 record RegionLoadFunction(
-    @NotNull Plugin plugin,
-    @NotNull EnchantableBlockManager manager)
+    @NotNull EnchantableBlockManager manager,
+    @NotNull Path dataDir,
+    @NotNull Logger logger)
     implements BiFunction<@NotNull Region, @NotNull Boolean, @Nullable RegionStorageData> {
 
   @Override
   public @Nullable RegionStorageData apply(@NotNull Region region, @NotNull Boolean create) {
-    RegionStorage storage = new RegionStorage(plugin(), region);
+    RegionStorage storage = new RegionStorage(dataDir(), region);
 
     if (!storage.getDataFile().exists() && Boolean.FALSE.equals(create)) {
       return null;
@@ -30,7 +32,7 @@ record RegionLoadFunction(
     try {
       storage.load();
     } catch (@NotNull IOException | InvalidConfigurationException e) {
-      plugin().getLogger().log(Level.WARNING, e, e::getMessage);
+      logger().log(Level.WARNING, e, e::getMessage);
     }
 
     return manager().new RegionStorageData(storage);

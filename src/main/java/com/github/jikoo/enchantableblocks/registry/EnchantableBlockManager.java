@@ -6,6 +6,7 @@ import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.planarwrappers.collections.BlockMap;
 import com.github.jikoo.planarwrappers.util.Coords;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.logging.Logger;
 import org.bukkit.Chunk;
@@ -13,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -25,8 +27,7 @@ public class EnchantableBlockManager {
   private final @NotNull Logger logger;
   private final @NotNull EnchantableBlockRegistry blockRegistry;
   private final @NotNull BlockMap<EnchantableBlock> blockMap;
-  @VisibleForTesting
-  final @NotNull Cache<Region, RegionStorageData> saveFileCache;
+  private final @NotNull Cache<Region, RegionStorageData> saveFileCache;
 
   /**
    * Construct a new {@code EnchantableBlockManager} for the given {@link Plugin}.
@@ -34,14 +35,28 @@ public class EnchantableBlockManager {
    * @param plugin the {@code Plugin}
    */
   public EnchantableBlockManager(@NotNull Plugin plugin) {
-    this.logger = plugin.getLogger();
-    blockRegistry = new EnchantableBlockRegistry(plugin);
-    blockMap = new BlockMap<>();
+    this(
+        new EnchantableBlockRegistry(plugin),
+        new Cache.CacheBuilder<>(),
+        plugin.getConfig().getInt("autosave", 5),
+        plugin.getDataFolder().toPath().resolve("data"),
+        plugin.getLogger());
+  }
 
-    saveFileCache = new Cache.CacheBuilder<Region, RegionStorageData>()
-        .withRetention(Math.max(plugin.getConfig().getInt("autosave", 5) * 60_000L, 60_000L))
-        .withInUseCheck(new RegionInUseCheck(this.logger))
-        .withLoadFunction(new RegionLoadFunction(plugin, this)).build();
+  @VisibleForTesting
+  EnchantableBlockManager(
+      @NotNull EnchantableBlockRegistry registry,
+      @NotNull Cache.CacheBuilder<Region, RegionStorageData> cacheBuilder,
+      int autoSave,
+      @NotNull Path dataDir,
+      @NotNull Logger logger) {
+    this.blockMap = new BlockMap<>();
+    this.logger = logger;
+    this.blockRegistry = registry;
+    this.saveFileCache = cacheBuilder
+        .withRetention(Math.max(autoSave * 60_000L, 60_000L))
+        .withInUseCheck(new RegionInUseCheck(logger))
+        .withLoadFunction(new RegionLoadFunction(this, dataDir, logger)).build();
   }
 
   /**
@@ -83,7 +98,7 @@ public class EnchantableBlockManager {
    */
   public @Nullable EnchantableBlock createBlock(
       @NotNull final Block block,
-      @NotNull final ItemStack itemStack) {
+      @Nullable final ItemStack itemStack) {
 
     if (isInvalidBlock(itemStack)) {
       return null;
@@ -107,6 +122,7 @@ public class EnchantableBlockManager {
    * @param itemStack the {@code ItemStack}
    * @return true if the {@code ItemStack} is an invalid type
    */
+  @Contract("null -> true")
   private boolean isInvalidBlock(@Nullable ItemStack itemStack) {
     return itemStack == null
         || itemStack.getType().isAir()
