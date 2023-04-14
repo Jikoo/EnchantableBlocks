@@ -5,12 +5,19 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +35,29 @@ class EnchantableRegistrationTest {
   void setUpAll() {
     var plugin = mock(Plugin.class);
     when(plugin.getName()).thenReturn(getClass().getSimpleName());
-    registration = new DummyEnchantableRegistration(plugin, Set.of(), Set.of());
+    registration = new EnchantableRegistration(plugin, EnchantableBlock.class) {
+      @Override
+      protected @NotNull EnchantableBlock newBlock(@NotNull Block block,
+          @NotNull ItemStack itemStack, @NotNull ConfigurationSection storage) {
+        return mock(EnchantableBlock.class);
+      }
+
+      @Override
+      protected @NotNull EnchantableBlockConfig loadConfig(
+          @NotNull ConfigurationSection configurationSection) {
+        return mock(EnchantableBlockConfig.class);
+      }
+
+      @Override
+      public @NotNull Collection<@NotNull Enchantment> getEnchants() {
+        return Set.of();
+      }
+
+      @Override
+      public @NotNull Collection<@NotNull Material> getMaterials() {
+        return Set.of();
+      }
+    };
   }
 
   @DisplayName("Permission or parent permissions grant access.")

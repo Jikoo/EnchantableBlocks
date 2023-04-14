@@ -36,7 +36,7 @@ public class EnchantableBlockManager {
    */
   public EnchantableBlockManager(@NotNull Plugin plugin) {
     this(
-        new EnchantableBlockRegistry(plugin),
+        new EnchantableBlockRegistry(plugin.getLogger()),
         new Cache.CacheBuilder<>(),
         plugin.getConfig().getInt("autosave", 5),
         plugin.getDataFolder().toPath().resolve("data"),

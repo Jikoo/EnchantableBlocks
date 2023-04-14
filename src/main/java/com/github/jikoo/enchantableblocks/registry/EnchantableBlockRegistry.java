@@ -3,28 +3,26 @@ package com.github.jikoo.enchantableblocks.registry;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 import org.bukkit.Material;
-import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
 
 /**
  * A registry for {@link EnchantableBlock} implementations.
  */
 public final class EnchantableBlockRegistry {
 
-  private final @NotNull Plugin plugin;
+  private final @NotNull Logger logger;
   private final @NotNull Map<Material, EnchantableRegistration> materialRegistry;
 
   /**
-   * Create a new {@code EnchantableBlockRegistry} for the given {@link Plugin}.
+   * Create a new {@code EnchantableBlockRegistry} for the given {@link Logger}.
    *
-   * @param plugin the {@code Plugin}
+   * @param logger the {@code Logger}
    */
-  @VisibleForTesting
-  public EnchantableBlockRegistry(@NotNull Plugin plugin) {
-    this.plugin = plugin;
+  EnchantableBlockRegistry(@NotNull Logger logger) {
+    this.logger = logger;
     materialRegistry = new HashMap<>();
   }
 
@@ -41,7 +39,7 @@ public final class EnchantableBlockRegistry {
         .forEach(material -> {
           var replaced = this.materialRegistry.put(material, registration);
           if (replaced != null) {
-            plugin.getLogger().info(() ->
+            logger.info(() ->
                 String.format(
                     "%s overrode %s for type %s",
                     registration.getBlockClass().getSimpleName(),

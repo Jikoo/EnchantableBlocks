@@ -1,19 +1,19 @@
 package com.github.jikoo.enchantableblocks.util;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.mock.BukkitServer;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.planarwrappers.util.StringConverters;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +42,7 @@ class EmptyCookingRecipeTest {
 
   @BeforeEach
   void beforeEach() {
-    recipe = new EmptyCookingRecipe(Objects.requireNonNull(StringConverters.toNamespacedKey("key")));
+    recipe = new EmptyCookingRecipe(NamespacedKey.minecraft("key"));
   }
 
   @Test
@@ -52,6 +52,16 @@ class EmptyCookingRecipeTest {
       ItemStack item = new ItemStack(material);
       assertThat("Empty recipe must not match anything", !recipe.getInputChoice().test(item));
     }
+  }
+
+  @DisplayName("Empty recipe choices are immutable and therefore always equal.")
+  @Test
+  void testEquality() {
+    var choice = recipe.getInputChoice();
+    assertThat("Choice is not equal to null value", null, not(choice));
+    assertThat("Choice is not equal to objects of other classes", "cool beans", not(choice));
+    var choice2 = new EmptyCookingRecipe(NamespacedKey.minecraft("other_key")).getInputChoice();
+    assertThat("Choice is equal to other EmptyCookingRecipe choice", choice2, is(choice));
   }
 
   @DisplayName("Empty recipe is not modified by setters.")

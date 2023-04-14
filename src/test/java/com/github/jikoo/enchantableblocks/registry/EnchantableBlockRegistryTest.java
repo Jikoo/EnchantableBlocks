@@ -5,22 +5,19 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.block.impl.dummy.DummyEnchantableBlock.DummyEnchantableRegistration;
-import java.nio.file.Path;
-import java.util.EnumSet;
+import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -29,25 +26,20 @@ import org.junit.jupiter.api.TestInstance;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantableBlockRegistryTest {
 
-  @DisplayName("Registration stores by material and allows overrides.")
+  private Logger logger;
+  private EnchantableBlockRegistry registry;
+
+  @BeforeEach
+  void beforeEach() {
+    logger = mock(Logger.class);
+    registry = new EnchantableBlockRegistry(logger);
+  }
+
+  @DisplayName("Registration stores by material.")
   @Test
   void testRegisterAndGet() {
-    var plugin = mock(Plugin.class);
-
-    var config = new YamlConfiguration();
-    var configFile = Path.of(".", "src", "test", "resources", "EnchantableBlocks", "config.yml").toFile();
-    assertDoesNotThrow(() -> config.load(configFile));
-    when(plugin.getConfig()).thenReturn(config);
-
-    var logger = mock(Logger.class);
-    when(plugin.getLogger()).thenReturn(logger);
-
-    EnchantableBlockRegistry registry = new EnchantableBlockRegistry(plugin);
-    EnchantableRegistration registration = new DummyEnchantableRegistration(
-        plugin,
-        Set.of(Enchantment.DIG_SPEED, Enchantment.LOOT_BONUS_BLOCKS),
-        EnumSet.of(Material.FURNACE, Material.ACACIA_WOOD)
-    );
+    var registration = mock(EnchantableRegistration.class);
+    doReturn(Set.of(Material.FURNACE, Material.ACACIA_WOOD)).when(registration).getMaterials();
 
     assertDoesNotThrow(
         () -> registry.register(registration),
@@ -57,45 +49,50 @@ class EnchantableBlockRegistryTest {
             "Registration for material must match",
             registry.get(material),
             is(registration)));
+  }
 
-    DummyEnchantableRegistration dummyReg = new DummyEnchantableRegistration(
-        plugin,
-        registration.getEnchants().stream().limit(1).collect(Collectors.toSet()),
-        registration.getMaterials().stream().limit(1).collect(Collectors.toSet()));
+  @DisplayName("Registration allows overrides.")
+  @Test
+  void testOverride() {
+    var registration = mock(EnchantableRegistration.class);
+    Material mutualMat = Material.FURNACE;
+    doReturn(Set.of(mutualMat, Material.ACACIA_WOOD)).when(registration).getMaterials();
+    doReturn(EnchantableBlock.class).when(registration).getBlockClass();
+    registry.register(registration);
+    var registration2 = mock(EnchantableRegistration.class);
+    doReturn(Set.of(mutualMat)).when(registration2).getMaterials();
+    doReturn(EnchantableBlock.class).when(registration2).getBlockClass();
 
-    registry.register(dummyReg);
+    // Check logging content.
+    doAnswer(invocation -> {
+      Object supplied = invocation.getArgument(0, Supplier.class).get();
+      assertThat(
+          "Override must be logged as expected",
+          supplied,
+          is("EnchantableBlock overrode EnchantableBlock for type " + mutualMat.getKey()));
+      return null;
+    }).when(logger).info(any(Supplier.class));
 
-    // Ensure override count is correct
-    verify(logger, times(dummyReg.getMaterials().size())).info(any(Supplier.class));
+    registry.register(registration2);
 
-    dummyReg.getMaterials().forEach(material ->
+    // Ensure override count is correct.
+    verify(logger, times(registration2.getMaterials().size())).info(any(Supplier.class));
+
+    registration2.getMaterials().forEach(material ->
         assertThat(
             "Registration for material must match",
             registry.get(material),
-            is(dummyReg)));
+            is(registration2)));
 
     long count = registration.getMaterials().stream()
         .filter(material -> !registration.equals(registry.get(material))).count();
 
-    assertThat("Override counts must match", count, equalTo((long) dummyReg.getMaterials().size()));
+    assertThat("Override counts must match", count, equalTo((long) registration2.getMaterials().size()));
   }
 
-  @DisplayName("Configuration load handles nonexistent sections gracefully.")
-  @Test
-  void testMissingConfig() {
-    var noConfig = mock(Plugin.class);
-    when(noConfig.getConfig()).thenReturn(new YamlConfiguration());
-    EnchantableBlockRegistry registry = new EnchantableBlockRegistry(noConfig);
-    var registration = new DummyEnchantableRegistration(noConfig, Set.of(), Set.of());
-    registry.register(registration);
-    noConfig.getConfig().set("blocks.DummyEnchantableBlock", null);
-    assertDoesNotThrow(registration::getConfig, "Nonexistent sections must be handled gracefully");
-  }
-
-  @Test
   @DisplayName("Reloading registry reloads all registrations.")
+  @Test
   void testReloadRegistry() {
-    var registry = new EnchantableBlockRegistry(mock(Plugin.class));
     var registration = mock(EnchantableRegistration.class);
     when(registration.getMaterials()).thenReturn(Set.of(Material.DIRT));
     registry.register(registration);
