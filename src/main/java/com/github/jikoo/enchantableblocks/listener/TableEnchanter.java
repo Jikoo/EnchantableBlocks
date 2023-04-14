@@ -52,16 +52,16 @@ public class TableEnchanter extends TableEnchantListener {
     var world = player.getWorld().getName();
     var config = registration.getConfig();
     var enchants = new ArrayList<>(registration.getEnchants());
-    var blacklist = config.tableDisabledEnchants.get(world);
+    var blacklist = config.tableDisabledEnchants().get(world);
     enchants.removeAll(blacklist);
 
     if (enchants.isEmpty()) {
       return null;
     }
 
-    EnchantingTable operation = new EnchantingTable(enchants, config.tableEnchantability.get(world));
+    EnchantingTable operation = new EnchantingTable(enchants, config.tableEnchantability().get(world));
 
-    var conflicts = config.tableEnchantmentConflicts.get(world);
+    var conflicts = config.tableEnchantmentConflicts().get(world);
     operation.setIncompatibility(hasConflict(conflicts));
 
     return operation;

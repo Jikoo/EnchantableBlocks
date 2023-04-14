@@ -80,9 +80,9 @@ class FurnaceListener implements Listener {
     if (fortune > 0) {
       String world = furnace.getWorld().getName();
       EnchantableFurnaceConfig configuration = enchantableFurnace.getConfig();
-      boolean listContains = configuration.fortuneList.get(world)
+      boolean listContains = configuration.fortuneList().get(world)
           .contains(event.getSource().getType());
-      if (configuration.fortuneListIsBlacklist.get(world) != listContains) {
+      if (configuration.fortuneListIsBlacklist().get(world) != listContains) {
         applyFortune(event, fortune);
       }
     }

@@ -56,7 +56,7 @@ class EnchantableBlockConfigTest {
   @DisplayName("Blocks should be able to be disabled per-world.")
   @Test
   void testEnabled() {
-    Setting<Boolean> enabled = config.enabled;
+    Setting<Boolean> enabled = config.enabled();
 
     assertThat("Blocks should be enabled in default settings",
         enabled.get(INVALID_WORLD));
@@ -69,7 +69,7 @@ class EnchantableBlockConfigTest {
   @DisplayName("Enchantablity should be customizable per-world.")
   @Test
   void testTableEnchantability() {
-    Setting<Enchantability> enchantability = config.tableEnchantability;
+    Setting<Enchantability> enchantability = config.tableEnchantability();
 
     assertThat("Enchantability should be STONE by default",
         enchantability.get(INVALID_WORLD), is(Enchantability.STONE));
@@ -80,7 +80,7 @@ class EnchantableBlockConfigTest {
   @DisplayName("Disabled enchantments should be customizable per-world.")
   @Test
   void testDisabledEnchants() {
-    Setting<Set<Enchantment>> disabledEnchants = config.tableDisabledEnchants;
+    Setting<Set<Enchantment>> disabledEnchants = config.tableDisabledEnchants();
 
     assertThat("Conflicts should default to empty set",
         disabledEnchants.get(INVALID_WORLD).isEmpty());
@@ -93,7 +93,7 @@ class EnchantableBlockConfigTest {
   @DisplayName("Enchantment conflicts should be customizable per-world.")
   @Test
   void testEnchantmentConflicts() {
-    Setting<Multimap<Enchantment, Enchantment>> conflicts = config.tableEnchantmentConflicts;
+    Setting<Multimap<Enchantment, Enchantment>> conflicts = config.tableEnchantmentConflicts();
 
     Multimap<Enchantment, Enchantment> defaultConflicts = conflicts.get(INVALID_WORLD);
     assertThat("Conflicts should default to a single entry", defaultConflicts.size(), is(1));
@@ -106,13 +106,13 @@ class EnchantableBlockConfigTest {
     assertThat("Conflicts should be overridden properly",
         conflicts.get(POWER_WORLD).isEmpty());
     assertThat("Invalid overrides should still override",
-        config.anvilEnchantmentConflicts.get(POWER_WORLD).isEmpty());
+        config.anvilEnchantmentConflicts().get(POWER_WORLD).isEmpty());
   }
 
   @DisplayName("Maximum level enchantments combine to should be customizable per-world.")
   @Test
   void testAnvilEnchantMax() {
-    Mapping<Enchantment, Integer> enchantmentMax = config.anvilEnchantmentMax;
+    Mapping<Enchantment, Integer> enchantmentMax = config.anvilEnchantmentMax();
 
     Enchantment enchantment = Enchantment.SILK_TOUCH;
     int actual = enchantmentMax.get(INVALID_WORLD, enchantment);

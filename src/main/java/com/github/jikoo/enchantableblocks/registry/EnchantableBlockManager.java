@@ -78,7 +78,7 @@ public class EnchantableBlockManager {
 
     EnchantableBlock enchantableBlock = this.blockMap.get(block);
     if (enchantableBlock != null
-        && enchantableBlock.getConfig().enabled.get(block.getWorld().getName())) {
+        && enchantableBlock.getConfig().enabled().get(block.getWorld().getName())) {
       return enchantableBlock;
     }
 
@@ -146,7 +146,7 @@ public class EnchantableBlockManager {
       return null;
     }
 
-    if (!registration.getConfig().enabled.get(block.getWorld().getName())) {
+    if (!registration.getConfig().enabled().get(block.getWorld().getName())) {
       return null;
     }
 
@@ -209,8 +209,7 @@ public class EnchantableBlockManager {
     EnchantableBlock enchantableBlock = this.newBlock(block, itemStack);
 
     if (enchantableBlock == null || !enchantableBlock.isCorrectBlockType()
-        || !enchantableBlock.getConfig().enabled.get(
-        block.getWorld().getName())) {
+        || !enchantableBlock.getConfig().enabled().get(block.getWorld().getName())) {
       return null;
     }
 

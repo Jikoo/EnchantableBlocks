@@ -21,14 +21,28 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class EnchantableBlockConfig {
 
-  protected final ConfigurationSection section;
-  public final Setting<Boolean> enabled;
-  public final Setting<Enchantability> tableEnchantability;
-  public final Setting<Set<Enchantment>> tableDisabledEnchants;
-  public final Setting<Multimap<Enchantment, Enchantment>> tableEnchantmentConflicts;
-  public final Setting<Set<Enchantment>> anvilDisabledEnchants;
-  public final Setting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts;
-  public final Mapping<Enchantment, Integer> anvilEnchantmentMax;
+  protected final @NotNull ConfigurationSection section;
+  /** @deprecated use {@link #enabled()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Boolean> enabled;
+  /** @deprecated use {@link #tableEnchantability()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Enchantability> tableEnchantability;
+  /** @deprecated use {@link #tableDisabledEnchants()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Set<Enchantment>> tableDisabledEnchants;
+  /** @deprecated use {@link #tableEnchantmentConflicts()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Multimap<Enchantment, Enchantment>> tableEnchantmentConflicts;
+  /** @deprecated use {@link #anvilDisabledEnchants()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Set<Enchantment>> anvilDisabledEnchants;
+  /** @deprecated use {@link #anvilEnchantmentConflicts()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts;
+  /** @deprecated use {@link #anvilEnchantmentMax()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Mapping<Enchantment, Integer> anvilEnchantmentMax;
 
   protected EnchantableBlockConfig(@NotNull ConfigurationSection configurationSection) {
     this.section = configurationSection;
@@ -57,6 +71,34 @@ public abstract class EnchantableBlockConfig {
         "anvilEnchantmentConflicts",
         enchantIncompatibilities);
     this.anvilEnchantmentMax = new EnchantMaxLevelMapping(section, "anvilEnchantmentMax");
+  }
+
+  public @NotNull Setting<Boolean> enabled() {
+    return enabled;
+  }
+
+  public @NotNull Setting<Enchantability> tableEnchantability() {
+    return tableEnchantability;
+  }
+
+  public @NotNull Setting<Set<Enchantment>> tableDisabledEnchants() {
+    return tableDisabledEnchants;
+  }
+
+  public @NotNull Setting<Multimap<Enchantment, Enchantment>> tableEnchantmentConflicts() {
+    return tableEnchantmentConflicts;
+  }
+
+  public @NotNull Setting<Set<Enchantment>> anvilDisabledEnchants() {
+    return anvilDisabledEnchants;
+  }
+
+  public @NotNull Setting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts() {
+    return anvilEnchantmentConflicts;
+  }
+
+  public @NotNull Mapping<Enchantment, Integer> anvilEnchantmentMax() {
+    return anvilEnchantmentMax;
   }
 
 }

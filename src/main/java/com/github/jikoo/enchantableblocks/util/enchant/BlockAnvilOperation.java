@@ -29,15 +29,15 @@ public class BlockAnvilOperation extends AnvilOperation {
     // Set world allowed enchantments.
     var enchantments = new ArrayList<>(registration.getEnchants());
     var config = registration.getConfig();
-    enchantments.removeAll(config.anvilDisabledEnchants.get(worldName));
+    enchantments.removeAll(config.anvilDisabledEnchants().get(worldName));
     this.setEnchantApplies((enchantment, itemStack) -> enchantments.contains(enchantment));
     // Set world enchantment conflicts.
-    var enchantConflicts = config.anvilEnchantmentConflicts.get(worldName);
+    var enchantConflicts = config.anvilEnchantmentConflicts().get(worldName);
     this.setEnchantsConflict((enchantment, enchantment2) ->
         enchantConflicts.get(enchantment).contains(enchantment2)
             || enchantConflicts.get(enchantment2).contains(enchantment));
     // Set world max levels.
-    this.setEnchantMaxLevel(enchantment -> config.anvilEnchantmentMax.get(worldName, enchantment));
+    this.setEnchantMaxLevel(enchantment -> config.anvilEnchantmentMax().get(worldName, enchantment));
     // Combination validation is handled before calling #apply.
     this.setItemsCombineEnchants((a, b) -> true);
   }

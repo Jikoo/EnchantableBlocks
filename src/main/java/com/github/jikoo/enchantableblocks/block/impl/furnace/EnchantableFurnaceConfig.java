@@ -14,8 +14,12 @@ import org.jetbrains.annotations.NotNull;
  */
 class EnchantableFurnaceConfig extends EnchantableBlockConfig {
 
-  public final Setting<Boolean> fortuneListIsBlacklist;
-  public final Setting<Set<Material>> fortuneList;
+  /** @deprecated use {@link #fortuneListIsBlacklist()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Boolean> fortuneListIsBlacklist;
+  /** @deprecated use {@link #fortuneList()} */
+  @Deprecated(forRemoval = true, since = "4.1.0")
+  public final @NotNull Setting<Set<Material>> fortuneList;
 
   /**
    * Construct a new {@code EnchantableFurnaceConfig} with the given {@link ConfigurationSection}.
@@ -29,6 +33,14 @@ class EnchantableFurnaceConfig extends EnchantableBlockConfig {
         section,
         "fortuneList",
         Set.of(Material.WET_SPONGE, Material.STONE_BRICKS));
+  }
+
+  public @NotNull Setting<Boolean> fortuneListIsBlacklist() {
+    return fortuneListIsBlacklist;
+  }
+
+  public @NotNull Setting<Set<Material>> fortuneList() {
+    return fortuneList;
   }
 
 }

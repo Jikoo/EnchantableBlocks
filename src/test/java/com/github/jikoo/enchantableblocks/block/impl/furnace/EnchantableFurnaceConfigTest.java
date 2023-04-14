@@ -46,7 +46,7 @@ class EnchantableFurnaceConfigTest {
   void testFortuneList() {
     Bukkit.setServer(BukkitServer.newServer());
 
-    Setting<Set<Material>> fortuneList = config.fortuneList;
+    Setting<Set<Material>> fortuneList = config.fortuneList();
     Collection<Material> value = Set.of(Material.WET_SPONGE, Material.STONE_BRICKS);
     assertThat("Materials should be set in default settings",
         fortuneList.get(INVALID_WORLD),
@@ -67,7 +67,7 @@ class EnchantableFurnaceConfigTest {
   @DisplayName("Fortune list mode should be customizable per-world.")
   @Test
   void testEnabled() {
-    Setting<Boolean> isBlacklist = config.fortuneListIsBlacklist;
+    Setting<Boolean> isBlacklist = config.fortuneListIsBlacklist();
 
     assertThat("Default uses blacklist",
         isBlacklist.get(INVALID_WORLD));
