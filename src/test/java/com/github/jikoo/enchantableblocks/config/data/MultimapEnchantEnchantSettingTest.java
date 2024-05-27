@@ -5,8 +5,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.google.common.collect.HashMultimap;
+import org.bukkit.Server;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,7 +26,8 @@ class MultimapEnchantEnchantSettingTest {
 
   @BeforeAll
   void beforeAll() {
-    EnchantmentMocks.init();
+    Server server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
   }
 
   @BeforeEach
@@ -36,7 +39,7 @@ class MultimapEnchantEnchantSettingTest {
   @DisplayName("Keys are converted to enchantments.")
   @Test
   void testConvertKey() {
-    Enchantment original = Enchantment.DURABILITY;
+    Enchantment original = Enchantment.UNBREAKING;
     Enchantment converted = setting.convertKey(original.getKey().toString());
     assertThat("Key is converted to enchantment", converted, is(enchant(original)));
   }
@@ -44,7 +47,7 @@ class MultimapEnchantEnchantSettingTest {
   @DisplayName("Values are converted to enchantments.")
   @Test
   void testConvertValue() {
-    Enchantment original = Enchantment.DURABILITY;
+    Enchantment original = Enchantment.UNBREAKING;
     Enchantment converted = setting.convertValue(original.getKey().toString());
     assertThat("Value is converted to enchantment", converted, is(enchant(original)));
   }

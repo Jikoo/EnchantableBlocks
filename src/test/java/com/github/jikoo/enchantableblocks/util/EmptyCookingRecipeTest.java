@@ -5,13 +5,12 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -34,10 +33,9 @@ class EmptyCookingRecipeTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
+    var server = ServerMocks.mockServer();
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
-    Bukkit.setServer(server);
   }
 
   @BeforeEach

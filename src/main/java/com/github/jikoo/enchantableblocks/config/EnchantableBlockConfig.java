@@ -57,7 +57,7 @@ public abstract class EnchantableBlockConfig {
         "tableDisabledEnchantments",
         Set.of());
     Multimap<Enchantment, Enchantment> enchantIncompatibilities = HashMultimap.create();
-    enchantIncompatibilities.put(Enchantment.SILK_TOUCH, Enchantment.LOOT_BONUS_BLOCKS);
+    enchantIncompatibilities.put(Enchantment.SILK_TOUCH, Enchantment.FORTUNE);
     this.tableEnchantmentConflicts = new MultimapEnchantEnchantSetting(
         section,
         "tableEnchantmentConflicts",

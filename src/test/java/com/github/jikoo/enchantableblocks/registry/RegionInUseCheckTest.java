@@ -13,7 +13,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -51,7 +50,7 @@ class RegionInUseCheckTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
+    var server = ServerMocks.mockServer();
 
     worlds = new ArrayList<>();
     for (boolean loaded : new boolean[] { true, false }) {
@@ -66,8 +65,6 @@ class RegionInUseCheckTest {
 
       worlds.add(world);
     }
-
-    Bukkit.setServer(server);
   }
 
   @BeforeEach

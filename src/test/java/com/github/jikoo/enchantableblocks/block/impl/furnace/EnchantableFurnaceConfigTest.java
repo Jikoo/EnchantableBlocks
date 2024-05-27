@@ -7,15 +7,15 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.planarwrappers.config.Setting;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -34,7 +34,8 @@ class EnchantableFurnaceConfigTest {
 
   @BeforeAll
   void beforeAll() {
-    EnchantmentMocks.init();
+    Server server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
 
     File configFile = Path.of(".", "src", "test", "resources", "furnace_config.yml").toFile();
     YamlConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
@@ -44,8 +45,6 @@ class EnchantableFurnaceConfigTest {
   @DisplayName("Fortune list should be customizable per-world.")
   @Test
   void testFortuneList() {
-    Bukkit.setServer(BukkitServer.newServer());
-
     Setting<Set<Material>> fortuneList = config.fortuneList();
     Collection<Material> value = Set.of(Material.WET_SPONGE, Material.STONE_BRICKS);
     assertThat("Materials should be set in default settings",
@@ -60,8 +59,6 @@ class EnchantableFurnaceConfigTest {
         Material.NETHER_QUARTZ_ORE, Material.NETHER_GOLD_ORE);
     assertThat("Materials should be overridden", fortuneList.get(ORE_WORLD),
         both(everyItem(is(in(value)))).and(containsInAnyOrder(value.toArray())));
-
-    BukkitServer.unsetBukkitServer();
   }
 
   @DisplayName("Fortune list mode should be customizable per-world.")

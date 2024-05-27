@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.answer.SpiedAnswer;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -63,9 +62,9 @@ class EnchantableBlockManagerTest {
   private static final String NORMAL_WORLD_NAME = "world";
   private static final String DISABLED_WORLD_NAME = "lame_vanilla_world";
   private static final String DISABLED_WORLD_PATH = "overrides." + DISABLED_WORLD_NAME + ".enabled";
-  private static final Material GOOD_MAT = Material.COAL_ORE;
-  private static final Material BAD_MAT = Material.DIRT;
-  private static final Enchantment GOOD_ENCHANT = Enchantment.DIG_SPEED;
+  private Material goodMat;
+  private Material badMat;
+  private Enchantment goodEnchant;
 
   @Mock EnchantableBlockRegistry registry;
   Path dataDir;
@@ -82,10 +81,13 @@ class EnchantableBlockManagerTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
+    var server = ServerMocks.mockServer();
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
-    Bukkit.setServer(server);
+
+    goodMat = Material.COAL_ORE;
+    badMat = Material.DIRT;
+    goodEnchant = Enchantment.EFFICIENCY;
 
     block = WorldMocks.newWorld(NORMAL_WORLD_NAME).getBlockAt(0, 0, 0);
     blockDisabledWorld = WorldMocks.newWorld(DISABLED_WORLD_NAME).getBlockAt(0, 0, 0);
@@ -114,8 +116,8 @@ class EnchantableBlockManagerTest {
     doAnswer(invocation ->
         new EnchantableBlock(registration, invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2)) {})
         .when(registration).newBlock(any(), any(), any());
-    doReturn(registration).when(registry).get(GOOD_MAT);
-    doReturn(Set.of(GOOD_MAT)).when(registration).getMaterials();
+    doReturn(registration).when(registry).get(goodMat);
+    doReturn(Set.of(goodMat)).when(registration).getMaterials();
 
     // Set up config for disabled world.
     backingConfig = new YamlConfiguration();
@@ -124,8 +126,8 @@ class EnchantableBlockManagerTest {
     doReturn(config).when(registration).getConfig();
 
     // Reset block types
-    block.setType(GOOD_MAT);
-    blockDisabledWorld.setType(GOOD_MAT);
+    block.setType(goodMat);
+    blockDisabledWorld.setType(goodMat);
   }
 
   @AfterEach
@@ -135,7 +137,7 @@ class EnchantableBlockManagerTest {
 
   @AfterAll
   void afterAll() {
-    BukkitServer.unsetBukkitServer();
+    ServerMocks.unsetBukkitServer();
   }
 
   @DisplayName("Registry is obtainable for type registration.")
@@ -184,7 +186,7 @@ class EnchantableBlockManagerTest {
     @DisplayName("Unenchanted items do not create blocks.")
     @Test
     void testCreateItemUnenchanted() {
-      var item = new ItemStack(GOOD_MAT);
+      var item = new ItemStack(goodMat);
       assertThat(
           "Manager must not create block",
           manager.createBlock(block, item),
@@ -196,7 +198,7 @@ class EnchantableBlockManagerTest {
     @Test
     void testCreateNoRegistration() {
       var item = getValidItem();
-      doReturn(null).when(registry).get(GOOD_MAT);
+      doReturn(null).when(registry).get(goodMat);
 
       assertThat(
           "Manager must not create block",
@@ -322,7 +324,7 @@ class EnchantableBlockManagerTest {
       EnchantableBlock enchantableBlock = manager.createBlock(block, stack);
       assertThat("Manager must create block", enchantableBlock, is(notNullValue()));
 
-      block.setType(BAD_MAT);
+      block.setType(badMat);
 
       assertThat(
           "Invalid save data should return null for invalid block type",
@@ -462,7 +464,7 @@ class EnchantableBlockManagerTest {
       assertThat("Data must not be dirty after clean", data.isDirty(), is(false));
 
       data = manager.new RegionStorageData(new RegionStorage(dataDir, new Region(block)));
-      block.setType(GOOD_MAT);
+      block.setType(goodMat);
       ItemStack stack = getValidItem();
       var enchantableBlock = manager.createBlock(block, stack);
       assertThat("EnchantableBlock must not be null", enchantableBlock, notNullValue());
@@ -476,8 +478,8 @@ class EnchantableBlockManagerTest {
   }
 
   private @NotNull ItemStack getValidItem() {
-    ItemStack itemStack = new ItemStack(GOOD_MAT);
-    itemStack.addUnsafeEnchantment(GOOD_ENCHANT, 1);
+    ItemStack itemStack = new ItemStack(goodMat);
+    itemStack.addUnsafeEnchantment(goodEnchant, 1);
     return itemStack;
   }
 

@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
@@ -57,18 +57,20 @@ import org.mockito.ArgumentCaptor;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AnvilEnchanterTest {
 
-  private static final Enchantment ENCHANTMENT = Enchantment.DIG_SPEED;
-  private static final Material GOOD_MAT = Material.COAL_ORE;
-  private static final Material BAD_MAT = Material.REDSTONE_ORE;
+  private Enchantment enchantment;
+  private Material goodMat;
+  private Material badMat;
 
   private AnvilEnchanter enchanter;
 
   @BeforeAll
   void setUpAll() {
-    EnchantmentMocks.init();
+    var server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
 
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    enchantment = Enchantment.EFFICIENCY;
+    goodMat = Material.COAL_ORE;
+    badMat = Material.REDSTONE_ORE;
 
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
@@ -93,32 +95,32 @@ class AnvilEnchanterTest {
     @DisplayName("Items are invalid if addition is empty.")
     @Test
     void testNullAdditionInvalid() {
-      var base = new ItemStack(GOOD_MAT);
+      var base = new ItemStack(goodMat);
       assertThat("Items are invalid", enchanter.areItemsInvalid(base, null));
     }
 
     @DisplayName("Items are invalid if base is stacked.")
     @Test
     void testStackedBaseInvalid() {
-      var base = new ItemStack(GOOD_MAT);
+      var base = new ItemStack(goodMat);
       base.setAmount(64);
-      var addition = new ItemStack(GOOD_MAT);
+      var addition = new ItemStack(goodMat);
       assertThat("Items are invalid", enchanter.areItemsInvalid(base, addition));
     }
 
     @DisplayName("Items are invalid base and addition do not match.")
     @Test
     void testDifferentAddition() {
-      var base = new ItemStack(GOOD_MAT);
-      var addition = new ItemStack(BAD_MAT);
+      var base = new ItemStack(goodMat);
+      var addition = new ItemStack(badMat);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition));
     }
 
     @DisplayName("Items are valid if base and addition match.")
     @Test
     void testSame() {
-      var base = new ItemStack(GOOD_MAT);
-      var addition = new ItemStack(GOOD_MAT);
+      var base = new ItemStack(goodMat);
+      var addition = new ItemStack(goodMat);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
       addition.setAmount(64);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
@@ -127,7 +129,7 @@ class AnvilEnchanterTest {
     @DisplayName("Items are valid if addition is enchanted book.")
     @Test
     void testEnchantedBookAddition() {
-      var base = new ItemStack(GOOD_MAT);
+      var base = new ItemStack(goodMat);
       var addition = new ItemStack(Material.ENCHANTED_BOOK);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
     }
@@ -156,15 +158,15 @@ class AnvilEnchanterTest {
 
       registry = mock(EnchantableBlockRegistry.class);
       registration = mock(EnchantableRegistration.class);
-      doAnswer(invocation -> registration).when(registry).get(GOOD_MAT);
-      doReturn(Set.of(ENCHANTMENT)).when(registration).getEnchants();
+      doAnswer(invocation -> registration).when(registry).get(goodMat);
+      doReturn(Set.of(enchantment)).when(registration).getEnchants();
       doReturn(true).when(registration).hasEnchantPermission(notNull(), anyString());
       // Not worth the hassle of mocking.
       var config = new EnchantableBlockConfig(new YamlConfiguration()) {};
       doReturn(config).when(registration).getConfig();
 
       enchanter = new AnvilEnchanter(plugin, registry);
-      itemStack = new ItemStack(GOOD_MAT);
+      itemStack = new ItemStack(goodMat);
     }
 
     @AfterEach
@@ -184,7 +186,7 @@ class AnvilEnchanterTest {
       var additionItem = new ItemStack(Material.ENCHANTED_BOOK);
       var additionMeta = additionItem.getItemMeta();
       if (additionMeta instanceof EnchantmentStorageMeta storageMeta) {
-        storageMeta.addStoredEnchant(ENCHANTMENT, ENCHANTMENT.getMaxLevel(), true);
+        storageMeta.addStoredEnchant(enchantment, enchantment.getMaxLevel(), true);
       }
       additionItem.setItemMeta(additionMeta);
       inventory.setItem(1, additionItem);
@@ -211,10 +213,10 @@ class AnvilEnchanterTest {
     @Test
     void testUnregisteredMaterial() {
       var view = prepareEventPlayer().getOpenInventory();
-      view.getTopInventory().setItem(0, new ItemStack(BAD_MAT));
+      view.getTopInventory().setItem(0, new ItemStack(badMat));
       var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
-      verify(registry).get(BAD_MAT);
+      verify(registry).get(badMat);
       verify(event, times(0)).setResult(any());
     }
 

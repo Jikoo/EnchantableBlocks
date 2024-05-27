@@ -9,6 +9,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
+import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.planarwrappers.config.Mapping;
 import com.github.jikoo.planarwrappers.config.Setting;
@@ -16,8 +18,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Set;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,12 @@ import org.junit.jupiter.api.TestInstance;
 class BlockAnvilOperationTest {
 
   private EnchantableRegistration registration;
+
+  @BeforeAll
+  void beforeAll() {
+    Server server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
+  }
 
   @BeforeEach
   void beforeEach() {
@@ -46,18 +56,18 @@ class BlockAnvilOperationTest {
 
   @Test
   void testEnchantApplies() {
-    doReturn(Set.of(Enchantment.DURABILITY, Enchantment.DIG_SPEED)).when(registration).getEnchants();
+    doReturn(Set.of(Enchantment.UNBREAKING, Enchantment.EFFICIENCY)).when(registration).getEnchants();
     var anvilDisabledEnchants = registration.getConfig().anvilDisabledEnchants();
-    doReturn(Set.of(Enchantment.DURABILITY)).when(anvilDisabledEnchants).get(anyString());
+    doReturn(Set.of(Enchantment.UNBREAKING)).when(anvilDisabledEnchants).get(anyString());
 
     var op = new BlockAnvilOperation(registration, "sample_text");
 
     assertThat(
         "Enabled enchantment applies",
-        op.enchantApplies(Enchantment.DIG_SPEED, new ItemStack(Material.AIR)));
+        op.enchantApplies(Enchantment.EFFICIENCY, new ItemStack(Material.AIR)));
     assertThat(
         "Disabled enchantment does not apply",
-        op.enchantApplies(Enchantment.DURABILITY, new ItemStack(Material.AIR)),
+        op.enchantApplies(Enchantment.UNBREAKING, new ItemStack(Material.AIR)),
         is(false));
   }
 
@@ -65,24 +75,24 @@ class BlockAnvilOperationTest {
   void testEnchantsConflict() {
     var anvilEnchantmentConflicts = registration.getConfig().anvilEnchantmentConflicts();
     Multimap<Enchantment, Enchantment> conflicts = HashMultimap.create();
-    conflicts.put(Enchantment.DURABILITY, Enchantment.DIG_SPEED);
+    conflicts.put(Enchantment.UNBREAKING, Enchantment.EFFICIENCY);
     doReturn(conflicts).when(anvilEnchantmentConflicts).get(anyString());
 
     var op = new BlockAnvilOperation(registration, "sample_text");
 
     assertThat(
         "Enchantments conflict",
-        op.enchantsConflict(Enchantment.DURABILITY, Enchantment.DIG_SPEED));
+        op.enchantsConflict(Enchantment.UNBREAKING, Enchantment.EFFICIENCY));
     assertThat(
         "Inverted enchantments conflict",
-        op.enchantsConflict(Enchantment.DIG_SPEED, Enchantment.DURABILITY));
+        op.enchantsConflict(Enchantment.EFFICIENCY, Enchantment.UNBREAKING));
     assertThat(
         "Other enchantments do not conflict",
-        op.enchantsConflict(Enchantment.DIG_SPEED, Enchantment.SILK_TOUCH),
+        op.enchantsConflict(Enchantment.EFFICIENCY, Enchantment.SILK_TOUCH),
         is(false));
     assertThat(
         "Inverted other enchantments do not conflict",
-        op.enchantsConflict(Enchantment.SILK_TOUCH, Enchantment.DIG_SPEED),
+        op.enchantsConflict(Enchantment.SILK_TOUCH, Enchantment.EFFICIENCY),
         is(false));
   }
 
@@ -92,7 +102,7 @@ class BlockAnvilOperationTest {
     int genericEnchantLevel = 0;
     doReturn(genericEnchantLevel).when(anvilEnchantmentMax).get(anyString(), any());
     int specificEnchantLevel = 4;
-    Enchantment specifiedEnchant = Enchantment.DURABILITY;
+    Enchantment specifiedEnchant = Enchantment.UNBREAKING;
     doReturn(specificEnchantLevel).when(anvilEnchantmentMax).get(anyString(), eq(specifiedEnchant));
 
     var op = new BlockAnvilOperation(registration, "sample_text");
@@ -103,7 +113,7 @@ class BlockAnvilOperationTest {
         is(specificEnchantLevel));
     assertThat(
         "Generic max is used for other enchantments",
-        op.getEnchantMaxLevel(Enchantment.DIG_SPEED),
+        op.getEnchantMaxLevel(Enchantment.EFFICIENCY),
         is(genericEnchantLevel));
   }
 

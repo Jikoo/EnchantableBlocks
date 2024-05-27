@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.planarenchanting.table.Enchantability;
 import com.github.jikoo.planarwrappers.config.Mapping;
@@ -18,6 +19,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,7 +42,8 @@ class EnchantableBlockConfigTest {
 
   @BeforeAll
   void beforeAll() {
-    EnchantmentMocks.init();
+    Server server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
 
     File configFile = Path.of(".", "src", "test", "resources", "generic_config.yml").toFile();
     YamlConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
@@ -84,7 +87,7 @@ class EnchantableBlockConfigTest {
 
     assertThat("Conflicts should default to empty set",
         disabledEnchants.get(INVALID_WORLD).isEmpty());
-    Set<Enchantment> value = Set.of(Enchantment.DURABILITY);
+    Set<Enchantment> value = Set.of(Enchantment.UNBREAKING);
     assertThat("Conflicts should be overridden properly",
         disabledEnchants.get(VANILLA_WORLD),
         is(enchantSet(value)));
@@ -101,7 +104,7 @@ class EnchantableBlockConfigTest {
     assertThat("Conflict entry must exist", entryOptional.isPresent());
     Entry<Enchantment, Collection<Enchantment>> entry = entryOptional.get();
     assertThat("Conflict must contain silk touch", entry.getKey(), is(enchant(Enchantment.SILK_TOUCH)));
-    assertThat("Conflict must contain fortune", entry.getValue(), contains(enchant(Enchantment.LOOT_BONUS_BLOCKS)));
+    assertThat("Conflict must contain fortune", entry.getValue(), contains(enchant(Enchantment.FORTUNE)));
 
     assertThat("Conflicts should be overridden properly",
         conflicts.get(POWER_WORLD).isEmpty());
@@ -123,13 +126,13 @@ class EnchantableBlockConfigTest {
     assertThat("Worlds with invalid keys should fall through to default",
         enchantmentMax.get(VANILLA_WORLD, enchantment), is(actual));
 
-    enchantment = Enchantment.DIG_SPEED;
+    enchantment = Enchantment.EFFICIENCY;
     assertThat("Max level should use specified defaults",
         enchantmentMax.get(INVALID_WORLD, enchantment), is(4));
     assertThat("World overrides should be provided",
         enchantmentMax.get(POWER_WORLD, enchantment), is(10));
 
-    enchantment = Enchantment.LOOT_BONUS_BLOCKS;
+    enchantment = Enchantment.FORTUNE;
     assertThat("Invalid values should fall through to defaults",
         enchantmentMax.get(INVALID_WORLD, enchantment), is(enchantment.getMaxLevel()));
   }

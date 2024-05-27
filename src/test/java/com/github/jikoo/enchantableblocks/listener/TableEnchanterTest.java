@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
@@ -28,7 +28,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Map;
 import java.util.Set;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -61,10 +60,8 @@ class TableEnchanterTest {
 
   @BeforeAll
   void setUpAll() {
-    EnchantmentMocks.init();
-
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
 
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
@@ -77,7 +74,7 @@ class TableEnchanterTest {
     // Set up default registration.
     registration = mock(EnchantableRegistration.class);
     doReturn(true).when(registration).hasEnchantPermission(notNull(), anyString());
-    doReturn(Set.of(Enchantment.DIG_SPEED)).when(registration).getEnchants();
+    doReturn(Set.of(Enchantment.EFFICIENCY)).when(registration).getEnchants();
     doReturn(new EnchantableBlockConfig(new YamlConfiguration()) {}).when(registration).getConfig();
 
     Plugin plugin = mock(Plugin.class);
@@ -124,7 +121,7 @@ class TableEnchanterTest {
   @DisplayName("Registrations with all enchantments blacklisted cannot enchant.")
   @Test
   void testEnchantsBlacklist() {
-    doReturn(Set.of(Enchantment.DIG_SPEED))
+    doReturn(Set.of(Enchantment.EFFICIENCY))
         .doReturn(Set.of())
         .when(registration).getEnchants();
     verify(registration, times(0)).getConfig();
@@ -158,8 +155,8 @@ class TableEnchanterTest {
   @DisplayName("Incompatibilities are respected, including inverses.")
   @Test
   void testIncompatibility() {
-    Enchantment enchant1 = Enchantment.DIG_SPEED;
-    Enchantment enchant2 = Enchantment.DURABILITY;
+    Enchantment enchant1 = Enchantment.EFFICIENCY;
+    Enchantment enchant2 = Enchantment.UNBREAKING;
     Multimap<Enchantment, Enchantment> conflicts = HashMultimap.create();
     conflicts.put(enchant1, enchant2);
 
@@ -182,7 +179,7 @@ class TableEnchanterTest {
     assertDoesNotThrow(() -> listener.onPrepareItemEnchant(prepareEvent));
     assertThat("Offers are set", prepareEvent.getOffers(), hasItemInArray(notNullValue()));
 
-    var enchantEvent = new EnchantItemEvent(player, view, table, itemStack, 30, Map.of(), 2);
+    var enchantEvent = new EnchantItemEvent(player, view, table, itemStack, 30, Map.of(), Enchantment.UNBREAKING, 30, 15);
     assertDoesNotThrow(() -> listener.onEnchantItem(enchantEvent));
     assertThat(
         "Enchantments are added",

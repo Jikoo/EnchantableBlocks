@@ -17,7 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
@@ -64,8 +64,7 @@ class EnchantableFurnaceRegistrationTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
 
     var pluginManager = mock(PluginManager.class);
     when(server.getPluginManager()).thenReturn(pluginManager);

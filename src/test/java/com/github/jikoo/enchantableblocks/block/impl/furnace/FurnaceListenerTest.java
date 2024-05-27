@@ -16,7 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.BlockMocks;
@@ -72,8 +72,7 @@ class FurnaceListenerTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
 
     // Set up item factory for ItemMeta generation and comparison.
     var factory = ItemFactoryMocks.mockFactory();

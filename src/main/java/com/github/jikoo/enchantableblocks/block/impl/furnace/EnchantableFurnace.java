@@ -93,7 +93,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @return the cooking speed modifier
    */
   public int getCookModifier() {
-    return this.getItemStack().getEnchantmentLevel(Enchantment.DIG_SPEED);
+    return this.getItemStack().getEnchantmentLevel(Enchantment.EFFICIENCY);
   }
 
   /**
@@ -102,7 +102,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @return the fuel burn rate modifier
    */
   public int getBurnModifier() {
-    return this.getItemStack().getEnchantmentLevel(Enchantment.DURABILITY);
+    return this.getItemStack().getEnchantmentLevel(Enchantment.UNBREAKING);
   }
 
   /**
@@ -111,7 +111,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @return the fortune level
    */
   public int getFortune() {
-    return this.getItemStack().getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS);
+    return this.getItemStack().getEnchantmentLevel(Enchantment.FORTUNE);
   }
 
   /**

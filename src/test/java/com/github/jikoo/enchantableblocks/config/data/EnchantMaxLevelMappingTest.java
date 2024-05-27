@@ -9,7 +9,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
+import org.bukkit.Server;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,7 +29,8 @@ class EnchantMaxLevelMappingTest {
 
   @BeforeAll
   void beforeAll() {
-    EnchantmentMocks.init();
+    Server server = ServerMocks.mockServer();
+    EnchantmentMocks.init(server);
   }
 
   @BeforeEach
@@ -39,7 +42,7 @@ class EnchantMaxLevelMappingTest {
   @DisplayName("Keys are converted to enchantments.")
   @Test
   void testConvertKey() {
-    Enchantment original = Enchantment.DURABILITY;
+    Enchantment original = Enchantment.UNBREAKING;
     Enchantment converted = mapping.convertKey(original.getKey().toString());
     assertThat("Key is converted to enchantment", converted, is(enchant(original)));
   }
@@ -69,7 +72,7 @@ class EnchantMaxLevelMappingTest {
   @DisplayName("Defaults are fetched from server.")
   @Test
   void testDefaultMaxLevel() {
-    Enchantment enchantment = Enchantment.DURABILITY;
+    Enchantment enchantment = Enchantment.UNBREAKING;
     assertThat(
         "Max level must fall through to enchantment default",
         mapping.get("none", enchantment),

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
@@ -65,8 +65,7 @@ class EnchantableFurnaceTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
 
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
@@ -226,23 +225,23 @@ class EnchantableFurnaceTest {
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
-    itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, modifier);
+    itemStack.addUnsafeEnchantment(Enchantment.EFFICIENCY, modifier);
     enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
-    itemStack.removeEnchantment(Enchantment.DIG_SPEED);
+    itemStack.removeEnchantment(Enchantment.EFFICIENCY);
     assertThat("Modifier must be set", enchantableFurnace.getCookModifier(), is(modifier));
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
-    itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, modifier);
+    itemStack.addUnsafeEnchantment(Enchantment.UNBREAKING, modifier);
     enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
-    itemStack.removeEnchantment(Enchantment.DURABILITY);
+    itemStack.removeEnchantment(Enchantment.UNBREAKING);
     assertThat("Base modifier must be 0", enchantableFurnace.getCookModifier(), is(0));
     assertThat("Modifier must be set", enchantableFurnace.getBurnModifier(), is(modifier));
     assertThat("Base modifier must be 0", enchantableFurnace.getFortune(), is(0));
 
-    itemStack.addUnsafeEnchantment(Enchantment.LOOT_BONUS_BLOCKS, modifier);
+    itemStack.addUnsafeEnchantment(Enchantment.FORTUNE, modifier);
     enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
-    itemStack.removeEnchantment(Enchantment.LOOT_BONUS_BLOCKS);
+    itemStack.removeEnchantment(Enchantment.FORTUNE);
     assertThat("Base modifier must be 0", enchantableFurnace.getCookModifier(), is(0));
     assertThat("Base modifier must be 0", enchantableFurnace.getBurnModifier(), is(0));
     assertThat("Modifier must be set", enchantableFurnace.getFortune(), is(modifier));
@@ -582,7 +581,7 @@ class EnchantableFurnaceTest {
       "-6,200,350", "-7,200,355", "-8,200,360", "-9,200,363", "-10,200,366"
   })
   void testApplyCookTimeModifiers(int level, int ticks, short expectedTicks) {
-    itemStack.addUnsafeEnchantment(Enchantment.DIG_SPEED, level);
+    itemStack.addUnsafeEnchantment(Enchantment.EFFICIENCY, level);
     var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
 
     assertThat("Cook time must be modified as expected",
@@ -599,7 +598,7 @@ class EnchantableFurnaceTest {
       "-1,1600,1200", "-2,1600,960", "-3,1600,800", "-4,1600,685", "-5,200,75",
   })
   void testApplyBurnTimeModifiers(int level, int ticks, short expectedTicks) {
-    itemStack.addUnsafeEnchantment(Enchantment.DURABILITY, level);
+    itemStack.addUnsafeEnchantment(Enchantment.UNBREAKING, level);
     var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
 
     assertThat("Calculated value must be equal to expectation",

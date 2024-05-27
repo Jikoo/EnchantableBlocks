@@ -40,9 +40,9 @@ import org.jetbrains.annotations.VisibleForTesting;
 public class EnchantableFurnaceRegistration extends EnchantableRegistration {
 
   private static final List<Enchantment> ENCHANTMENTS = List.of(
-      Enchantment.DIG_SPEED,
-      Enchantment.DURABILITY,
-      Enchantment.LOOT_BONUS_BLOCKS,
+      Enchantment.EFFICIENCY,
+      Enchantment.UNBREAKING,
+      Enchantment.FORTUNE,
       Enchantment.SILK_TOUCH);
   private static final Set<Material> MATERIALS =
       Set.of(Material.FURNACE, Material.BLAST_FURNACE, Material.SMOKER);

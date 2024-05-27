@@ -13,7 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
@@ -21,10 +21,10 @@ import com.google.common.base.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -56,6 +56,7 @@ import org.mockito.ArgumentCaptor;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WorldListenerTest {
 
+  private Server server;
   private ArgumentCaptor<Runnable> runnableCaptor;
   private PluginManager pluginManager;
   private Player player;
@@ -66,8 +67,7 @@ class WorldListenerTest {
 
   @BeforeAll
   void setUpAll() {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    server = ServerMocks.mockServer();
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
   }
@@ -89,7 +89,6 @@ class WorldListenerTest {
     when(inventory.getItemInMainHand()).thenReturn(new ItemStack(Material.DIAMOND_PICKAXE));
     when(player.getInventory()).thenReturn(inventory);
 
-    var server = BukkitServer.newServer();
     var scheduler = mock(BukkitScheduler.class);
     runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
     when(scheduler.runTask(any(Plugin.class), runnableCaptor.capture())).thenReturn(null);

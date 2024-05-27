@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.jparams.verifier.tostring.ToStringVerifier;
@@ -22,7 +22,6 @@ import com.jparams.verifier.tostring.preset.Presets;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Set;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
@@ -45,8 +44,7 @@ class EnchantableBlockTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
   }

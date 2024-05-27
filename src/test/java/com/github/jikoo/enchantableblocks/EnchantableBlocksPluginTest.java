@@ -12,7 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.github.jikoo.enchantableblocks.mock.BukkitServer;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import java.io.BufferedReader;
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -49,8 +48,7 @@ class EnchantableBlocksPluginTest {
 
   @BeforeEach
   void beforeEach() throws FileNotFoundException, InvalidDescriptionException {
-    var server = BukkitServer.newServer();
-    Bukkit.setServer(server);
+    var server = ServerMocks.mockServer();
     var pluginManager = mock(PluginManager.class);
     when(server.getPluginManager()).thenReturn(pluginManager);
     var scheduler = mock(BukkitScheduler.class);
@@ -82,7 +80,7 @@ class EnchantableBlocksPluginTest {
 
   @AfterEach
   void afterEach() {
-    BukkitServer.unsetBukkitServer();
+    ServerMocks.unsetBukkitServer();
   }
 
   @DisplayName("Plugin has no-arg constructor.")
