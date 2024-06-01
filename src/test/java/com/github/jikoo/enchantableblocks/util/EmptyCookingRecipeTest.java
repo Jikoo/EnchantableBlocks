@@ -43,13 +43,17 @@ class EmptyCookingRecipeTest {
     recipe = new EmptyCookingRecipe(NamespacedKey.minecraft("key"));
   }
 
-  @Test
+  @ParameterizedTest
   @DisplayName("Empty recipe does not match any item.")
-  void testAlwaysInvalid() {
-    for (Material material : Material.values()) {
-      ItemStack item = new ItemStack(material);
-      assertThat("Empty recipe must not match anything", !recipe.getInputChoice().test(item));
-    }
+  @MethodSource("getModernItems")
+  void testAlwaysInvalid(ItemStack item) {
+    assertThat("Empty recipe must not match anything", !recipe.getInputChoice().test(item));
+  }
+
+  static Stream<ItemStack> getModernItems() {
+    return Stream.of(Material.values())
+        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR && material.isItem())
+        .map(ItemStack::new);
   }
 
   @DisplayName("Empty recipe choices are immutable and therefore always equal.")
