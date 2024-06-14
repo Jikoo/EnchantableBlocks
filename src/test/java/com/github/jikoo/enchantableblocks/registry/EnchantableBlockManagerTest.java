@@ -174,7 +174,6 @@ class EnchantableBlockManagerTest {
     @DisplayName("Items that do not have a corresponding block do not create blocks.")
     @Test
     void testCreateItemNotBlock() {
-      // TODO: items that are not blocks but are placed as blocks, i.e. cauldron item
       var item = new ItemStack(Material.DIAMOND);
       assertThat(
           "Manager must not create block",

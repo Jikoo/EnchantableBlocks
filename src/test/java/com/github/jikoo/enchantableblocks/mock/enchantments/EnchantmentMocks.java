@@ -4,33 +4,43 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 
-import com.github.jikoo.planarenchanting.util.ItemUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.Server;
 import org.bukkit.Tag;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import org.mockito.ArgumentMatchers;
 
 public class EnchantmentMocks {
-  private static final Map<NamespacedKey, Enchantment> KEYS_TO_ENCHANTS = new HashMap<>();
+
+  private static final Tag<Material> TAG_EMPTY = new Tag<>() {
+    @Override
+    public boolean isTagged(@NotNull Material item) {
+      return false;
+    }
+
+    @NotNull
+    @Override
+    public Set<Material> getValues() {
+      return Set.of();
+    }
+
+    @NotNull
+    @Override
+    public NamespacedKey getKey() {
+      return Objects.requireNonNull(NamespacedKey.fromString("mock:empty"));
+    }
+  };
 
   public static void init(Server server) {
-    Registry<?> registry = Registry.ENCHANTMENT;
-    // Redirect enchantment registry back so that our modified version is always returned.
-    doReturn(registry).when(server).getRegistry(Enchantment.class);
-
     List<Enchantment> protections = List.of(Enchantment.PROTECTION, Enchantment.FIRE_PROTECTION, Enchantment.BLAST_PROTECTION, Enchantment.PROJECTILE_PROTECTION);
     setUpEnchant(Enchantment.PROTECTION, 4, Tag.ITEMS_ENCHANTABLE_ARMOR, protections);
     setUpEnchant(Enchantment.FIRE_PROTECTION, 4, Tag.ITEMS_ENCHANTABLE_ARMOR, protections);
@@ -44,11 +54,11 @@ public class EnchantmentMocks {
     setUpEnchant(Enchantment.THORNS, 3, Tag.ITEMS_ENCHANTABLE_ARMOR);
 
     setUpEnchant(Enchantment.DEPTH_STRIDER, 3, Tag.ITEMS_ENCHANTABLE_FOOT_ARMOR, List.of(Enchantment.FROST_WALKER));
-    setUpEnchant(Enchantment.FROST_WALKER, 3, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_FOOT_ARMOR, List.of(Enchantment.DEPTH_STRIDER));
-    setUpEnchant(Enchantment.SOUL_SPEED, 3, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_FOOT_ARMOR, List.of());
-    setUpEnchant(Enchantment.SWIFT_SNEAK, 3, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_LEG_ARMOR, List.of());
+    setUpEnchant(Enchantment.FROST_WALKER, 3, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_FOOT_ARMOR, List.of(Enchantment.DEPTH_STRIDER));
+    setUpEnchant(Enchantment.SOUL_SPEED, 3, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_FOOT_ARMOR, List.of());
+    setUpEnchant(Enchantment.SWIFT_SNEAK, 3, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_LEG_ARMOR, List.of());
 
-    setUpEnchant(Enchantment.BINDING_CURSE, 1, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_EQUIPPABLE, List.of());
+    setUpEnchant(Enchantment.BINDING_CURSE, 1, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_EQUIPPABLE, List.of());
 
     setUpEnchant(Enchantment.SHARPNESS, 5, Tag.ITEMS_ENCHANTABLE_SWORD, Tag.ITEMS_ENCHANTABLE_SHARP_WEAPON, List.of(Enchantment.BANE_OF_ARTHROPODS, Enchantment.SMITE));
     setUpEnchant(Enchantment.SMITE, 5, Tag.ITEMS_ENCHANTABLE_SWORD, Tag.ITEMS_ENCHANTABLE_WEAPON, List.of(Enchantment.SHARPNESS, Enchantment.BANE_OF_ARTHROPODS));
@@ -81,23 +91,25 @@ public class EnchantmentMocks {
     setUpEnchant(Enchantment.MULTISHOT, 1, Tag.ITEMS_ENCHANTABLE_CROSSBOW, List.of(Enchantment.PIERCING));
     setUpEnchant(Enchantment.QUICK_CHARGE, 3, Tag.ITEMS_ENCHANTABLE_CROSSBOW);
     setUpEnchant(Enchantment.PIERCING, 4, Tag.ITEMS_ENCHANTABLE_CROSSBOW, List.of(Enchantment.MULTISHOT));
-    setUpEnchant(Enchantment.WIND_BURST, 3, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_MACE, List.of());
+    setUpEnchant(Enchantment.WIND_BURST, 3, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_MACE, List.of());
     setUpEnchant(Enchantment.BREACH, 4, Tag.ITEMS_ENCHANTABLE_MACE);
     setUpEnchant(Enchantment.DENSITY, 5, Tag.ITEMS_ENCHANTABLE_MACE);
 
-    setUpEnchant(Enchantment.MENDING, 1, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_DURABILITY, List.of(Enchantment.INFINITY));
-    setUpEnchant(Enchantment.VANISHING_CURSE, 1, ItemUtil.TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_VANISHING, List.of());
+    setUpEnchant(Enchantment.MENDING, 1, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_DURABILITY, List.of(Enchantment.INFINITY));
+    setUpEnchant(Enchantment.VANISHING_CURSE, 1, TAG_EMPTY, Tag.ITEMS_ENCHANTABLE_VANISHING, List.of());
 
+    checkMissingEnchantments();
+  }
+
+  private static void checkMissingEnchantments() {
     Set<String> missingInternalEnchants = new HashSet<>();
     try {
       for (Field field : Enchantment.class.getFields()) {
         if (Modifier.isStatic(field.getModifiers()) && Enchantment.class.equals(field.getType())) {
           Enchantment declaredEnchant = (Enchantment) field.get(null);
-          Enchantment stored = KEYS_TO_ENCHANTS.get(declaredEnchant.getKey());
-          if (stored == null) {
+          // If max leveel is 0, enchantment was not set up.
+          if (declaredEnchant.getMaxLevel() == 0) {
             missingInternalEnchants.add(declaredEnchant.getKey().toString());
-          } else {
-            doReturn(field.getName()).when(stored).getName();
           }
         }
       }
@@ -108,17 +120,6 @@ public class EnchantmentMocks {
     if (!missingInternalEnchants.isEmpty()) {
       throw new IllegalStateException("Missing enchantment declarations for " + missingInternalEnchants);
     }
-
-    // When all enchantments are initialized using Bukkit keys, redirect registry to our map
-    // so that invalid keys result in the expected null response.
-    doAnswer(invocation -> KEYS_TO_ENCHANTS.get(invocation.getArgument(0, NamespacedKey.class)))
-        .when(registry).get(ArgumentMatchers.notNull());
-    doAnswer(invocation -> KEYS_TO_ENCHANTS.values().stream()).when(registry).stream();
-    doAnswer(invocation -> KEYS_TO_ENCHANTS.values().iterator()).when(registry).iterator();
-  }
-
-  public static void putEnchant(@NotNull Enchantment enchantment) {
-    KEYS_TO_ENCHANTS.put(enchantment.getKey(), enchantment);
   }
 
   private static void setUpEnchant(
@@ -142,8 +143,6 @@ public class EnchantmentMocks {
       @NotNull Tag<Material> tableTarget,
       @NotNull Tag<Material> anvilTarget,
       @NotNull Collection<Enchantment> conflicts) {
-    KEYS_TO_ENCHANTS.put(enchantment.getKey(), enchantment);
-
     doReturn(1).when(enchantment).getStartLevel();
     doReturn(maxLevel).when(enchantment).getMaxLevel();
     // Hopefully in the future the enchantment API gets expanded, making separate table+anvil targets available

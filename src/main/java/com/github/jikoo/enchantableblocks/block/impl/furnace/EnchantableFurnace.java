@@ -23,7 +23,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 /**
  * Track and manage effects for enchanted furnace variants.
  */
-class EnchantableFurnace extends EnchantableBlock {
+public class EnchantableFurnace extends EnchantableBlock {
 
   private static final String PATH_CAN_PAUSE = "silk.enabled";
   private static final String PATH_FROZEN_TICKS = "silk.ticks";
@@ -314,7 +314,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @param totalCookTime the original total cook time
    * @return the modified cook time
    */
-  public short applyCookTimeModifiers(double totalCookTime) {
+  short applyCookTimeModifiers(double totalCookTime) {
     // Invert sign of cook modifier to invert sigmoid.
     return MathHelper.clampPositiveShort(
         MathHelper.sigmoid(totalCookTime, -getCookModifier(), 2.0));
@@ -330,7 +330,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @param burnTime the original burn time
    * @return the modified burn time
    */
-  public short applyBurnTimeModifiers(int burnTime) {
+  short applyBurnTimeModifiers(int burnTime) {
     // Apply burn time modifiers.
     double baseTicks = MathHelper.sigmoid(burnTime, getBurnModifier(), 3.0);
     // Apply cook speed reduction.
@@ -353,7 +353,7 @@ class EnchantableFurnace extends EnchantableBlock {
    * @param plugin the {@link Plugin} instance
    * @param inventory the furnace inventory that may need an update
    */
-  public static void update(
+  static void update(
       @NotNull Plugin plugin,
       @NotNull EnchantableBlockManager manager,
       @NotNull FurnaceInventory inventory) {

@@ -12,14 +12,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Configuration for {@link EnchantableFurnace EnchantableFurnaces}.
  */
-class EnchantableFurnaceConfig extends EnchantableBlockConfig {
+public class EnchantableFurnaceConfig extends EnchantableBlockConfig {
 
-  /** @deprecated use {@link #fortuneListIsBlacklist()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Boolean> fortuneListIsBlacklist;
-  /** @deprecated use {@link #fortuneList()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Set<Material>> fortuneList;
+  private final @NotNull Setting<Boolean> fortuneListIsBlacklist;
+  private final @NotNull Setting<Set<Material>> fortuneList;
 
   /**
    * Construct a new {@code EnchantableFurnaceConfig} with the given {@link ConfigurationSection}.
