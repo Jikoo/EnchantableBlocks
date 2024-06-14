@@ -18,7 +18,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Set;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,8 +34,8 @@ class BlockAnvilOperationTest {
 
   @BeforeAll
   void beforeAll() {
-    Server server = ServerMocks.mockServer();
-    EnchantmentMocks.init(server);
+    ServerMocks.mockServer();
+    EnchantmentMocks.init();
   }
 
   @BeforeEach

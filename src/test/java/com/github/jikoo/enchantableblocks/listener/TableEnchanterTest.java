@@ -61,7 +61,7 @@ class TableEnchanterTest {
   @BeforeAll
   void setUpAll() {
     var server = ServerMocks.mockServer();
-    EnchantmentMocks.init(server);
+    EnchantmentMocks.init();
 
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);

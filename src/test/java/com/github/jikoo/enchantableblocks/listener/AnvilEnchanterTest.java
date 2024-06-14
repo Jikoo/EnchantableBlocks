@@ -66,7 +66,7 @@ class AnvilEnchanterTest {
   @BeforeAll
   void setUpAll() {
     var server = ServerMocks.mockServer();
-    EnchantmentMocks.init(server);
+    EnchantmentMocks.init();
 
     enchantment = Enchantment.EFFICIENCY;
     goodMat = Material.COAL_ORE;

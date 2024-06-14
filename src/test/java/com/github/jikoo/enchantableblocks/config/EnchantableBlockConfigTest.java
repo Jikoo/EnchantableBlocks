@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,8 +41,8 @@ class EnchantableBlockConfigTest {
 
   @BeforeAll
   void beforeAll() {
-    Server server = ServerMocks.mockServer();
-    EnchantmentMocks.init(server);
+    ServerMocks.mockServer();
+    EnchantmentMocks.init();
 
     File configFile = Path.of(".", "src", "test", "resources", "generic_config.yml").toFile();
     YamlConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);

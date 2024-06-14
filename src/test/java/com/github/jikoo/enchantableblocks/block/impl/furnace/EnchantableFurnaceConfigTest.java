@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -34,8 +33,8 @@ class EnchantableFurnaceConfigTest {
 
   @BeforeAll
   void beforeAll() {
-    Server server = ServerMocks.mockServer();
-    EnchantmentMocks.init(server);
+    ServerMocks.mockServer();
+    EnchantmentMocks.init();
 
     File configFile = Path.of(".", "src", "test", "resources", "furnace_config.yml").toFile();
     YamlConfiguration configuration = YamlConfiguration.loadConfiguration(configFile);
