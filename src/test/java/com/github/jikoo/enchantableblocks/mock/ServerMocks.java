@@ -5,9 +5,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
@@ -17,7 +19,6 @@ import org.bukkit.Registry;
 import org.bukkit.Server;
 import org.bukkit.Tag;
 import org.jetbrains.annotations.NotNull;
-import org.mockito.Answers;
 
 public final class ServerMocks {
 
@@ -26,28 +27,44 @@ public final class ServerMocks {
 
     Logger noOp = mock(Logger.class);
     when(mock.getLogger()).thenReturn(noOp);
+    when(mock.isPrimaryThread()).thenReturn(true);
 
     // Server must be available before tags can be mocked.
     Bukkit.setServer(mock);
 
     // Bukkit has a lot of static constants referencing registry values. To initialize those, the
     // registries must be able to be fetched before the classes are touched.
-    // The mock registry can later be more specifically modified as necessary.
-    doAnswer(invocationGetRegistry -> {
-      // This must be mocked here or else Registry will be initialized when mocking it.
-      Registry<?> registry = mock();
-      doAnswer(invocationGetEntry -> {
-        NamespacedKey key = invocationGetEntry.getArgument(0);
-        // Set registries to always return a new value so that any constants are initialized.
-        Class<? extends Keyed> arg = invocationGetRegistry.getArgument(0);
-        // Deep stubs aren't great, but Bukkit has a lot of nullity checks on new constants.
-        Keyed keyed = mock(arg, withSettings().defaultAnswer(Answers.RETURNS_DEEP_STUBS));
-        doReturn(key).when(keyed).getKey();
-        // It may eventually be necessary to stub BlockType#typed() here, but deep stubs work for now.
-        return keyed;
-      }).when(registry).get(notNull());
-      return registry;
-    }).when(mock).getRegistry(notNull());
+    Map<Class<? extends Keyed>, Object> registers = new HashMap<>();
+
+    doAnswer(invocationGetRegistry ->
+        registers.computeIfAbsent(invocationGetRegistry.getArgument(0), clazz -> {
+          Registry<?> registry = mock();
+          Map<NamespacedKey, Keyed> cache = new HashMap<>();
+          doAnswer(invocationGetEntry -> {
+            NamespacedKey key = invocationGetEntry.getArgument(0);
+            // Some classes (like BlockType and ItemType) have extra generics that will be
+            // erased during runtime calls. To ensure accurate typing, grab the constant's field.
+            // This approach also allows us to return null for unsupported keys.
+            Class<? extends Keyed> constantClazz;
+            try {
+              //noinspection unchecked
+              constantClazz = (Class<? extends Keyed>) clazz.getField(key.getKey().toUpperCase(
+                  Locale.ROOT).replace('.', '_')).getType();
+            } catch (ClassCastException e) {
+              throw new RuntimeException(e);
+            } catch (NoSuchFieldException e) {
+              return null;
+            }
+
+            return cache.computeIfAbsent(key, key1 -> {
+              Keyed keyed = mock(constantClazz);
+              doReturn(key).when(keyed).getKey();
+              return keyed;
+            });
+          }).when(registry).get(notNull());
+          return registry;
+        }))
+        .when(mock).getRegistry(notNull());
 
     // Tags are dependent on registries, but use a different method.
     // This will set up blank tags for each constant; all that needs to be done to render them
@@ -67,6 +84,15 @@ public final class ServerMocks {
       }).when(tag).isTagged(notNull());
       return tag;
     }).when(mock).getTag(notNull(), notNull(), notNull());
+
+    // Once the server is all set up, touch BlockType and ItemType to initialize.
+    // This prevents issues when trying to access dependent methods from a Material constant.
+    try {
+      Class.forName("org.bukkit.inventory.ItemType");
+      Class.forName("org.bukkit.block.BlockType");
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
 
     return mock;
   }

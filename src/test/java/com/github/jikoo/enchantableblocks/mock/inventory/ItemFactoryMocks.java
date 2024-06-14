@@ -81,7 +81,6 @@ public final class ItemFactoryMocks {
     when(factory.isApplicable(any(ItemMeta.class), any(Material.class))).thenReturn(true);
     when(factory.isApplicable(any(ItemMeta.class), any(ItemStack.class)))
         .thenAnswer(invocation -> factory.isApplicable(invocation.getArgument(0), invocation.getArgument(1, ItemStack.class).getType()));
-    when(factory.updateMaterial(any(ItemMeta.class), any(Material.class))).thenAnswer(invocation -> invocation.getArgument(1));
 
     return factory;
   }
