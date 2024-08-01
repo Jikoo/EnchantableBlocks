@@ -37,8 +37,8 @@ import org.bukkit.enchantments.EnchantmentOffer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.view.EnchantmentView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -172,7 +172,7 @@ class TableEnchanterTest {
     var pdc = mock(PersistentDataContainer.class);
     doReturn(pdc).when(player).getPersistentDataContainer();
 
-    var view = mock(InventoryView.class);
+    var view = mock(EnchantmentView.class);
     var table = mock(Block.class);
 
     var prepareEvent = new PrepareItemEnchantEvent(player, view, table, itemStack, new EnchantmentOffer[3], 15);

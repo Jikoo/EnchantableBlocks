@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -35,9 +34,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
@@ -177,7 +176,6 @@ class AnvilEnchanterTest {
 
     private @NotNull Player prepareEventPlayer() {
       var player = mock(Player.class);
-      when(player.setWindowProperty(any(), anyInt())).thenReturn(true);
       var world = WorldMocks.newWorld("world");
       when(player.getWorld()).thenReturn(world);
 
@@ -191,7 +189,7 @@ class AnvilEnchanterTest {
       additionItem.setItemMeta(additionMeta);
       inventory.setItem(1, additionItem);
 
-      InventoryView view = mock(InventoryView.class);
+      AnvilView view = mock(AnvilView.class);
       when(view.getTopInventory()).thenReturn(inventory);
       when(view.getPlayer()).thenReturn(player);
 
@@ -202,7 +200,7 @@ class AnvilEnchanterTest {
 
     @Test
     void testInvalidItem() {
-      var view = prepareEventPlayer().getOpenInventory();
+      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       view.getTopInventory().setItem(0, null);
       var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -212,7 +210,7 @@ class AnvilEnchanterTest {
 
     @Test
     void testUnregisteredMaterial() {
-      var view = prepareEventPlayer().getOpenInventory();
+      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       view.getTopInventory().setItem(0, new ItemStack(badMat));
       var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -223,7 +221,7 @@ class AnvilEnchanterTest {
     @Test
     void testNoPermission() {
       doReturn(false).when(registration).hasEnchantPermission(notNull(), anyString());
-      var event = spy(new PrepareAnvilEvent(prepareEventPlayer().getOpenInventory(), null));
+      var event = spy(new PrepareAnvilEvent((AnvilView) prepareEventPlayer().getOpenInventory(), null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
       verify(registration).hasEnchantPermission(notNull(), anyString());
       verify(event, times(0)).setResult(any());
@@ -231,7 +229,7 @@ class AnvilEnchanterTest {
 
     @Test
     void testNoChange() {
-      var view = prepareEventPlayer().getOpenInventory();
+      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       view.getTopInventory().setItem(1, itemStack.clone());
       var event = spy(new PrepareAnvilEvent(view, null));
 
@@ -242,7 +240,7 @@ class AnvilEnchanterTest {
     @ParameterizedTest
     @MethodSource("getSlots")
     void testChangePostCalculate(int... slots) {
-      var view = prepareEventPlayer().getOpenInventory();
+      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       var event = spy(new PrepareAnvilEvent(view, null));
 
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -270,7 +268,7 @@ class AnvilEnchanterTest {
 
     @Test
     void testSuccess() {
-      var view = prepareEventPlayer().getOpenInventory();
+      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       var event = spy(new PrepareAnvilEvent(view, null));
 
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
