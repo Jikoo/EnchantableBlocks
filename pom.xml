@@ -16,7 +16,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
-    <versions.fastutil>8.5.17</versions.fastutil>
+    <versions.fastutil>8.5.18</versions.fastutil>
   </properties>
 
   <profiles>
