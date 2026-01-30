@@ -1,21 +1,5 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.similar;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
@@ -24,11 +8,6 @@ import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.planarwrappers.util.StringConverters;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.IntSupplier;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -63,6 +42,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.IntSupplier;
+
+import static com.github.jikoo.enchantableblocks.mock.matcher.ItemMatcher.isSimilar;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Event handlers for enchantable furnaces.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -152,7 +153,8 @@ class FurnaceListenerTest {
       when(player.getOpenInventory()).thenReturn(viewMock);
 
       var playerInventory = InventoryMocks.newMock(PlayerInventory.class, InventoryType.PLAYER, 41);
-      when(playerInventory.getItemInMainHand()).thenReturn(new ItemStack(Material.AIR));
+      ItemStack air = new ItemStack(Material.AIR);
+      when(playerInventory.getItemInMainHand()).thenReturn(air);
       when(viewMock.getTopInventory()).thenReturn(playerInventory);
 
       // Set up open/close for modifications.
@@ -281,7 +283,7 @@ class FurnaceListenerTest {
     void testApplyFortunePositive(int value) {
       var event = new FurnaceSmeltEvent(block, recipe.getInput(), recipe.getResult());
       listener.applyFortune(event, () -> value);
-      assertThat("Result must be similar", event.getResult(), similar(recipe.getResult()));
+      assertThat("Result must be similar", event.getResult(), isSimilar(recipe.getResult()));
       assertThat("Result must be modified", event.getResult(), is(not(recipe.getResult())));
       assertThat("Result amount must be increased as expected", event.getResult().getAmount(),
           is(value + 1));

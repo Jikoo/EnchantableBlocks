@@ -1,29 +1,11 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.similar;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyShort;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.planarwrappers.util.StringConverters;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -36,6 +18,7 @@ import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemType;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -52,6 +35,25 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.github.jikoo.enchantableblocks.mock.matcher.ItemMatcher.isSimilar;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Enchantable furnaces.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -74,14 +76,14 @@ class EnchantableFurnaceTest {
 
     recipe = new FurnaceRecipe(
         Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
-        new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200);
+        ItemType.COARSE_DIRT.createItemStack(), Material.DIRT, 0, 200);
   }
 
   @BeforeEach
   void beforeEach() {
     reg = mock(EnchantableFurnaceRegistration.class);
     block = mock(Block.class);
-    itemStack = new ItemStack(Material.FURNACE);
+    itemStack = ItemType.FURNACE.createItemStack();
     storage = mock(ConfigurationSection.class);
 
     // Set up matching recipe
@@ -124,8 +126,6 @@ class EnchantableFurnaceTest {
   void testConstructorLegacyData() {
     short legacyFrozenTicks = 200;
     itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, legacyFrozenTicks);
-    itemStack = spy(itemStack);
-    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
 
     var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Data needs saving", enchantableFurnace.isDirty());
@@ -137,8 +137,6 @@ class EnchantableFurnaceTest {
   @Test
   void testConstructorNewData() {
     itemStack.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
-    itemStack = spy(itemStack);
-    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
 
     var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Data needs saving", enchantableFurnace.isDirty());
@@ -150,9 +148,6 @@ class EnchantableFurnaceTest {
   @DisplayName("New data does not fetch silk level")
   @Test
   void testConstructorNewNonSilk() {
-    itemStack = spy(itemStack);
-    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
-
     var enchantableFurnace = new EnchantableFurnace(reg, block, itemStack, storage);
     assertThat("Data needs saving", enchantableFurnace.isDirty());
     assertThat("Non-silk cannot pause", enchantableFurnace.canPause(), is(false));
@@ -162,8 +157,6 @@ class EnchantableFurnaceTest {
   @DisplayName("Existing data is used")
   @Test
   void testConstructorExistingData() {
-    itemStack = spy(itemStack);
-    when(itemStack.clone()).thenAnswer(invocation -> spy(invocation.callRealMethod()));
     storage = new YamlConfiguration();
     storage.set("silk.enabled", true);
     short frozenTicks = 200;
@@ -356,7 +349,7 @@ class EnchantableFurnaceTest {
     var tile = setUpTile();
     var inv = tile.getInventory();
     ItemStack input = new ItemStack(Material.FURNACE);
-    assertThat("Input is not similar to recipe input", input, not(similar(recipe.getInput())));
+    assertThat("Input is not similar to recipe input", input, not(isSimilar(recipe.getInput())));
     inv.setSmelting(input);
     inv.setResult(recipe.getResult());
 
@@ -438,7 +431,7 @@ class EnchantableFurnaceTest {
     var inv = tile.getInventory();
     inv.setSmelting(recipe.getInput());
     ItemStack result = new ItemStack(Material.DIAMOND);
-    assertThat("Result must be dissimilar", result, not(similar(recipe.getResult())));
+    assertThat("Result must be dissimilar", result, not(isSimilar(recipe.getResult())));
     inv.setResult(result);
 
     assertThat("Furnace with dissimilar result should pause", enchantableFurnace.shouldPause(null));

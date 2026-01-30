@@ -1,30 +1,9 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.both;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -46,6 +25,7 @@ import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.SmokingRecipe;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +33,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Registration for EnchantableFurnace.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -73,6 +76,7 @@ class EnchantableFurnaceRegistrationTest {
 
     plugin = mock(Plugin.class);
     when(plugin.getName()).thenReturn(getClass().getSimpleName());
+    doReturn(plugin.getName().toLowerCase()).when(plugin).namespace();
     when(plugin.getConfig()).thenReturn(new YamlConfiguration());
     when(plugin.getServer()).thenReturn(server);
     var logger = mock(Logger.class);
@@ -208,7 +212,16 @@ class EnchantableFurnaceRegistrationTest {
   static Stream<ItemStack> getModernItems() {
     return Stream.of(Material.values())
         .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR && material.isItem())
-        .map(ItemStack::new);
+        .map(material -> new ItemStack(material) {
+          @Override
+          public @NotNull ItemStack clone() {
+            super.clone(); // Shh, IDE.
+            // Because these are backed by mocks, each clone results in a new backing mock.
+            // As mocks override equals, toString, and hashCode, we cannot mock those.
+            // Instead, we bypass the attempt to not alter the original when getting the cache key.
+            return this;
+          }
+        });
   }
 
   @DisplayName("Recipe lookup ignores null tile.")
