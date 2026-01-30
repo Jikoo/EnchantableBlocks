@@ -1,28 +1,12 @@
 package com.github.jikoo.enchantableblocks.mock.inventory;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.AxolotlBucketMeta;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.inventory.meta.BlockStateMeta;
@@ -39,8 +23,10 @@ import org.bukkit.inventory.meta.KnowledgeBookMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.MusicInstrumentMeta;
+import org.bukkit.inventory.meta.OminousBottleMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.Repairable;
+import org.bukkit.inventory.meta.ShieldMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 import org.bukkit.inventory.meta.SuspiciousStewMeta;
@@ -49,6 +35,25 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.ArgumentMatchers;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 public final class ItemFactoryMocks {
 
@@ -90,75 +95,85 @@ public final class ItemFactoryMocks {
     if (material == Material.AIR) {
       return null;
     }
-    if (material == Material.WRITTEN_BOOK || material == Material.WRITABLE_BOOK) {
-      // Note: Internally 2 separate implementations, but the API doesn't differentiate
-      return copyDetails(createMeta(BookMeta.class), meta);
-    }
-    if (material.name().endsWith("_HEAD") || material.name().endsWith("_SKULL")) {
-      return copyDetails(createMeta(SkullMeta.class), meta);
-    }
     if (material.name().startsWith("LEATHER_")) {
       return copyDetails(createMeta(LeatherArmorMeta.class), meta);
     }
-    if (material.name().endsWith("POTION") || material == Material.TIPPED_ARROW) {
-      return copyDetails(createMeta(PotionMeta.class), meta);
+    if (material == Material.SHIELD) {
+      return copyDetails(createMeta(ShieldMeta.class), meta);
     }
-    if (material == Material.FILLED_MAP) {
-      return copyDetails(createMeta(MapMeta.class), meta);
-    }
-    if (material == Material.FIREWORK_ROCKET) {
-      return copyDetails(createMeta(FireworkMeta.class), meta);
-    }
-    if (material == Material.FIREWORK_STAR) {
-      return copyDetails(createMeta(FireworkEffectMeta.class), meta);
-    }
-    if (material == Material.ENCHANTED_BOOK) {
-      return copyDetails(createMeta(EnchantmentStorageMeta.class), meta);
-    }
-    if (material.name().endsWith("_BANNER")) {
-      return copyDetails(createMeta(BannerMeta.class), meta);
-    }
-    if (material.name().endsWith("_SPAWN_EGG")) {
-      return copyDetails(createMeta(SpawnEggMeta.class), meta);
-    }
-    // CB has a different meta for Armor Stands and one for things like fish buckets but there's no API for in-inventory entities.
-    if (material == Material.KNOWLEDGE_BOOK) {
-      return copyDetails(createMeta(KnowledgeBookMeta.class), meta);
-    }
-    if (material.data != null && BlockData.class.isAssignableFrom(material.data)
-        || List.of(Material.SPAWNER, Material.ENCHANTING_TABLE, Material.BEACON, Material.SHIELD).contains(material)) {
-      return copyDetails(createMeta(BlockStateMeta.class), meta);
-    }
-    if (material == Material.TROPICAL_FISH_BUCKET) {
-      return copyDetails(createMeta(TropicalFishBucketMeta.class), meta);
+    if (material.name().endsWith("_BOOTS") || material.name().endsWith("_CHESTPLATE") || material.name().endsWith("_HELMET") || material.name().endsWith("_LEGGINGS")) {
+      return copyDetails(createMeta(ArmorMeta.class), meta);
     }
     if (material == Material.AXOLOTL_BUCKET) {
       return copyDetails(createMeta(AxolotlBucketMeta.class), meta);
     }
-    if (material == Material.CROSSBOW) {
-      return copyDetails(createMeta(CrossbowMeta.class), meta);
+    if (material.name().endsWith("_BANNER")) {
+      return copyDetails(createMeta(BannerMeta.class), meta);
     }
-    if (material == Material.SUSPICIOUS_STEW) {
-      return copyDetails(createMeta(SuspiciousStewMeta.class), meta);
+    if (material.name().endsWith("_HEAD") || material.name().endsWith("_SKULL")) {
+      return copyDetails(createMeta(SkullMeta.class), meta);
     }
-    if (material == Material.COMPASS) {
-      return copyDetails(createMeta(CompassMeta.class), meta);
+    // Perhaps a generic BlockStateMeta+BlockDataMeta if material.isBlock()?
+    if (material.data != null && BlockData.class.isAssignableFrom(material.data)
+        || List.of(Material.SPAWNER, Material.ENCHANTING_TABLE, Material.BEACON).contains(material)) {
+      return copyDetails(createMeta(BlockStateMeta.class), meta);
     }
     if (material == Material.BUNDLE) {
       return copyDetails(createMeta(BundleMeta.class), meta);
     }
+    // ColorableArmorMeta only cases are also LeatherArmorMeta, which is a subclass.
+    if (material == Material.COMPASS) {
+      return copyDetails(createMeta(CompassMeta.class), meta);
+    }
+    if (material == Material.CROSSBOW) {
+      return copyDetails(createMeta(CrossbowMeta.class), meta);
+    }
+    if (material == Material.ENCHANTED_BOOK) {
+      return copyDetails(createMeta(EnchantmentStorageMeta.class), meta);
+    }
+    if (material == Material.FIREWORK_STAR) {
+      return copyDetails(createMeta(FireworkEffectMeta.class), meta);
+    }
+    if (material == Material.FIREWORK_ROCKET) {
+      return copyDetails(createMeta(FireworkMeta.class), meta);
+    }
+    if (material == Material.KNOWLEDGE_BOOK) {
+      return copyDetails(createMeta(KnowledgeBookMeta.class), meta);
+    }
+    if (material == Material.FILLED_MAP) {
+      return copyDetails(createMeta(MapMeta.class), meta);
+    }
     if (material == Material.GOAT_HORN) {
       return copyDetails(createMeta(MusicInstrumentMeta.class), meta);
+    }
+    if (material == Material.OMINOUS_BOTTLE) {
+      return copyDetails(createMeta(OminousBottleMeta.class), meta);
+    }
+    if (material.name().endsWith("POTION") || material == Material.TIPPED_ARROW) {
+      return copyDetails(createMeta(PotionMeta.class), meta);
+    }
+    if (material.name().endsWith("_SPAWN_EGG")) {
+      return copyDetails(createMeta(SpawnEggMeta.class), meta);
+    }
+    if (material == Material.SUSPICIOUS_STEW) {
+      return copyDetails(createMeta(SuspiciousStewMeta.class), meta);
+    }
+    if (material == Material.TROPICAL_FISH_BUCKET) {
+      return copyDetails(createMeta(TropicalFishBucketMeta.class), meta);
+    }
+    if (material == Material.WRITTEN_BOOK || material == Material.WRITABLE_BOOK) {
+      // Note: Internally 2 separate implementations, but the API doesn't differentiate
+      return copyDetails(createMeta(BookMeta.class), meta);
     }
     return copyDetails(createMeta(ItemMeta.class), meta);
   }
 
-  public static @NotNull <T extends ItemMeta> T createMeta(@NotNull Class<T> metaClass) {
+  public static <T extends ItemMeta> @NotNull T createMeta(@NotNull Class<T> metaClass) {
     T meta;
-    if (metaClass == ItemMetaHelper.class) {
+    if (metaClass == ItemMetaBase.class) {
       meta = mock(metaClass);
     } else {
-      meta = mock(metaClass, withSettings().extraInterfaces(ItemMetaHelper.class));
+      meta = mock(metaClass, withSettings().extraInterfaces(ItemMetaBase.class));
     }
 
     for (Entry<Class<?>, Consumer<ItemMeta>> classConsumerEntry : CLASS_META_METHODS.entrySet()) {
@@ -168,7 +183,7 @@ public final class ItemFactoryMocks {
     }
 
     // Lazy copy the creation process and details.
-    doAnswer(invocation -> copyDetails(createMeta(metaClass), meta)).when(meta).clone();
+    when(meta.clone()).thenAnswer(invocation -> copyDetails(createMeta(metaClass), meta));
 
     return meta;
   }
@@ -183,40 +198,67 @@ public final class ItemFactoryMocks {
     // Note that certain things such as enchantments have more specific setting methods;
     // setters for bulk handling can be added via the ItemMetaCloneHelper interface.
     for (Method getter : oldMeta.getClass().getMethods()) {
-      if (isSimpleGetter(getter)) {
+      Method setter = findSetter(newMeta.getClass(), getter);
+      if (setter != null) {
         try {
-          // Find matching setter.
-          Method setter = newMeta.getClass()
-              .getMethod("set" + getter.getName().substring(3), getter.getReturnType());
           // Get value.
           Object oldValue = getter.invoke(oldMeta);
           if (oldValue != null) {
             // Only set if non-null; Null should be default for nullables, and this may just be a stub.
             setter.invoke(newMeta, oldValue);
           }
-        } catch (NoSuchMethodException ignored) {
-          // No matching method, not a getter + setter pair.
         } catch (InvocationTargetException | IllegalAccessException e) {
           // Method should be accessible and invokable - must be public and types should match.
           throw new RuntimeException(e);
         }
+
       }
     }
 
     return newMeta;
   }
 
-  private static boolean isSimpleGetter(@NotNull Method method) {
-    // Getter must start with "get".
-    return method.getName().startsWith("get")
-        // We only accept getters that don't accept parameters - we have no idea what to provide.
-        && method.getParameterCount() == 0
+  private static @Nullable Method findSetter(@NotNull Class<?> clazz, @NotNull Method method) {
+    if (!isPossibleGetter(method)) {
+      return null;
+    }
+
+    String methodName = method.getName();
+    Class<?> returnType = method.getReturnType();
+
+    // Simple get/set pattern. Setter must accept type returned by getter.
+    if (methodName.startsWith("get")) {
+      return findSetter(clazz, "set"  + methodName.substring(3), returnType);
+    }
+
+    // Paper uses a different pattern to prevent signature
+    // conflicts: getter and setter have matching names.
+    return findSetter(clazz, methodName, returnType);
+  }
+
+  private static boolean isPossibleGetter(@NotNull Method method) {
+    // We only accept getters that don't accept parameters - we have no idea what to provide.
+    return method.getParameterCount() == 0
         // Getter must actually get a value.
         && method.getReturnType() != void.class
         // Getter must not be part of Mockito's internals.
         && !method.getReturnType().getPackageName().startsWith("org.mockito")
         // Native methods aren't exactly simple. This ignores Object#getClass etc.
         && !Modifier.isNative(method.getModifiers());
+  }
+
+  private static @Nullable Method findSetter(
+      @NotNull Class<?> clazz,
+      @NotNull String methodName,
+      @NotNull Class<?> returnType
+  ) {
+    try {
+      // Find corresponding set method accepting return type.
+      return clazz.getMethod(methodName, returnType);
+    } catch (NoSuchMethodException ignored) {
+      // Otherwise, no setter. Return null.
+      return null;
+    }
   }
 
   private static boolean equals(@Nullable ItemMeta meta, @Nullable ItemMeta other) {
@@ -239,7 +281,7 @@ public final class ItemFactoryMocks {
     Map<String, Object> methodValues = new HashMap<>();
 
     for (Method getter : meta.getClass().getMethods()) {
-      if (!isSimpleGetter(getter)) {
+      if (findSetter(meta.getClass(), getter) == null) {
         continue;
       }
 
@@ -258,13 +300,13 @@ public final class ItemFactoryMocks {
 
   private static void meta(@NotNull ItemMeta meta) {
     // Display name
-    AtomicReference<String> displayName = new AtomicReference<>();
-    when(meta.hasDisplayName()).thenAnswer(invocation -> displayName.get() != null);
-    when(meta.getDisplayName()).thenAnswer(invocation -> displayName.get());
+    AtomicReference<Component> customName = new AtomicReference<>();
+    when(meta.hasCustomName()).thenAnswer(invocation -> customName.get() != null);
+    when(meta.customName()).thenAnswer(invocation -> customName.get());
     doAnswer(invocation -> {
-      displayName.set(invocation.getArgument(0));
+      customName.set(invocation.getArgument(0));
       return null;
-    }).when(meta).setDisplayName(any());
+    }).when(meta).customName(any());
 
     // Enchantments
     Map<Enchantment, Integer> enchants = new HashMap<>();
@@ -298,7 +340,7 @@ public final class ItemFactoryMocks {
     when(meta.getEnchants()).thenAnswer(invocation -> Map.copyOf(enchants));
     when(meta.hasEnchants()).thenAnswer(invocation -> !enchants.isEmpty());
 
-    if (meta instanceof ItemMetaHelper cloneHelper) {
+    if (meta instanceof ItemMetaBase cloneHelper) {
       doAnswer(invocation -> {
         enchants.clear();
         Map<Object, Object> map = invocation.getArgument(0);
@@ -314,7 +356,7 @@ public final class ItemFactoryMocks {
       }).when(cloneHelper).setEnchants(any());
     }
 
-    // TODO lore
+    // Doesn't set up lore, unnecessary here.
   }
 
   private static void repairable(@NotNull ItemMeta meta) {
@@ -382,7 +424,7 @@ public final class ItemFactoryMocks {
     when(storageMeta.getStoredEnchants()).thenAnswer(invocation -> Map.copyOf(stored));
     when(storageMeta.hasStoredEnchants()).thenAnswer(invocation -> !stored.isEmpty());
 
-    if (meta instanceof ItemMetaHelper cloneHelper) {
+    if (meta instanceof ItemMetaBase cloneHelper) {
       doAnswer(invocation -> {
         stored.clear();
         Map<Object, Object> map = invocation.getArgument(0);

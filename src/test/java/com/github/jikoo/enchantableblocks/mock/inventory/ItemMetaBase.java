@@ -1,11 +1,12 @@
 package com.github.jikoo.enchantableblocks.mock.inventory;
 
-import java.util.Map;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
 
 /**
  * An interface used to help perform corresponding get/set operations on ItemMetas while "cloning"
@@ -13,12 +14,12 @@ import org.jetbrains.annotations.NotNull;
  * implementation exists that does not implement Damageable, Repairable, and BlockDataMeta.
  * See CraftMetaItem.
  */
-public interface ItemMetaHelper extends ItemMeta, Repairable, Damageable {
+public interface ItemMetaBase extends ItemMeta, Repairable, Damageable {
 
   void setEnchants(Map<Enchantment, Integer> enchantments);
 
   void setStoredEnchants(Map<Enchantment, Integer> enchantments);
 
-  @NotNull ItemMetaHelper clone();
+  @NotNull ItemMetaBase clone();
 
 }
