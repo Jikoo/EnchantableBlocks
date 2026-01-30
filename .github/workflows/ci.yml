@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build Java 17
+    name: Build Java 21
     steps:
       - uses: actions/checkout@v4
 
@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: '17'
+          java-version: '21'
           cache: 'maven'
 
       - name: Cache SonarCloud packages
