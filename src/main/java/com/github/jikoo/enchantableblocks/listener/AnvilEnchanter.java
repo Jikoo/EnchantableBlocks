@@ -1,7 +1,7 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
-import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvilOperation;
+import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvil;
 import com.github.jikoo.planarenchanting.anvil.AnvilResult;
 import com.github.jikoo.planarenchanting.util.ItemUtil;
 import org.bukkit.Material;
@@ -9,7 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Contract;
@@ -39,7 +38,8 @@ public class AnvilEnchanter implements Listener {
   @EventHandler(priority = EventPriority.HIGH)
   @VisibleForTesting
   void onPrepareAnvil(@NotNull PrepareAnvilEvent event) {
-    var clicker = event.getView().getPlayer();
+    var view = event.getView();
+    var clicker = view.getPlayer();
     var inventory = event.getInventory();
     var base = inventory.getItem(0);
     var addition = inventory.getItem(1);
@@ -55,8 +55,8 @@ public class AnvilEnchanter implements Listener {
       return;
     }
 
-    var operation = new BlockAnvilOperation(registration, clicker.getWorld().getName());
-    final var result = operation.apply(inventory);
+    var operation = new BlockAnvil(registration, clicker.getWorld().getName());
+    final var result = operation.getResult(view);
 
     if (result == AnvilResult.EMPTY) {
       return;
@@ -78,9 +78,7 @@ public class AnvilEnchanter implements Listener {
       inventory.setItem(2, resultItem);
       // Set repair cost. As vanilla has no result for our combinations, this is always set to 0
       // after the event has completed and needs to be set again.
-      inventory.setRepairCost(result.levelCost());
-      // Update level cost window property again just to be safe.
-      clicker.setWindowProperty(InventoryView.Property.REPAIR_COST, result.levelCost());
+      view.setRepairCost(result.levelCost());
     });
   }
 

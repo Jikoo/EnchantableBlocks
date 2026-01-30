@@ -90,7 +90,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>planarenchanting</artifactId>
-      <version>2.0.1</version>
+      <version>fe946163f8</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -162,11 +162,6 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
-              <!--
-                ~ Unfortunately, the minimizeJar option actually breaks build.
-                ~ As a (hopefully temporary) workaround, explicitly declare classes used.
-                ~ Watch MSHADE-366 for a fix.
-               -->
               <filters>
                 <filter>
                   <artifact>com.github.jikoo:*</artifact>
