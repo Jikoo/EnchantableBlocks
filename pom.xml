@@ -15,13 +15,14 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <versions.fastutil>8.5.18</versions.fastutil>
+    <!-- Required so ${argLine} can be evaluated and edited by plugins (i.e. jacoco) before surefire -->
+    <argLine/>
   </properties>
 
   <profiles>
     <profile>
       <id>sonarcloud</id>
       <properties>
-        <maven.compiler.release>21</maven.compiler.release>
         <sonar.projectKey>Jikoo_EnchantableBlocks</sonar.projectKey>
         <sonar.organization>jikoo</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -143,11 +144,23 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
           <forkCount>2</forkCount>
           <reuseForks>false</reuseForks>
+          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
         </configuration>
       </plugin>
       <plugin>
