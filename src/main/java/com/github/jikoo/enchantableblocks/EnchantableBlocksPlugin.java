@@ -70,7 +70,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
       @NotNull String label,
       @NotNull String @NotNull [] args) {
     if (args.length < 1 || !args[0].equalsIgnoreCase("reload")) {
-      sender.sendMessage("EnchantableBlocks v" + getDescription().getVersion());
+      sender.sendMessage("EnchantableBlocks v" + getPluginMeta().getVersion());
       return false;
     }
 
@@ -78,7 +78,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
     this.blockManager.getRegistry().reload();
     sender.sendMessage(
         "[EnchantableBlocks v"
-            + getDescription().getVersion()
+            + getPluginMeta().getVersion()
             + "] Reloaded config and registry cache.");
     return true;
   }

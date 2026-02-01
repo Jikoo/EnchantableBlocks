@@ -3,14 +3,15 @@ package com.github.jikoo.enchantableblocks.registry;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link BiFunction} used to load data from disk.
@@ -25,7 +26,7 @@ record RegionLoadFunction(
   public @Nullable RegionStorageData apply(@NotNull Region region, @NotNull Boolean create) {
     RegionStorage storage = new RegionStorage(dataDir(), region);
 
-    if (!storage.getDataFile().exists() && Boolean.FALSE.equals(create)) {
+    if (!storage.getDataFile().exists() && !create) {
       return null;
     }
 

@@ -1,8 +1,6 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.IntSupplier;
 import org.bukkit.block.Furnace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,6 +16,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.IntSupplier;
 
 /**
  * Listener for furnace-specific events.
@@ -92,6 +93,7 @@ class FurnaceListener implements Listener {
     }
 
     if (enchantableFurnace.shouldPause(event)) {
+      // TODO can use Paper's addition of recipe to skip cache?
       plugin.getServer().getScheduler().runTask(plugin, enchantableFurnace::pause);
     }
   }

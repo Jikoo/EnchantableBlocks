@@ -96,14 +96,14 @@ public enum ItemStackMocks {
       return existing != null && existing.hasEnchant(invocation.getArgument(0));
     }).when(stack).containsEnchantment(any(Enchantment.class));
     Answer<Void> addEnchant = invocation -> {
-      get(meta, stack.getType(), true).ifPresent(itemMeta -> {
-        itemMeta.addEnchant(
+      get(meta, stack.getType(), true).ifPresent(itemMeta ->
+          itemMeta.addEnchant(
             invocation.getArgument(0),
             invocation.getArgument(1),
             // We aren't winning any performance prizes here, a beautiful DRY hack.
             invocation.getMethod().getName().contains("Unsafe")
-        );
-      });
+        )
+      );
       return null;
     };
     doAnswer(addEnchant).when(stack).addEnchantment(any(Enchantment.class), anyInt());

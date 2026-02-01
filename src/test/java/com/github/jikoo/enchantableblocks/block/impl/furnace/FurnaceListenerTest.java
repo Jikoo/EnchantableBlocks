@@ -113,10 +113,6 @@ class FurnaceListenerTest {
     private FurnaceListener listener;
     private Block block;
 
-    @BeforeAll
-    static void beforeAll() {
-    }
-
     @BeforeEach
     void beforeEach() {
       var server = Bukkit.getServer();

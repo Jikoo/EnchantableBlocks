@@ -371,7 +371,7 @@ public class EnchantmentMocks {
     return new EnchantConfig(enchantment);
   }
 
-  private static record EnchantConfig(Enchantment enchantment) {
+  private record EnchantConfig(Enchantment enchantment) {
 
     EnchantConfig(Enchantment enchantment) {
       this.enchantment = enchantment;
