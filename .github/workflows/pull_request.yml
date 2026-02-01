@@ -10,6 +10,9 @@ jobs:
     if: "github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'"
     needs: [ "run-ci" ]
     runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       # Always approve PRs from Dependabot.
       - name: Approve
