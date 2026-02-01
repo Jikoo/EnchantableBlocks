@@ -23,7 +23,7 @@
     <profile>
       <id>sonarcloud</id>
       <properties>
-        <sonar.projectKey>Jikoo_EnchantableBlocks</sonar.projectKey>
+        <sonar.projectKey>jikoo_enchantableblocks</sonar.projectKey>
         <sonar.organization>jikoo</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.language>java</sonar.language>
