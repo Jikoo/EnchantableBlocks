@@ -64,6 +64,7 @@ class EnchantableFurnaceTest {
   private Block block;
   private ItemStack itemStack;
   private ConfigurationSection storage;
+  private ItemStack input;
 
   @BeforeAll
   void beforeAll() {
@@ -85,11 +86,13 @@ class EnchantableFurnaceTest {
     block = mock(Block.class);
     itemStack = ItemType.FURNACE.createItemStack();
     storage = mock(ConfigurationSection.class);
+    input = ItemType.DIRT.createItemStack();
+    doReturn(64).when(ItemType.COARSE_DIRT).getMaxStackSize();
 
     // Set up matching recipe
     when(reg.getFurnaceRecipe(any())).thenAnswer(invocation -> {
       FurnaceInventory inventory = invocation.getArgument(0);
-      if (recipe.getInput().isSimilar(inventory.getSmelting())) {
+      if (input.isSimilar(inventory.getSmelting())) {
         return recipe;
       }
       return null;
@@ -333,7 +336,7 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
     var result = recipe.getResult();
     result.setAmount(result.getType().getMaxStackSize());
     inv.setResult(result);
@@ -348,9 +351,9 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    ItemStack input = new ItemStack(Material.FURNACE);
-    assertThat("Input is not similar to recipe input", input, not(isSimilar(recipe.getInput())));
-    inv.setSmelting(input);
+    ItemStack otherInput = new ItemStack(Material.FURNACE);
+    assertThat("Input is not similar to recipe input", otherInput, not(isSimilar(input)));
+    inv.setSmelting(otherInput);
     inv.setResult(recipe.getResult());
 
     assertThat("Furnace with no matching recipe should pause", enchantableFurnace.shouldPause(null));
@@ -369,7 +372,7 @@ class EnchantableFurnaceTest {
 
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
     inv.setResult(recipe.getResult());
 
     assertThat("Furnace with input not matching recipe input should pause", enchantableFurnace.shouldPause(null));
@@ -382,7 +385,7 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
 
     assertThat(
         "Furnace with null result should not pause",
@@ -397,7 +400,7 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
     inv.setResult(new ItemStack(Material.AIR));
 
     assertThat(
@@ -413,7 +416,7 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
     inv.setResult(recipe.getResult());
 
     assertThat(
@@ -429,7 +432,7 @@ class EnchantableFurnaceTest {
     when(enchantableFurnace.canPause()).thenReturn(true);
     var tile = setUpTile();
     var inv = tile.getInventory();
-    inv.setSmelting(recipe.getInput());
+    inv.setSmelting(input);
     ItemStack result = new ItemStack(Material.DIAMOND);
     assertThat("Result must be dissimilar", result, not(isSimilar(recipe.getResult())));
     inv.setResult(result);
@@ -445,10 +448,10 @@ class EnchantableFurnaceTest {
 
     var furnace = setUpTile();
     var inv = furnace.getInventory();
-    var smelting = recipe.getInput();
+    var smelting = input;
     inv.setSmelting(smelting);
     inv.setResult(null);
-    var event = new FurnaceSmeltEvent(block, smelting, recipe.getResult());
+    var event = new FurnaceSmeltEvent(block, smelting, recipe.getResult(), recipe);
 
     assertThat(
         "Situation does not result in pausing without event context",
@@ -556,7 +559,7 @@ class EnchantableFurnaceTest {
     short frozenTicks = 200;
     enchantableFurnace.setFrozenTicks(frozenTicks);
     var tile = setUpTile();
-    tile.getInventory().setSmelting(recipe.getInput());
+    tile.getInventory().setSmelting(input);
 
     assertThat("Furnace resumes as needed", enchantableFurnace.resume());
     assertThat("Tile is burning", tile.getBurnTime(), is(frozenTicks));
@@ -709,7 +712,7 @@ class EnchantableFurnaceTest {
       verify(enchantableFurnace, times(0)).resume();
 
       when(enchantableFurnace.isPaused()).thenReturn(false);
-      inventory.setSmelting(recipe.getInput());
+      inventory.setSmelting(input);
       task.run();
       verify(enchantableFurnace, times(0)).pause();
       verify(enchantableFurnace, times(0)).resume();
@@ -727,7 +730,7 @@ class EnchantableFurnaceTest {
       Runnable task = taskCaptor.getValue();
 
       when(enchantableFurnace.isPaused()).thenReturn(true);
-      inventory.setSmelting(recipe.getInput());
+      inventory.setSmelting(input);
       task.run();
       verify(enchantableFurnace, times(0)).pause();
       verify(enchantableFurnace).resume();
