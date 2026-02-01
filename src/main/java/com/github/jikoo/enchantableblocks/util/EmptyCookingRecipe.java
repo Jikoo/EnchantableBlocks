@@ -28,14 +28,11 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
             return new ItemStack(Material.AIR);
           }
 
+          @SuppressWarnings("MethodDoesntCallSuperMethod")
           @NotNull
           @Override
           public RecipeChoice clone() {
-            try {
-              return (RecipeChoice) super.clone();
-            } catch (CloneNotSupportedException e) {
-              throw new IllegalStateException(e);
-            }
+            return this;
           }
 
           @Override
