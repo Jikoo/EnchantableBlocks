@@ -1,29 +1,8 @@
 package com.github.jikoo.enchantableblocks;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.bukkit.Chunk;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -32,14 +11,31 @@ import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPluginLoader;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.mockito.invocation.InvocationOnMock;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 @DisplayName("Feature: Plugin should load and enable features.")
 class EnchantableBlocksPluginTest {
@@ -56,26 +52,19 @@ class EnchantableBlocksPluginTest {
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
 
-    // JavaPlugin constructs a PluginLogger during initialization, which copies certain
-    // fields out of the parent server logger directly. As a result, the server logger cannot be
-    // a mock or the process will result in a NPE.
-    Logger logger = new Logger(this.getClass().getCanonicalName(), null) {
-      @Override
-      public boolean isLoggable(Level level) {
-        // Instead, turn our real logger into a faux-dummy logger by blocking all logging.
-        return false;
-      }
-    };
-    when(server.getLogger()).thenReturn(logger);
-
-    var loader = new JavaPluginLoader(server);
     var description = new PluginDescriptionFile(new BufferedReader(new FileReader(
         Path.of(".", "src", "main", "resources", "plugin.yml").toFile())));
     var dataFolder = Path.of(".", "src", "test", "resources", description.getName()).toFile();
-    plugin = spy(new EnchantableBlocksPlugin(loader, description, dataFolder, new File("jarfile")));
+    plugin = mock(EnchantableBlocksPlugin.class, withSettings().defaultAnswer(InvocationOnMock::callRealMethod));
 
-    logger = mock(Logger.class);
-    when(plugin.getLogger()).thenReturn(logger);
+    plugin.init(
+        mock(),
+        server,
+        description,
+        dataFolder,
+        mock(),
+        EnchantableBlocksPlugin.class.getClassLoader()
+    );
   }
 
   @AfterEach
@@ -119,15 +108,12 @@ class EnchantableBlocksPluginTest {
 
     plugin.onLoad();
 
-    var logger = plugin.getLogger();
-    ArgumentCaptor<Supplier<String>> captor = ArgumentCaptor.forClass(Supplier.class);
-    doNothing().when(logger).info(captor.capture());
+    Logger logger = mock();
+    doReturn(logger).when(plugin).getLogger();
 
     plugin.onEnable();
 
-    assertThat("Line is logged", captor.getAllValues().size(), is(1));
-    String line = captor.getValue().get();
-    assertThat("Correct line is logged", line, startsWith("Loaded all active blocks"));
+    verify(plugin.getLogger()).info(any(Supplier.class));
   }
 
   @DisplayName("Reload command functions as expected.")

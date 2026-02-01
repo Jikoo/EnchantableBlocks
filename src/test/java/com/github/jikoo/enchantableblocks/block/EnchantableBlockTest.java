@@ -12,7 +12,6 @@ import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ItemType;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -80,7 +79,7 @@ class EnchantableBlockTest {
     var enchantableBlock = new EnchantableBlock(registration, block, itemStack, storage) {};
     verify(itemStack).clone();
     ItemStack internalStack = enchantableBlock.getItemStack();
-    assertThat("Item is clone", internalStack, CoreMatchers.is(itemStackClone));
+    assertThat("Item is clone", internalStack, is(itemStackClone));
     verify(itemStackClone).setAmount(1);
     // Directly returning the internal ItemStack instance allows subclasses to manipulate it.
     assertThat("Same item is returned", internalStack == enchantableBlock.getItemStack());
