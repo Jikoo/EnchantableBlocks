@@ -417,7 +417,6 @@ public class EnchantmentMocks {
 
     EnchantConfig tableTarget(TagKey<ItemType> targetKey) {
       Tag<ItemType> target = RegistryAccess.registryAccess().getRegistry(RegistryKey.ITEM).getTag(targetKey);
-      doReturn(false).when(enchantment).isTreasure();
       ENCHANTING_TABLE_TAGS.add(target);
       return anvilTarget(targetKey);
     }

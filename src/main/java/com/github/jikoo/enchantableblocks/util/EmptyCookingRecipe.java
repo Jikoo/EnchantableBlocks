@@ -28,11 +28,14 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
             return new ItemStack(Material.AIR);
           }
 
-          @SuppressWarnings("MethodDoesntCallSuperMethod")
           @NotNull
           @Override
           public RecipeChoice clone() {
-            return this;
+            try {
+              return (RecipeChoice) super.clone();
+            } catch (CloneNotSupportedException e) {
+              throw new IllegalStateException(e);
+            }
           }
 
           @Override
@@ -44,6 +47,12 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
           public boolean equals(Object obj) {
             // Since this is an unmodifiable object, all instances are equal.
             return obj != null && obj.getClass().equals(this.getClass());
+          }
+
+          @Override
+          public int hashCode() {
+            // As above - all instances are equal.
+            return 0;
           }
         },
         0,

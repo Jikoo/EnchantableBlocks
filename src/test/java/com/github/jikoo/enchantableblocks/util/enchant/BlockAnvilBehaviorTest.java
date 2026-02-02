@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 
 @DisplayName("Feature: Configurable AnvilBehavior for EnchantableBlocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class BlockAnvilBehaviorTest {
+class BlockAnvilBehaviorTest {
 
   private EnchantableRegistration registration;
 
