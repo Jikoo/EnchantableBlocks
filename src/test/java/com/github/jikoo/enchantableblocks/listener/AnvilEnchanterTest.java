@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.doAnswer;
@@ -141,6 +142,7 @@ class AnvilEnchanterTest {
     private EnchantableRegistration registration;
     private ItemStack itemStack;
     private ArgumentCaptor<Runnable> runnableCaptor;
+    private AnvilView view;
 
     @BeforeEach
     void beforeEach() {
@@ -167,22 +169,18 @@ class AnvilEnchanterTest {
       doReturn(config).when(registration).getConfig();
 
       enchanter = new AnvilEnchanter(plugin, registry);
+
+      view = prepareView();
     }
 
-    @AfterEach
-    void afterEach() {
-      var server = Bukkit.getServer();
-      when(server.getScheduler()).thenReturn(null);
-    }
-
-    private @NotNull Player prepareEventPlayer() {
+    private @NotNull AnvilView prepareView() {
       var player = mock(Player.class);
       var world = WorldMocks.newWorld("world");
       when(player.getWorld()).thenReturn(world);
 
       var inventory = InventoryMocks.newAnvilMock();
       inventory.setItem(0, itemStack.clone());
-      var additionItem = new ItemStack(Material.ENCHANTED_BOOK);
+      var additionItem = ItemType.ENCHANTED_BOOK.createItemStack();
       var additionMeta = additionItem.getItemMeta();
       if (additionMeta instanceof EnchantmentStorageMeta storageMeta) {
         storageMeta.addStoredEnchant(enchantment, enchantment.getMaxLevel(), true);
@@ -201,12 +199,17 @@ class AnvilEnchanterTest {
 
       when(player.getOpenInventory()).thenReturn(view);
 
-      return player;
+      return view;
+    }
+
+    @AfterEach
+    void afterEach() {
+      var server = Bukkit.getServer();
+      when(server.getScheduler()).thenReturn(null);
     }
 
     @Test
     void testInvalidItem() {
-      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       view.getTopInventory().setItem(0, null);
       var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -216,7 +219,6 @@ class AnvilEnchanterTest {
 
     @Test
     void testUnregisteredMaterial() {
-      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       ItemStack badStack = badType.createItemStack();
       view.getTopInventory().setItem(0, badStack);
       var event = spy(new PrepareAnvilEvent(view, null));
@@ -228,7 +230,7 @@ class AnvilEnchanterTest {
     @Test
     void testNoPermission() {
       doReturn(false).when(registration).hasEnchantPermission(notNull(), anyString());
-      var event = spy(new PrepareAnvilEvent((AnvilView) prepareEventPlayer().getOpenInventory(), null));
+      var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
       verify(registration).hasEnchantPermission(notNull(), anyString());
       verify(event, times(0)).setResult(any());
@@ -236,7 +238,6 @@ class AnvilEnchanterTest {
 
     @Test
     void testNoChange() {
-      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       view.getTopInventory().setItem(1, itemStack.clone());
       var event = spy(new PrepareAnvilEvent(view, null));
 
@@ -247,7 +248,6 @@ class AnvilEnchanterTest {
     @ParameterizedTest
     @MethodSource("getSlots")
     void testChangePostCalculate(int... slots) {
-      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       var event = spy(new PrepareAnvilEvent(view, null));
 
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -275,8 +275,16 @@ class AnvilEnchanterTest {
 
     @Test
     void testSuccess() {
-      var view = (AnvilView) prepareEventPlayer().getOpenInventory();
       var event = spy(new PrepareAnvilEvent(view, null));
+
+      // Because we can't override .equals for mocks and we need to verify that items
+      // are unchanged before setting the result, we instead want to ensure that "copy"
+      // is actually the same object.
+      // This does cause the original item to be manipulated as a side effect when producing the result.
+      ItemStack base = view.getTopInventory().getItem(0);
+      doReturn(base).when(base).clone();
+      ItemStack addition = view.getTopInventory().getItem(1);
+      doReturn(addition).when(addition).clone();
 
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
       verify(event).setResult(notNull());
@@ -287,11 +295,11 @@ class AnvilEnchanterTest {
       Runnable task = runnableCaptor.getValue();
 
       assertDoesNotThrow(task::run);
-//      var inventory = view.getTopInventory() TODO equals workaround for runnable?
-//      verify(inventory).setItem(
-//          eq(2),
-//          argThat(item -> result.isSimilar(item) && result.getAmount() == item.getAmount())
-//      )
+      var inventory = view.getTopInventory();
+      verify(inventory).setItem(
+          eq(2),
+          argThat(item -> result.isSimilar(item) && result.getAmount() == item.getAmount())
+      );
     }
 
   }
