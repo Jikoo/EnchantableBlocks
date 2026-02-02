@@ -93,7 +93,6 @@ class FurnaceListener implements Listener {
     }
 
     if (enchantableFurnace.shouldPause(event)) {
-      // TODO can use Paper's addition of recipe to skip cache?
       plugin.getServer().getScheduler().runTask(plugin, enchantableFurnace::pause);
     }
   }

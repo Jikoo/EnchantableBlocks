@@ -143,6 +143,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
     ItemStack input;
     ItemStack result;
+    CookingRecipe<?> recipe;
     if (event instanceof FurnaceSmeltEvent smeltEvent) {
       // Special case FurnaceSmeltEvent: smelt has not completed, input and result are different.
       // Decrease input for post-smelt
@@ -150,14 +151,17 @@ public class EnchantableFurnace extends EnchantableBlock {
       input.setAmount(input.getAmount() - 1);
       // Use post-smelt result
       result = smeltEvent.getResult();
+      // FurnaceSmeltEvent is the only pause event that provides the active recipe.
+      recipe = smeltEvent.getRecipe();
     } else {
       // In all other cases use current contents of furnace.
       FurnaceInventory inventory = furnace.getInventory();
       input = inventory.getSmelting();
       result = inventory.getResult();
+      recipe = null;
     }
 
-    return shouldPause(furnace, input, result);
+    return shouldPause(furnace, input, result, recipe);
   }
 
   /**
@@ -172,7 +176,9 @@ public class EnchantableFurnace extends EnchantableBlock {
   private boolean shouldPause(
       final @NotNull Furnace furnace,
       final @Nullable ItemStack input,
-      final @Nullable ItemStack result) {
+      final @Nullable ItemStack result,
+      final @Nullable CookingRecipe<?> recipe
+  ) {
     if (!this.canPause()) {
       return false;
     }
@@ -182,13 +188,15 @@ public class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
-    return isFreezableState(furnace.getInventory(), input, result);
+    return isFreezableState(furnace.getInventory(), input, result, recipe);
   }
 
   private boolean isFreezableState(
       final @NotNull FurnaceInventory inventory,
       final @Nullable ItemStack input,
-      final @Nullable ItemStack result) {
+      final @Nullable ItemStack result,
+      @Nullable CookingRecipe<?> recipe
+  ) {
     // Is there no input?
     if (ItemUtil.isEmpty(input)) {
       return true;
@@ -202,7 +210,10 @@ public class EnchantableFurnace extends EnchantableBlock {
       }
     }
 
-    CookingRecipe<?> recipe = getRegistration().getFurnaceRecipe(inventory);
+    // If the recipe wasn't provided, look it up.
+    if (recipe == null) {
+      recipe = getRegistration().getFurnaceRecipe(inventory);
+    }
 
     // Does the current smelting item not have a recipe?
     if (recipe == null) {
@@ -263,7 +274,7 @@ public class EnchantableFurnace extends EnchantableBlock {
     }
 
     FurnaceInventory inventory = furnace.getInventory();
-    if (checkState && isFreezableState(inventory, inventory.getSmelting(), inventory.getResult())) {
+    if (checkState && isFreezableState(inventory, inventory.getSmelting(), inventory.getResult(), null)) {
       return false;
     }
 
@@ -377,7 +388,7 @@ public class EnchantableFurnace extends EnchantableBlock {
 
     plugin.getServer().getScheduler().runTask(plugin, () -> {
       boolean shouldPause =
-          enchantableFurnace.shouldPause(furnace, inventory.getSmelting(), inventory.getResult());
+          enchantableFurnace.shouldPause(furnace, inventory.getSmelting(), inventory.getResult(), null);
       if (enchantableFurnace.isPaused() == shouldPause) {
         enchantableFurnace.updating = false;
         return;
