@@ -10,10 +10,11 @@ import com.github.jikoo.planarwrappers.config.Setting;
 import com.github.jikoo.planarwrappers.config.impl.BooleanSetting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Set;
 
 /**
  * The base settings for all
@@ -22,27 +23,13 @@ import org.jetbrains.annotations.NotNull;
 public abstract class EnchantableBlockConfig {
 
   protected final @NotNull ConfigurationSection section;
-  /** @deprecated use {@link #enabled()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Boolean> enabled;
-  /** @deprecated use {@link #tableEnchantability()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Enchantability> tableEnchantability;
-  /** @deprecated use {@link #tableDisabledEnchants()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Set<Enchantment>> tableDisabledEnchants;
-  /** @deprecated use {@link #tableEnchantmentConflicts()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Multimap<Enchantment, Enchantment>> tableEnchantmentConflicts;
-  /** @deprecated use {@link #anvilDisabledEnchants()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Set<Enchantment>> anvilDisabledEnchants;
-  /** @deprecated use {@link #anvilEnchantmentConflicts()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Setting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts;
-  /** @deprecated use {@link #anvilEnchantmentMax()} */
-  @Deprecated(forRemoval = true, since = "4.1.0")
-  public final @NotNull Mapping<Enchantment, Integer> anvilEnchantmentMax;
+  private final @NotNull Setting<Boolean> enabled;
+  private final @NotNull Setting<Enchantability> tableEnchantability;
+  private final @NotNull Setting<Set<Enchantment>> tableDisabledEnchants;
+  private final @NotNull Setting<Multimap<Enchantment, Enchantment>> tableEnchantmentConflicts;
+  private final @NotNull Setting<Set<Enchantment>> anvilDisabledEnchants;
+  private final @NotNull Setting<Multimap<Enchantment, Enchantment>> anvilEnchantmentConflicts;
+  private final @NotNull Mapping<Enchantment, Integer> anvilEnchantmentMax;
 
   protected EnchantableBlockConfig(@NotNull ConfigurationSection configurationSection) {
     this.section = configurationSection;

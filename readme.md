@@ -1,8 +1,8 @@
 ## EnchantableBlocks
 [![Build](https://github.com/Jikoo/EnchantableBlocks/actions/workflows/ci.yml/badge.svg)](https://github.com/Jikoo/EnchantableBlocks/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Jikoo_EnchantableBlocks&metric=alert_status)](https://sonarcloud.io/dashboard?id=Jikoo_EnchantableBlocks)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Jikoo_EnchantableBlocks&metric=coverage)](https://sonarcloud.io/dashboard?id=Jikoo_EnchantableBlocks)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Jikoo_EnchantableBlocks&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=Jikoo_EnchantableBlocks)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jikoo_enchantableblocks&metric=alert_status)](https://sonarcloud.io/dashboard?id=jikoo_enchantableblocks)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=jikoo_enchantableblocks&metric=coverage)](https://sonarcloud.io/dashboard?id=jikoo_enchantableblocks)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jikoo_enchantableblocks&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=jikoo_enchantableblocks)
 
 EnchantableBlocks is a Bukkit plugin adding effects for enchantments on blocks.
 

@@ -1,22 +1,14 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
+import com.github.jikoo.planarenchanting.util.MetaCachedStack;
 import com.github.jikoo.planarwrappers.config.Mapping;
 import com.github.jikoo.planarwrappers.config.Setting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
@@ -26,9 +18,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-@DisplayName("Feature: Configurable AnvilOperation for EnchantableBlocks.")
+import java.util.Set;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+
+@DisplayName("Feature: Configurable AnvilBehavior for EnchantableBlocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class BlockAnvilOperationTest {
+class BlockAnvilBehaviorTest {
 
   private EnchantableRegistration registration;
 
@@ -54,30 +56,30 @@ class BlockAnvilOperationTest {
   }
 
   @Test
-  void testEnchantApplies() {
+  void enchantApplies() {
     doReturn(Set.of(Enchantment.UNBREAKING, Enchantment.EFFICIENCY)).when(registration).getEnchants();
     var anvilDisabledEnchants = registration.getConfig().anvilDisabledEnchants();
     doReturn(Set.of(Enchantment.UNBREAKING)).when(anvilDisabledEnchants).get(anyString());
 
-    var op = new BlockAnvilOperation(registration, "sample_text");
+    var op = new BlockAnvilBehavior(registration, "sample_text");
 
     assertThat(
         "Enabled enchantment applies",
-        op.enchantApplies(Enchantment.EFFICIENCY, new ItemStack(Material.AIR)));
+        op.enchantApplies(Enchantment.EFFICIENCY, new MetaCachedStack(new ItemStack(Material.AIR))));
     assertThat(
         "Disabled enchantment does not apply",
-        op.enchantApplies(Enchantment.UNBREAKING, new ItemStack(Material.AIR)),
+        op.enchantApplies(Enchantment.UNBREAKING, new MetaCachedStack(new ItemStack(Material.AIR))),
         is(false));
   }
 
   @Test
-  void testEnchantsConflict() {
+  void enchantsConflict() {
     var anvilEnchantmentConflicts = registration.getConfig().anvilEnchantmentConflicts();
     Multimap<Enchantment, Enchantment> conflicts = HashMultimap.create();
     conflicts.put(Enchantment.UNBREAKING, Enchantment.EFFICIENCY);
     doReturn(conflicts).when(anvilEnchantmentConflicts).get(anyString());
 
-    var op = new BlockAnvilOperation(registration, "sample_text");
+    var op = new BlockAnvilBehavior(registration, "sample_text");
 
     assertThat(
         "Enchantments conflict",
@@ -96,7 +98,7 @@ class BlockAnvilOperationTest {
   }
 
   @Test
-  void testEnchantMaxLevel() {
+  void enchantMaxLevel() {
     var anvilEnchantmentMax = registration.getConfig().anvilEnchantmentMax();
     int genericEnchantLevel = 0;
     doReturn(genericEnchantLevel).when(anvilEnchantmentMax).get(anyString(), any());
@@ -104,7 +106,7 @@ class BlockAnvilOperationTest {
     Enchantment specifiedEnchant = Enchantment.UNBREAKING;
     doReturn(specificEnchantLevel).when(anvilEnchantmentMax).get(anyString(), eq(specifiedEnchant));
 
-    var op = new BlockAnvilOperation(registration, "sample_text");
+    var op = new BlockAnvilBehavior(registration, "sample_text");
 
     assertThat(
         "Specified enchantment max is provided",
@@ -117,13 +119,19 @@ class BlockAnvilOperationTest {
   }
 
   @Test
-  void testItemsCombineEnchants() {
-    var op = new BlockAnvilOperation(registration, "sample_text");
+  void itemsCombineEnchants() {
+    var op = new BlockAnvilBehavior(registration, "sample_text");
     assertThat(
         "Items always combine",
-        op.itemsCombineEnchants(new ItemStack(Material.AIR), new ItemStack(Material.AIR)));
+        op.itemsCombineEnchants(new MetaCachedStack(new ItemStack(Material.AIR)), new MetaCachedStack(new ItemStack(Material.AIR))));
   }
 
-  // Application handled by AnvilEnchanterTest.
+  @Test
+  void itemRepairedBy() {
+    var op = new BlockAnvilBehavior(registration, "sample_text");
+    assertThat(
+        "Item is never repairable",
+        !op.itemRepairedBy(new MetaCachedStack(new ItemStack(Material.AIR)), new MetaCachedStack(new ItemStack(Material.AIR))));
+  }
 
 }

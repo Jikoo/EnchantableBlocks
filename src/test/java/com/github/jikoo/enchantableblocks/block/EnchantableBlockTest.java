@@ -1,5 +1,27 @@
 package com.github.jikoo.enchantableblocks.block;
 
+import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
+import com.github.jikoo.enchantableblocks.mock.ServerMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemStackMocks;
+import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
+import com.jparams.verifier.tostring.ToStringVerifier;
+import com.jparams.verifier.tostring.preset.Presets;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemType;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
+import java.util.Set;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -12,26 +34,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
-import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
-import com.jparams.verifier.tostring.ToStringVerifier;
-import com.jparams.verifier.tostring.preset.Presets;
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
-import java.util.Set;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.inventory.ItemStack;
-import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
 @DisplayName("Feature: Enchantable blocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -77,7 +79,7 @@ class EnchantableBlockTest {
     var enchantableBlock = new EnchantableBlock(registration, block, itemStack, storage) {};
     verify(itemStack).clone();
     ItemStack internalStack = enchantableBlock.getItemStack();
-    assertThat("Item is clone", internalStack, CoreMatchers.is(itemStackClone));
+    assertThat("Item is clone", internalStack, is(itemStackClone));
     verify(itemStackClone).setAmount(1);
     // Directly returning the internal ItemStack instance allows subclasses to manipulate it.
     assertThat("Same item is returned", internalStack == enchantableBlock.getItemStack());
@@ -195,6 +197,7 @@ class EnchantableBlockTest {
         })
         .withPreset(Presets.INTELLI_J)
         .withIgnoredFields("registration", "storage", "dirty", "updating")
+        .withValueProvider(ItemStack.class, path -> ItemStackMocks.newItemMock(ItemType.AIR, 1))
         .withFailOnExcludedFields(true).verify();
   }
 

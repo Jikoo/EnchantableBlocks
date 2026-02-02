@@ -7,25 +7,23 @@
   <groupId>com.github.jikoo</groupId>
   <artifactId>enchantableblocks</artifactId>
   <name>EnchantableBlocks</name>
-  <version>4.1.1-SNAPSHOT</version>
+  <version>5.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.release>21</maven.compiler.release>
     <versions.fastutil>8.5.18</versions.fastutil>
+    <!-- Required so ${argLine} can be evaluated and edited by plugins (i.e. jacoco) before surefire -->
+    <argLine/>
   </properties>
 
   <profiles>
     <profile>
       <id>sonarcloud</id>
       <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <sonar.projectKey>Jikoo_EnchantableBlocks</sonar.projectKey>
+        <sonar.projectKey>jikoo_enchantableblocks</sonar.projectKey>
         <sonar.organization>jikoo</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.language>java</sonar.language>
@@ -61,8 +59,8 @@
 
   <repositories>
     <repository>
-      <id>spigot-repo</id>
-      <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+      <id>papermc</id>
+      <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
     <repository>
       <id>jitpack.io</id>
@@ -78,9 +76,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>spigot-api</artifactId>
-      <version>1.21-R0.1-SNAPSHOT</version>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <version>1.21.11-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -93,7 +91,7 @@
     <dependency>
       <groupId>com.github.jikoo</groupId>
       <artifactId>planarenchanting</artifactId>
-      <version>2.0.1</version>
+      <version>fe946163f8</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -146,11 +144,23 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
           <forkCount>2</forkCount>
           <reuseForks>false</reuseForks>
+          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -165,11 +175,6 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
-              <!--
-                ~ Unfortunately, the minimizeJar option actually breaks build.
-                ~ As a (hopefully temporary) workaround, explicitly declare classes used.
-                ~ Watch MSHADE-366 for a fix.
-               -->
               <filters>
                 <filter>
                   <artifact>com.github.jikoo:*</artifact>

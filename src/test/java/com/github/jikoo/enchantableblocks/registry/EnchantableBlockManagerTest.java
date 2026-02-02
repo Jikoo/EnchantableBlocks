@@ -1,21 +1,5 @@
 package com.github.jikoo.enchantableblocks.registry;
 
-import static com.github.jikoo.enchantableblocks.mock.matcher.IsSimilarMatcher.similar;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
@@ -27,13 +11,6 @@ import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.planarwrappers.util.Coords;
-import java.lang.reflect.Field;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.logging.Logger;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -54,6 +31,30 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.lang.reflect.Field;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+
+import static com.github.jikoo.enchantableblocks.mock.matcher.ItemMatcher.isSimilar;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Manage enchantable blocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -227,7 +228,7 @@ class EnchantableBlockManagerTest {
       assertThat(
           "Item should match creation stack",
           enchantableBlock.getItemStack(),
-          similar(item));
+          isSimilar(item));
     }
 
     @DisplayName("Unset block returns null.")
@@ -348,7 +349,7 @@ class EnchantableBlockManagerTest {
       assertThat(
           "Invalid save data should still return in-memory item if available",
           manager.destroyBlock(block),
-          similar(stack));
+          isSimilar(stack));
     }
 
     @DisplayName("Destroying valid blocks should return creation item.")
@@ -361,7 +362,7 @@ class EnchantableBlockManagerTest {
       assertThat(
           "Valid block should return creation item",
           manager.destroyBlock(block),
-          similar(stack));
+          isSimilar(stack));
     }
 
     private void setUpChunks() {

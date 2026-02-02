@@ -48,6 +48,12 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
             // Since this is an unmodifiable object, all instances are equal.
             return obj != null && obj.getClass().equals(this.getClass());
           }
+
+          @Override
+          public int hashCode() {
+            // As above - all instances are equal.
+            return 0;
+          }
         },
         0,
         0);

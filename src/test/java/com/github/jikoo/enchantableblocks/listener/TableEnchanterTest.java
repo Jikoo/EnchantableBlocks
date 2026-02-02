@@ -1,23 +1,5 @@
 package com.github.jikoo.enchantableblocks.listener;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.notNull;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
@@ -26,8 +8,6 @@ import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import java.util.Map;
-import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -42,18 +22,38 @@ import org.bukkit.inventory.view.EnchantmentView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.util.Map;
+import java.util.Set;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItemInArray;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @DisplayName("Feature: Enchant blocks in enchanting tables.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TableEnchanterTest {
 
-  private @Nullable EnchantableRegistration registration;
+  private EnchantableBlockRegistry registry;
+  private EnchantableRegistration registration;
   private Player player;
   private TableEnchanter listener;
   private ItemStack itemStack;
@@ -79,9 +79,8 @@ class TableEnchanterTest {
 
     Plugin plugin = mock(Plugin.class);
     when(plugin.getName()).thenReturn(getClass().getSimpleName());
-    var registry = mock(EnchantableBlockRegistry.class);
-    // Use doAnswer so that we can test with a null registration despite instantiating by default.
-    doAnswer(invocation -> registration).when(registry).get(any());
+    registry = mock(EnchantableBlockRegistry.class);
+    doReturn(registration).when(registry).get(any());
 
     listener = new TableEnchanter(plugin, registry);
 
@@ -99,7 +98,7 @@ class TableEnchanterTest {
   @DisplayName("Materials with no corresponding registration cannot enchant.")
   @Test
   void testUnregistered() {
-    registration = null;
+    doReturn(null).when(registry).get(any());
     assertThat("Never ineligible", listener.isIneligible(player, itemStack), is(false));
     assertThat(
         "Unregistered material cannot be enchanted",
