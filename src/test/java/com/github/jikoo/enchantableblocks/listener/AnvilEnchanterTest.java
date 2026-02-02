@@ -188,18 +188,18 @@ class AnvilEnchanterTest {
       additionItem.setItemMeta(additionMeta);
       inventory.setItem(1, additionItem);
 
-      AnvilView view = mock(AnvilView.class);
-      when(view.getTopInventory()).thenReturn(inventory);
-      when(view.getPlayer()).thenReturn(player);
-      doAnswer(invocation -> inventory.getItem(invocation.getArgument(0))).when(view).getItem(anyInt());
+      AnvilView anvilView = mock(AnvilView.class);
+      when(anvilView.getTopInventory()).thenReturn(inventory);
+      when(anvilView.getPlayer()).thenReturn(player);
+      doAnswer(invocation -> inventory.getItem(invocation.getArgument(0))).when(anvilView).getItem(anyInt());
       doAnswer(invocation -> {
         inventory.setItem(invocation.getArgument(0), invocation.getArgument(1));
         return null;
-      }).when(view).setItem(anyInt(), any());
+      }).when(anvilView).setItem(anyInt(), any());
 
-      when(player.getOpenInventory()).thenReturn(view);
+      when(player.getOpenInventory()).thenReturn(anvilView);
 
-      return view;
+      return anvilView;
     }
 
     @AfterEach
