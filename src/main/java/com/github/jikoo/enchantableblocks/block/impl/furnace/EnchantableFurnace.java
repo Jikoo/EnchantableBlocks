@@ -278,9 +278,12 @@ public class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
-    furnace.setBurnTime(
-        MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
-    furnace.update(true);
+    // If the furnace is burning for longer than the client can display correctly, don't clamp it.
+    // Whoever caused the problem should probably deal with it.
+    if (furnace.getBurnTime() < Short.MAX_VALUE) {
+      furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
+      furnace.update(true);
+    }
     this.setFrozenTicks((short) 0);
     return true;
   }

@@ -9,7 +9,7 @@ public final class MathHelper {
    * @return the clamped value
    */
   public static short clampPositiveShort(double value) {
-    return clampPositiveShort((long) value);
+    return (short) Math.clamp(value, 0D, Short.MAX_VALUE);
   }
 
   /**
@@ -18,8 +18,8 @@ public final class MathHelper {
    * @param value the value to clamp
    * @return the clamped value
    */
-  public static short clampPositiveShort(long value) {
-    return (short) Math.max(0, Math.min(Short.MAX_VALUE, value));
+  public static short clampPositiveShort(int value) {
+    return (short) Math.clamp(value, 0, Short.MAX_VALUE);
   }
 
   /**
