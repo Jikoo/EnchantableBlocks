@@ -22,7 +22,11 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
         key,
         new ItemStack(Material.DIRT),
         new RecipeChoice() {
-          @Deprecated
+          /**
+           * @deprecated This exists only because the Bukkit API is very, very backwards-compatibility-friendly.
+           * @return an empty ItemStack
+           */
+          @Deprecated(since = "1.13.1")
           @Override
           public @NotNull ItemStack getItemStack() {
             return new ItemStack(Material.AIR);
@@ -55,7 +59,8 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
           }
         },
         0,
-        0);
+        0
+    );
   }
 
   @Override

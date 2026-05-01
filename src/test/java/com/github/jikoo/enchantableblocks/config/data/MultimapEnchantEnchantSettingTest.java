@@ -39,11 +39,11 @@ class MultimapEnchantEnchantSettingTest {
       Registry<?> registry = mock(Registry.class);
       if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
         doAnswer(invocation1 -> {
-          Enchantment enchantment = mock(Enchantment.class);
+          Enchantment localEnch = mock(Enchantment.class);
           NamespacedKey key = invocation1.getArgument(0);
-          doReturn(key).when(enchantment).getKey();
-          doReturn(key).when(enchantment).getKeyOrThrow();
-          return enchantment;
+          doReturn(key).when(localEnch).getKey();
+          doReturn(key).when(localEnch).getKeyOrThrow();
+          return localEnch;
         }).when(registry).getOrThrow(any());
         doAnswer(invocation1 -> registry.getOrThrow(invocation1.getArgument(0))).when(registry).get(any());
       }

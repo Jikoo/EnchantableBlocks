@@ -92,11 +92,11 @@ class EnchantableBlockManagerTest {
     bukkit.when(Bukkit::getItemFactory).thenReturn(itemFactory);
 
     bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
-      Registry<?> registry = mock(Registry.class);
+      Registry<?> bukkitReg = mock(Registry.class);
       if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
-        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(bukkitReg).getOrThrow(any());
       }
-      return registry;
+      return bukkitReg;
     });
 
     goodMat = mock();

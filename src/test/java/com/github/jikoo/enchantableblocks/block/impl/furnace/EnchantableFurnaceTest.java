@@ -109,7 +109,6 @@ class EnchantableFurnaceTest {
     itemStack = new ItemStack(Material.FURNACE);
     storage = mock(ConfigurationSection.class);
     input = new ItemStack(Material.DIRT);
-    //doReturn(64).when(ItemType.COARSE_DIRT).getMaxStackSize();
 
     // Set up matching recipe
     when(reg.getFurnaceRecipe(any())).thenAnswer(invocation -> {
