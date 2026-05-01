@@ -1,49 +1,52 @@
 package com.github.jikoo.enchantableblocks.util.enchant;
 
-import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.planarenchanting.anvil.Anvil;
-import com.github.jikoo.planarenchanting.anvil.AnvilFunctions;
+import com.github.jikoo.planarenchanting.anvil.AnvilFunctionsProvider;
 import com.github.jikoo.planarenchanting.anvil.AnvilResult;
-import com.github.jikoo.planarenchanting.anvil.AnvilState;
+import com.github.jikoo.planarenchanting.anvil.WorkPiece;
 import org.bukkit.inventory.view.AnvilView;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
+
+import java.util.function.Function;
 
 /**
- * A simplified {@link Anvil} designed for use with
- * {@link com.github.jikoo.enchantableblocks.block.EnchantableBlock} implementations. Unlike a
- * normal operation, this operation does not validate items!
+ * A minimal {@link com.github.jikoo.planarenchanting.anvil.Anvil}-like representation of
+ * the operations performed to produce an anvil result.
  */
-public class BlockAnvil extends Anvil {
+@NullMarked
+public class BlockAnvil<T> {
+
+  private final Function<AnvilView, WorkPiece<T>> createWork;
+  private final AnvilFunctionsProvider<T> functions;
 
   /**
    * A simplified {@link Anvil} designed for use with
    * {@link com.github.jikoo.enchantableblocks.block.EnchantableBlock} implementations.
    *
-   * @param registration the {@link EnchantableRegistration} for the block
-   * @param worldName the name of the world the operation is applied in
+   * @param createWork the method for creating a new {@link WorkPiece}
+   * @param functions the provider for default anvil functions
    */
   public BlockAnvil(
-      @NotNull EnchantableRegistration registration,
-      @NotNull String worldName) {
-    super(new BlockAnvilBehavior(registration, worldName));
+      Function<AnvilView, WorkPiece<T>> createWork,
+      AnvilFunctionsProvider<T> functions
+  ) {
+    this.createWork = createWork;
+    this.functions = functions;
   }
 
-  @Override
-  public @NotNull AnvilResult getResult(@NotNull AnvilView view) {
-    var state = new AnvilState(view);
+  public AnvilResult getResult(AnvilView view, BlockAnvilBehavior<T> behavior) {
+    WorkPiece<T> workPiece = createWork.apply(view);
+
     // Base and addition have already been validated.
 
-    // Apply base cost.
-    apply(state, AnvilFunctions.PRIOR_WORK_LEVEL_COST);
-
     // Apply the rename function first, then update prior work cost - both update prior work.
-    apply(state, AnvilFunctions.RENAME);
-    apply(state, AnvilFunctions.UPDATE_PRIOR_WORK_COST);
+    workPiece.apply(behavior, functions.rename());
+    workPiece.apply(behavior, functions.setItemPriorWork());
 
     // Combine enchantments.
-    apply(state, AnvilFunctions.COMBINE_ENCHANTMENTS_JAVA_EDITION);
+    workPiece.apply(behavior, functions.combineEnchantsJava());
 
-    return forge(state);
+    return workPiece.temper();
   }
 
 }

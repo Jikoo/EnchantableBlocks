@@ -38,7 +38,8 @@ public abstract class EnchantableBlockConfig {
     this.tableEnchantability = new EnchantabilitySetting(
         section,
         "tableEnchantability",
-        Enchantability.STONE);
+        new Enchantability(5)
+    );
     this.tableDisabledEnchants = new SetEnchantSetting(
         section,
         "tableDisabledEnchantments",

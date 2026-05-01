@@ -1,11 +1,7 @@
 package com.github.jikoo.enchantableblocks.config.data;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.mock;
-
 import com.github.jikoo.planarenchanting.table.Enchantability;
+import com.github.jikoo.planarenchanting.table.EnchantabilityCategory;
 import org.bukkit.configuration.ConfigurationSection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,11 +9,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.mock;
+
 @DisplayName("Config: Setting for Enchantability values.")
 @TestInstance(Lifecycle.PER_CLASS)
 class EnchantabilitySettingTest {
 
-  private static final Enchantability DEFAULT_VALUE = Enchantability.GOLD_ARMOR;
+  private static final Enchantability DEFAULT_VALUE = EnchantabilityCategory.GOLD_ARMOR;
 
   EnchantabilitySetting setting;
 
@@ -62,8 +63,8 @@ class EnchantabilitySettingTest {
   void testConvertFieldName() {
     assertThat(
         "Valid field name returns field",
-        setting.convertString("STONE"),
-        is(Enchantability.STONE));
+        setting.convertString("STONE_TOOL"),
+        is(EnchantabilityCategory.STONE_TOOL));
   }
 
   @DisplayName("Non-Enchantability fields yield null.")

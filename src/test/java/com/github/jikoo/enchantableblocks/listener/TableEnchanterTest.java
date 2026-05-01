@@ -1,14 +1,14 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
-import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
-import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Registry;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -22,11 +22,13 @@ import org.bukkit.inventory.view.EnchantmentView;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.MockedStatic;
 
 import java.util.Map;
 import java.util.Set;
@@ -42,8 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +56,8 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TableEnchanterTest {
 
+  private MockedStatic<Bukkit> bukkit;
+  private Server server;
   private EnchantableBlockRegistry registry;
   private EnchantableRegistration registration;
   private Player player;
@@ -59,18 +65,30 @@ class TableEnchanterTest {
   private ItemStack itemStack;
 
   @BeforeAll
-  void setUpAll() {
-    var server = ServerMocks.mockServer();
-    EnchantmentMocks.init();
+  void setUp() {
+    bukkit = mockStatic();
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> registry = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+      }
+      return registry;
+    });
+    // Touch to initialize.
+    Enchantment.EFFICIENCY.getMaxLevel();
 
-    var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+    server = mock();
     var scheduler = mock(BukkitScheduler.class);
-    when(server.getScheduler()).thenReturn(scheduler);
+    doReturn(scheduler).when(server).getScheduler();
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
-  void setUp() {
+  void setUpEach() {
     // Set up default registration.
     registration = mock(EnchantableRegistration.class);
     doReturn(true).when(registration).hasEnchantPermission(notNull(), anyString());
@@ -81,6 +99,7 @@ class TableEnchanterTest {
     when(plugin.getName()).thenReturn(getClass().getSimpleName());
     registry = mock(EnchantableBlockRegistry.class);
     doReturn(registration).when(registry).get(any());
+    doReturn(server).when(plugin).getServer();
 
     listener = new TableEnchanter(plugin, registry);
 

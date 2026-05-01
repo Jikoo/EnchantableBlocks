@@ -3,22 +3,22 @@ package com.github.jikoo.enchantableblocks.util.enchant;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.github.jikoo.planarenchanting.anvil.AnvilBehavior;
-import com.github.jikoo.planarenchanting.util.MetaCachedStack;
 import com.google.common.collect.Multimap;
 import org.bukkit.enchantments.Enchantment;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NullMarked;
 
 import java.util.Collection;
 
-public class BlockAnvilBehavior implements AnvilBehavior {
+@NullMarked
+public class BlockAnvilBehavior<T> implements AnvilBehavior<T> {
 
-  private final @NotNull EnchantableBlockConfig config;
-  private final @NotNull String worldName;
-  private final @NotNull Collection<Enchantment> enchants;
+  private final EnchantableBlockConfig config;
+  private final String worldName;
+  private final Collection<Enchantment> enchants;
 
   public BlockAnvilBehavior(
-      @NotNull EnchantableRegistration registration,
-      @NotNull String worldName
+      EnchantableRegistration registration,
+      String worldName
   ) {
     this.config = registration.getConfig();
     this.worldName = worldName;
@@ -26,28 +26,28 @@ public class BlockAnvilBehavior implements AnvilBehavior {
   }
 
   @Override
-  public boolean enchantApplies(@NotNull Enchantment enchantment, @NotNull MetaCachedStack base) {
+  public boolean enchantApplies(Enchantment enchantment, T base) {
     return enchants.contains(enchantment) && !config.anvilDisabledEnchants().get(worldName).contains(enchantment);
   }
 
   @Override
-  public boolean enchantsConflict(@NotNull Enchantment enchant1, @NotNull Enchantment enchant2) {
+  public boolean enchantsConflict(Enchantment enchant1, Enchantment enchant2) {
     Multimap<Enchantment, Enchantment> conflicts = config.anvilEnchantmentConflicts().get(worldName);
     return conflicts.containsEntry(enchant1, enchant2) || conflicts.containsEntry(enchant2, enchant1);
   }
 
   @Override
-  public int getEnchantMaxLevel(@NotNull Enchantment enchantment) {
+  public int getEnchantMaxLevel(Enchantment enchantment) {
     return config.anvilEnchantmentMax().get(worldName, enchantment);
   }
 
   @Override
-  public boolean itemsCombineEnchants(@NotNull MetaCachedStack base, @NotNull MetaCachedStack addition) {
+  public boolean itemsCombineEnchants(T base, T addition) {
     return true;
   }
 
   @Override
-  public boolean itemRepairedBy(@NotNull MetaCachedStack repaired, @NotNull MetaCachedStack repairMat) {
+  public boolean itemRepairedBy(T repaired, T repairMat) {
     return false;
   }
 

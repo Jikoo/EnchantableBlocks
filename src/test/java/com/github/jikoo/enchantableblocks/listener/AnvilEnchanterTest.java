@@ -1,26 +1,27 @@
 package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
-import com.github.jikoo.enchantableblocks.mock.enchantments.EnchantmentMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
-import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
+import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Registry;
+import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
+import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ItemType;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 import java.util.Collection;
 import java.util.List;
@@ -50,6 +52,7 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,21 +62,39 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AnvilEnchanterTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private Enchantment enchantment;
-  private ItemType goodType;
-  private ItemType badType;
-
-  private AnvilEnchanter enchanter;
+  private Material goodType;
+  private Material badType;
 
   @BeforeAll
-  void setUpAll() {
-    ServerMocks.mockServer();
-    EnchantmentMocks.init();
+  void setUp() {
+    bukkit = mockStatic();
+
+    ItemFactory itemFactory = ItemFactoryMocks.mockFactory();
+    bukkit.when(Bukkit::getItemFactory).thenReturn(itemFactory);
+
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> registry = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+      }
+      return registry;
+    });
 
     enchantment = Enchantment.EFFICIENCY;
-    goodType = ItemType.COAL_ORE;
-    badType = ItemType.REDSTONE_ORE;
+    doReturn(5).when(enchantment).getMaxLevel();
+
+    goodType = Material.COAL_ORE;
+    badType = Material.REDSTONE_ORE;
   }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
+  }
+
+  private AnvilEnchanter enchanter;
 
   @Nested
   class ItemsInvalidTest {
@@ -94,32 +115,32 @@ class AnvilEnchanterTest {
     @DisplayName("Items are invalid if addition is empty.")
     @Test
     void testNullAdditionInvalid() {
-      var base = goodType.createItemStack();
+      var base = new ItemStack(goodType);
       assertThat("Items are invalid", enchanter.areItemsInvalid(base, null));
     }
 
     @DisplayName("Items are invalid if base is stacked.")
     @Test
     void testStackedBaseInvalid() {
-      var base = goodType.createItemStack();
+      var base = new ItemStack(goodType);
       base.setAmount(64);
-      var addition = goodType.createItemStack();
+      var addition = new ItemStack(goodType);
       assertThat("Items are invalid", enchanter.areItemsInvalid(base, addition));
     }
 
     @DisplayName("Items are invalid base and addition do not match.")
     @Test
     void testDifferentAddition() {
-      var base = goodType.createItemStack();
-      var addition = badType.createItemStack();
+      var base = new ItemStack(goodType);
+      var addition = new ItemStack(badType);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition));
     }
 
     @DisplayName("Items are valid if base and addition match.")
     @Test
     void testSame() {
-      var base = goodType.createItemStack();
-      var addition = goodType.createItemStack();
+      var base = new ItemStack(goodType);
+      var addition = new ItemStack(goodType);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
       addition.setAmount(64);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
@@ -128,7 +149,7 @@ class AnvilEnchanterTest {
     @DisplayName("Items are valid if addition is enchanted book.")
     @Test
     void testEnchantedBookAddition() {
-      var base = goodType.createItemStack();
+      var base = new ItemStack(goodType);
       var addition = new ItemStack(Material.ENCHANTED_BOOK);
       assertThat("Items are valid", enchanter.areItemsInvalid(base, addition), is(false));
     }
@@ -146,7 +167,7 @@ class AnvilEnchanterTest {
 
     @BeforeEach
     void beforeEach() {
-      var server = Bukkit.getServer();
+      Server server = mock();
 
       var scheduler = mock(BukkitScheduler.class);
       runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
@@ -156,7 +177,7 @@ class AnvilEnchanterTest {
       var plugin = mock(Plugin.class);
       when(plugin.getServer()).thenReturn(server);
 
-      itemStack = goodType.createItemStack();
+      itemStack = new ItemStack(goodType);
 
       registry = mock(EnchantableBlockRegistry.class);
       registration = mock(EnchantableRegistration.class);
@@ -174,13 +195,14 @@ class AnvilEnchanterTest {
     }
 
     private @NotNull AnvilView prepareView() {
-      var player = mock(Player.class);
-      var world = WorldMocks.newWorld("world");
-      when(player.getWorld()).thenReturn(world);
+      Player player = mock();
+      World world = mock();
+      doReturn("world").when(world).getName();
+      doReturn(world).when(player).getWorld();
 
       var inventory = InventoryMocks.newAnvilMock();
       inventory.setItem(0, itemStack.clone());
-      var additionItem = ItemType.ENCHANTED_BOOK.createItemStack();
+      var additionItem = new ItemStack(Material.ENCHANTED_BOOK);
       var additionMeta = additionItem.getItemMeta();
       if (additionMeta instanceof EnchantmentStorageMeta storageMeta) {
         storageMeta.addStoredEnchant(enchantment, enchantment.getMaxLevel(), true);
@@ -202,12 +224,6 @@ class AnvilEnchanterTest {
       return anvilView;
     }
 
-    @AfterEach
-    void afterEach() {
-      var server = Bukkit.getServer();
-      when(server.getScheduler()).thenReturn(null);
-    }
-
     @Test
     void testInvalidItem() {
       view.getTopInventory().setItem(0, null);
@@ -219,7 +235,7 @@ class AnvilEnchanterTest {
 
     @Test
     void testUnregisteredMaterial() {
-      ItemStack badStack = badType.createItemStack();
+      ItemStack badStack = new ItemStack(badType);
       view.getTopInventory().setItem(0, badStack);
       var event = spy(new PrepareAnvilEvent(view, null));
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
@@ -276,15 +292,6 @@ class AnvilEnchanterTest {
     @Test
     void testSuccess() {
       var event = spy(new PrepareAnvilEvent(view, null));
-
-      // Because we can't override .equals for mocks and we need to verify that items
-      // are unchanged before setting the result, we instead want to ensure that "copy"
-      // is actually the same object.
-      // This does cause the original item to be manipulated as a side effect when producing the result.
-      ItemStack base = view.getTopInventory().getItem(0);
-      doReturn(base).when(base).clone();
-      ItemStack addition = view.getTopInventory().getItem(1);
-      doReturn(addition).when(addition).clone();
 
       assertDoesNotThrow(() -> enchanter.onPrepareAnvil(event));
       verify(event).setResult(notNull());

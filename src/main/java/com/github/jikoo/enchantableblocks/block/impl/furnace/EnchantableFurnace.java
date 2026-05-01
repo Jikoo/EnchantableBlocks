@@ -3,7 +3,6 @@ package com.github.jikoo.enchantableblocks.block.impl.furnace;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.MathHelper;
-import com.github.jikoo.planarenchanting.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -19,6 +18,8 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.lang.reflect.Method;
 
 /**
  * Track and manage effects for enchanted furnace variants.
@@ -151,8 +152,13 @@ public class EnchantableFurnace extends EnchantableBlock {
       input.setAmount(input.getAmount() - 1);
       // Use post-smelt result
       result = smeltEvent.getResult();
-      // FurnaceSmeltEvent is the only pause event that provides the active recipe.
-      recipe = smeltEvent.getRecipe();
+      // FurnaceSmeltEvent provides the recipe on Paper.
+      try {
+        Method getRecipe = FurnaceSmeltEvent.class.getDeclaredMethod("getRecipe");
+        recipe = (CookingRecipe<?>) getRecipe.invoke(smeltEvent);
+      } catch (ReflectiveOperationException | ClassCastException e) {
+        recipe = null;
+      }
     } else {
       // In all other cases use current contents of furnace.
       FurnaceInventory inventory = furnace.getInventory();
@@ -198,13 +204,13 @@ public class EnchantableFurnace extends EnchantableBlock {
       @Nullable CookingRecipe<?> recipe
   ) {
     // Is there no input?
-    if (ItemUtil.isEmpty(input)) {
+    if (input == null || input.getType() == Material.AIR || input.getAmount() <= 0) {
       return true;
     }
 
     // Is the result slot too full for more product?
-    if (!ItemUtil.isEmpty(result)) {
-      int stack = result.getType().getMaxStackSize();
+    if (result != null && result.getType() != Material.AIR) {
+      int stack = result.getMaxStackSize();
       if (result.getAmount() >= stack) {
         return true;
       }

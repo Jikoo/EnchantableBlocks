@@ -26,15 +26,6 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
 
   @Override
   public void onEnable() {
-    try {
-      Class.forName("io.papermc.paper.configuration.ServerConfiguration");
-    } catch (ClassNotFoundException e) {
-      getLogger().severe("EnchantableBlocks requires Paper; Spigot's enchantment API is missing features.");
-      getLogger().severe("Please vote for https://hub.spigotmc.org/jira/browse/SPIGOT-7838 for Spigot support.");
-      getServer().getPluginManager().disablePlugin(this);
-      return;
-    }
-
     this.saveDefaultConfig();
 
     // Register generic listeners for block management.
@@ -79,7 +70,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
       @NotNull String label,
       @NotNull String @NotNull [] args) {
     if (args.length < 1 || !args[0].equalsIgnoreCase("reload")) {
-      sender.sendMessage("EnchantableBlocks v" + getPluginMeta().getVersion());
+      sender.sendMessage("EnchantableBlocks v" + getDescription().getVersion());
       return false;
     }
 
@@ -87,7 +78,7 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
     this.blockManager.getRegistry().reload();
     sender.sendMessage(
         "[EnchantableBlocks v"
-            + getPluginMeta().getVersion()
+            + getDescription().getVersion()
             + "] Reloaded config and registry cache.");
     return true;
   }

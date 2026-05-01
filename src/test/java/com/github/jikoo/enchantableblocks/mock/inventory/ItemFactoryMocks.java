@@ -1,6 +1,5 @@
 package com.github.jikoo.enchantableblocks.mock.inventory;
 
-import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
@@ -300,13 +299,13 @@ public final class ItemFactoryMocks {
 
   private static void meta(@NotNull ItemMeta meta) {
     // Display name
-    AtomicReference<Component> customName = new AtomicReference<>();
-    when(meta.hasCustomName()).thenAnswer(invocation -> customName.get() != null);
-    when(meta.customName()).thenAnswer(invocation -> customName.get());
+    AtomicReference<String> customName = new AtomicReference<>();
+    doAnswer(invocation -> customName.get() != null).when(meta).hasDisplayName();
+    doAnswer(invocation -> customName.get()).when(meta).getDisplayName();
     doAnswer(invocation -> {
       customName.set(invocation.getArgument(0));
       return null;
-    }).when(meta).customName(any());
+    }).when(meta).setDisplayName(any());
 
     // Enchantments
     Map<Enchantment, Integer> enchants = new HashMap<>();

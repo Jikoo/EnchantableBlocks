@@ -22,15 +22,14 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
         key,
         new ItemStack(Material.DIRT),
         new RecipeChoice() {
-          @NotNull
+          @Deprecated
           @Override
-          public ItemStack getItemStack() {
+          public @NotNull ItemStack getItemStack() {
             return new ItemStack(Material.AIR);
           }
 
-          @NotNull
           @Override
-          public RecipeChoice clone() {
+          public @NotNull RecipeChoice clone() {
             try {
               return (RecipeChoice) super.clone();
             } catch (CloneNotSupportedException e) {
