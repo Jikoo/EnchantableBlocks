@@ -175,6 +175,9 @@
             </goals>
             <configuration>
               <minimizeJar>true</minimizeJar>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
               <filters>
                 <filter>
                   <artifact>com.github.jikoo:*</artifact>
