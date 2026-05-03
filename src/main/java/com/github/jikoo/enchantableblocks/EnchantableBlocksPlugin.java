@@ -20,13 +20,10 @@ public class EnchantableBlocksPlugin extends JavaPlugin {
   private EnchantableBlockManager blockManager;
 
   @Override
-  public void onLoad() {
-    this.blockManager = new EnchantableBlockManager(this);
-  }
-
-  @Override
   public void onEnable() {
     this.saveDefaultConfig();
+
+    this.blockManager = new EnchantableBlockManager(this);
 
     // Register generic listeners for block management.
     this.getServer().getPluginManager().registerEvents(
