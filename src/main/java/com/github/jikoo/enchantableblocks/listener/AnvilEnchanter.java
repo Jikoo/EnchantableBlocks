@@ -2,8 +2,16 @@ package com.github.jikoo.enchantableblocks.listener;
 
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvil;
+import com.github.jikoo.enchantableblocks.util.enchant.BlockAnvilBehavior;
 import com.github.jikoo.planarenchanting.anvil.AnvilResult;
-import com.github.jikoo.planarenchanting.util.ItemUtil;
+import com.github.jikoo.planarenchanting.anvil.ComponentAnvilFunctions;
+import com.github.jikoo.planarenchanting.anvil.ComponentTemperer;
+import com.github.jikoo.planarenchanting.anvil.ComponentViewState;
+import com.github.jikoo.planarenchanting.anvil.MetaAnvilFunctions;
+import com.github.jikoo.planarenchanting.anvil.MetaTemperer;
+import com.github.jikoo.planarenchanting.anvil.MetaViewState;
+import com.github.jikoo.planarenchanting.anvil.WorkPiece;
+import com.github.jikoo.planarenchanting.util.ServerCapabilities;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,6 +31,7 @@ public class AnvilEnchanter implements Listener {
 
   private final Plugin plugin;
   private final EnchantableBlockRegistry registry;
+  private final BlockAnvil<?> anvil;
 
   /**
    * Construct a new {@code AnvilEnchanter} to provide enchantments for blocks.
@@ -33,6 +42,18 @@ public class AnvilEnchanter implements Listener {
   public AnvilEnchanter(@NotNull Plugin plugin, @NotNull EnchantableBlockRegistry registry) {
     this.plugin = plugin;
     this.registry = registry;
+
+    if (ServerCapabilities.DATA_COMPONENT) {
+      anvil = new BlockAnvil<>(
+          view1 -> new WorkPiece<>(new ComponentViewState(view1), ComponentTemperer.INSTANCE),
+          ComponentAnvilFunctions.INSTANCE
+      );
+    } else {
+      anvil = new BlockAnvil<>(
+          view1 -> new WorkPiece<>(new MetaViewState(view1), MetaTemperer.INSTANCE),
+          MetaAnvilFunctions.INSTANCE
+      );
+    }
   }
 
   @EventHandler(priority = EventPriority.HIGH)
@@ -55,8 +76,7 @@ public class AnvilEnchanter implements Listener {
       return;
     }
 
-    var operation = new BlockAnvil(registration, clicker.getWorld().getName());
-    final var result = operation.getResult(view);
+    final var result = anvil.getResult(view, new BlockAnvilBehavior<>(registration, clicker.getWorld().getName()));
 
     if (result == AnvilResult.EMPTY) {
       return;
@@ -95,9 +115,11 @@ public class AnvilEnchanter implements Listener {
   boolean areItemsInvalid(
       @Nullable ItemStack base,
       @Nullable ItemStack addition) {
-    return ItemUtil.isEmpty(base)
+    return base == null
+        || base.getType() == Material.AIR
         || base.getAmount() != 1
-        || ItemUtil.isEmpty(addition)
+        || addition == null
+        || addition.getAmount() < 1
         || (addition.getType() != Material.ENCHANTED_BOOK && addition.getType() != base.getType());
   }
 

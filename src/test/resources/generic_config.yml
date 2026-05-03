@@ -1,5 +1,5 @@
 enabled: true
-tableEnchantability: STONE
+tableEnchantability: STONE_TOOL
 tableDisabledEnchantments: []
 tableEnchantmentConflicts:
   silk_touch:

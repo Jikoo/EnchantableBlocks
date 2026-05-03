@@ -22,15 +22,18 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
         key,
         new ItemStack(Material.DIRT),
         new RecipeChoice() {
-          @NotNull
+          /**
+           * @deprecated This exists only because the Bukkit API is very, very backwards-compatibility-friendly.
+           * @return an empty ItemStack
+           */
+          @Deprecated(since = "1.13.1")
           @Override
-          public ItemStack getItemStack() {
+          public @NotNull ItemStack getItemStack() {
             return new ItemStack(Material.AIR);
           }
 
-          @NotNull
           @Override
-          public RecipeChoice clone() {
+          public @NotNull RecipeChoice clone() {
             try {
               return (RecipeChoice) super.clone();
             } catch (CloneNotSupportedException e) {
@@ -56,7 +59,8 @@ public class EmptyCookingRecipe extends CookingRecipe<EmptyCookingRecipe> {
           }
         },
         0,
-        0);
+        0
+    );
   }
 
   @Override

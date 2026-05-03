@@ -6,7 +6,7 @@ blocks:
     fortuneList:
       - WET_SPONGE
       - STONE_BRICKS
-    tableEnchantability: STONE
+    tableEnchantability: STONE_TOOL
     tableDisabledEnchantments: []
     tableEnchantmentConflicts:
       silk_touch:

@@ -106,7 +106,7 @@ class FurnaceListener implements Listener {
       @NotNull FurnaceSmeltEvent event,
       @NotNull IntSupplier bonusCalculator) {
     ItemStack result = event.getResult();
-    int tillFullStack = result.getType().getMaxStackSize() - result.getAmount();
+    int tillFullStack = result.getMaxStackSize() - result.getAmount();
 
     // Ignore results that are already full.
     if (tillFullStack == 0) {
