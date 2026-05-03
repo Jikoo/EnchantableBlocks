@@ -10,7 +10,7 @@ import org.bukkit.block.Furnace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
-import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.block.BlockCookEvent;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
@@ -145,19 +145,30 @@ public class EnchantableFurnace extends EnchantableBlock {
     ItemStack input;
     ItemStack result;
     CookingRecipe<?> recipe;
-    if (event instanceof FurnaceSmeltEvent smeltEvent) {
-      // Special case FurnaceSmeltEvent: smelt has not completed, input and result are different.
-      // Decrease input for post-smelt
-      input = smeltEvent.getSource().clone();
-      input.setAmount(input.getAmount() - 1);
-      // Use post-smelt result
-      result = smeltEvent.getResult();
-      // FurnaceSmeltEvent provides the recipe on Paper.
+    if (event instanceof BlockCookEvent cookEvent) {
+      // Special case BlockCookEvent: smelt has not completed, input and result are different.
+      // On Paper, the BlockCookEvent also provides recipes.
       try {
-        Method getRecipe = FurnaceSmeltEvent.class.getDeclaredMethod("getRecipe");
-        recipe = (CookingRecipe<?>) getRecipe.invoke(smeltEvent);
+        Method getRecipe = BlockCookEvent.class.getDeclaredMethod("getRecipe");
+        recipe = (CookingRecipe<?>) getRecipe.invoke(cookEvent);
       } catch (ReflectiveOperationException | ClassCastException e) {
         recipe = null;
+      }
+      // Decrease input for post-smelt
+      input = cookEvent.getSource().clone();
+      input.setAmount(input.getAmount() - 1);
+      // Use post-smelt result
+      result = cookEvent.getResult();
+      ItemStack output = furnace.getInventory().getResult();
+      if (output != null && output.getType() != Material.AIR) {
+        // There's an edge case where a plugin messes with the event and the existing result might mismatch.
+        // This will cause undefined implementation-specific behavior. Just let it go.
+        if (!output.isSimilar(result)) {
+          return false;
+        }
+        // Otherwise, clone and add up amounts.
+        result = result.clone();
+        result.setAmount(result.getAmount() + output.getAmount());
       }
     } else {
       // In all other cases use current contents of furnace.
