@@ -114,7 +114,6 @@ class EnchantableBlocksPluginTest {
   @DisplayName("Plugin registers events.")
   @Test
   void testEventRegistration() {
-    plugin.onLoad();
     verify(plugin.getServer().getPluginManager(), times(0))
         .registerEvents(any(Listener.class), any(Plugin.class));
     plugin.onEnable();
@@ -139,8 +138,6 @@ class EnchantableBlocksPluginTest {
       return null;
     });
 
-    plugin.onLoad();
-
     plugin.onEnable();
 
     verify(plugin.getLogger()).info(any(Supplier.class));
@@ -149,7 +146,6 @@ class EnchantableBlocksPluginTest {
   @DisplayName("Reload command functions as expected.")
   @Test
   void testCommandBase() {
-    plugin.onLoad();
     plugin.onEnable();
     var command = mock(Command.class);
     var player = mock(Player.class);
@@ -163,7 +159,6 @@ class EnchantableBlocksPluginTest {
   @DisplayName("No argument command displays version and tells server to show help")
   @Test
   void testCommandNoArgs() {
-    plugin.onLoad();
     plugin.onEnable();
     var command = mock(Command.class);
     var player = mock(Player.class);
@@ -177,7 +172,6 @@ class EnchantableBlocksPluginTest {
   @DisplayName("Invalid argument command displays version and tells server to show help")
   @Test
   void testCommandInvalidArgs() {
-    plugin.onLoad();
     plugin.onEnable();
     var command = mock(Command.class);
     var player = mock(Player.class);
