@@ -37,8 +37,9 @@ public class BlockAnvil<T> {
   public AnvilResult getResult(AnvilView view, BlockAnvilBehavior<T> behavior) {
     WorkPiece<T> workPiece = createWork.apply(view);
 
-    // Base and addition have already been validated.
-
+    // Base and addition have already been validated. Vanilla handles the rename-only case.
+    // Apply level cost increase from prior work.
+    workPiece.apply(behavior, functions.addPriorWorkLevelCost());
     // Apply the rename function first, then update prior work cost - both update prior work.
     workPiece.apply(behavior, functions.rename());
     workPiece.apply(behavior, functions.setItemPriorWork());
