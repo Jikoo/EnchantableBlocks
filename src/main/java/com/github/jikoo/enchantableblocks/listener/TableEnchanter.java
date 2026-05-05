@@ -4,8 +4,6 @@ import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.planarenchanting.table.EnchantingTable;
 import com.github.jikoo.planarenchanting.table.TableEnchantListener;
 import com.google.common.collect.Multimap;
-import java.util.ArrayList;
-import java.util.function.BiPredicate;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -14,10 +12,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.ArrayList;
+import java.util.function.BiPredicate;
+
 /**
  * Listener for handling enchanting in an enchantment table.
  */
 public class TableEnchanter extends TableEnchantListener {
+
   private final EnchantableBlockRegistry registry;
 
   /**

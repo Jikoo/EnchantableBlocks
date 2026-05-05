@@ -1,7 +1,5 @@
 package com.github.jikoo.enchantableblocks.mock.matcher;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.hamcrest.BaseMatcher;
@@ -10,6 +8,9 @@ import org.hamcrest.Matcher;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class EnchantMatchers {
 
@@ -65,7 +66,6 @@ public final class EnchantMatchers {
     }
 
   }
-
 
   private EnchantMatchers() {}
 

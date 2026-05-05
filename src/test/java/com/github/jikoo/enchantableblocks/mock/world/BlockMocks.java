@@ -1,13 +1,5 @@
 package com.github.jikoo.enchantableblocks.mock.world;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.concurrent.atomic.AtomicReference;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -16,6 +8,15 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
 import org.mockito.stubbing.Answer;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class BlockMocks {
 
@@ -53,9 +54,6 @@ public final class BlockMocks {
     when(block.getType()).thenAnswer(parameters -> type.get());
     Answer<Block> setType = parameters -> {
       Material argument = parameters.getArgument(0);
-      if (!argument.isBlock()) {
-        throw new IllegalArgumentException("Cannot set block type to non-block material!");
-      }
       type.set(argument);
       return null;
     };
@@ -67,9 +65,6 @@ public final class BlockMocks {
     Answer<Block> setData = parameters -> {
       BlockData newData = parameters.getArgument(0);
       Material newType = newData.getMaterial();
-      if (!newType.isBlock()) {
-        throw new IllegalArgumentException("Cannot set block type to non-block material!");
-      }
       type.set(newType);
       data.set(newData);
       return null;

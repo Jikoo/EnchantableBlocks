@@ -1,13 +1,15 @@
 package com.github.jikoo.enchantableblocks.listener;
 
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.google.common.base.Preconditions;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -29,12 +31,14 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -57,6 +62,7 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class WorldListenerTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private Server server;
   private ArgumentCaptor<Runnable> runnableCaptor;
   private PluginManager pluginManager;
@@ -68,9 +74,17 @@ class WorldListenerTest {
 
   @BeforeAll
   void setUpAll() {
-    server = ServerMocks.mockServer();
+    bukkit = mockStatic();
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> mock(Registry.class));
+
+    server = mock();
     var factory = ItemFactoryMocks.mockFactory();
     when(server.getItemFactory()).thenReturn(factory);
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
@@ -106,10 +120,16 @@ class WorldListenerTest {
     listener = new WorldListener(plugin, manager);
 
     // Reset block type
-    block.setType(Material.DIRT);
+    Material material = mock();
+    doReturn(NamespacedKey.minecraft("dirt")).when(material).getKey();
+    doReturn(true).when(material).isBlock();
+    block.setType(material);
 
     // Create default item
-    itemStack = new ItemStack(Material.COAL_ORE);
+    material = mock();
+    doReturn(NamespacedKey.minecraft("coal_ore")).when(material).getKey();
+    doReturn(true).when(material).isBlock();
+    itemStack = new ItemStack(material);
   }
 
   private @NotNull World createWorld() {

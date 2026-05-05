@@ -1,11 +1,13 @@
 package com.github.jikoo.enchantableblocks.util;
 
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,25 +15,35 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.MockedStatic;
 
 import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 @DisplayName("Feature: Placeholder empty unmodifiable cooking recipe")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EmptyCookingRecipeTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private EmptyCookingRecipe recipe;
 
   @BeforeAll
-  void beforeAll() {
-    var server = ServerMocks.mockServer();
+  void setUp() {
+    bukkit = mockStatic();
     var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+    bukkit.when(Bukkit::getItemFactory).thenReturn(factory);
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> mock(Registry.class));
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
@@ -48,7 +60,9 @@ class EmptyCookingRecipeTest {
 
   static Stream<ItemStack> getModernItems() {
     return Stream.of(Material.values())
-        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR && material.isItem())
+        // Note that this is just modern materials now; modern items are partially data-driven.
+        // We could set up ItemType, or we could check block-exclusive materials and not worry about it.
+        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR)
         .map(ItemStack::new);
   }
 

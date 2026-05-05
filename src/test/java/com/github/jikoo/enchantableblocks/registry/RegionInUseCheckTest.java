@@ -1,32 +1,9 @@
 package com.github.jikoo.enchantableblocks.registry;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager.RegionStorageData;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -38,11 +15,38 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.MockedStatic;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Stream;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Load data on demand per region.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RegionInUseCheckTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private Collection<LoadedStateWorld> worlds;
   private Path dataDir;
   private EnchantableBlockManager manager;
@@ -50,7 +54,7 @@ class RegionInUseCheckTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = ServerMocks.mockServer();
+    bukkit = mockStatic();
 
     worlds = new ArrayList<>();
     for (boolean loaded : new boolean[] { true, false }) {
@@ -60,8 +64,7 @@ class RegionInUseCheckTest {
       when(world.isChunkLoaded(any())).thenReturn(loaded);
       when(world.isChunkLoaded(anyInt(), anyInt())).thenReturn(loaded);
       when(world.getLoadedState()).thenReturn(loaded);
-
-      when(server.getWorld(name)).thenReturn(world);
+      bukkit.when(() -> Bukkit.getWorld(name)).thenReturn(world);
 
       worlds.add(world);
     }
@@ -89,6 +92,8 @@ class RegionInUseCheckTest {
         }
       });
     }
+
+    bukkit.close();
   }
 
   @DisplayName("Null value is never in use.")

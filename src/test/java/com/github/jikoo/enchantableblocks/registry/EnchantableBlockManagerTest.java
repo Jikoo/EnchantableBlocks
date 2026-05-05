@@ -2,7 +2,6 @@ package com.github.jikoo.enchantableblocks.registry;
 
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.answer.SpiedAnswer;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.WorldMocks;
@@ -11,11 +10,14 @@ import com.github.jikoo.enchantableblocks.util.Cache;
 import com.github.jikoo.enchantableblocks.util.Region;
 import com.github.jikoo.enchantableblocks.util.RegionStorage;
 import com.github.jikoo.planarwrappers.util.Coords;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.Registry;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -30,6 +32,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
 import java.lang.reflect.Field;
@@ -51,10 +54,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Manage enchantable blocks.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -79,19 +82,38 @@ class EnchantableBlockManagerTest {
   private Chunk chunkBad;
   @Captor ArgumentCaptor<Supplier<String>> loggerCaptor;
   AutoCloseable mockAnnotations;
+  private MockedStatic<Bukkit> bukkit;
 
   @BeforeAll
-  void beforeAll() {
-    var server = ServerMocks.mockServer();
-    var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+  void setUp() {
+    bukkit = mockStatic();
 
-    goodMat = Material.COAL_ORE;
-    badMat = Material.DIRT;
-    goodEnchant = Enchantment.EFFICIENCY;
+    ItemFactory itemFactory = ItemFactoryMocks.mockFactory();
+    bukkit.when(Bukkit::getItemFactory).thenReturn(itemFactory);
+
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> bukkitReg = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(bukkitReg).getOrThrow(any());
+      }
+      return bukkitReg;
+    });
+
+    goodMat = mock();
+    doReturn(true).when(goodMat).isBlock();
+    doReturn("COAL_ORE").when(goodMat).name();
+    badMat = mock();
+    doReturn(true).when(badMat).isBlock();
+    doReturn("DIRT").when(badMat).name();
+    goodEnchant = mock();
 
     block = WorldMocks.newWorld(NORMAL_WORLD_NAME).getBlockAt(0, 0, 0);
     blockDisabledWorld = WorldMocks.newWorld(DISABLED_WORLD_NAME).getBlockAt(0, 0, 0);
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
@@ -134,11 +156,6 @@ class EnchantableBlockManagerTest {
   @AfterEach
   void afterEach() throws Exception {
     mockAnnotations.close();
-  }
-
-  @AfterAll
-  void afterAll() {
-    ServerMocks.unsetBukkitServer();
   }
 
   @DisplayName("Registry is obtainable for type registration.")

@@ -1,22 +1,24 @@
 package com.github.jikoo.enchantableblocks.block;
 
 import com.github.jikoo.enchantableblocks.config.EnchantableBlockConfig;
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
-import com.github.jikoo.enchantableblocks.mock.inventory.ItemStackMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableRegistration;
 import com.jparams.verifier.tostring.ToStringVerifier;
 import com.jparams.verifier.tostring.preset.Presets;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Registry;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ItemType;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.mockito.MockedStatic;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -24,12 +26,14 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -39,6 +43,7 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantableBlockTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private EnchantableRegistration registration;
   private Block block;
   private ItemStack itemStack;
@@ -46,9 +51,21 @@ class EnchantableBlockTest {
 
   @BeforeAll
   void beforeAll() {
-    var server = ServerMocks.mockServer();
+    bukkit = mockStatic();
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> registry = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+      }
+      return registry;
+    });
     var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+    bukkit.when(Bukkit::getItemFactory).thenReturn(factory);
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
@@ -82,7 +99,7 @@ class EnchantableBlockTest {
     assertThat("Item is clone", internalStack, is(itemStackClone));
     verify(itemStackClone).setAmount(1);
     // Directly returning the internal ItemStack instance allows subclasses to manipulate it.
-    assertThat("Same item is returned", internalStack == enchantableBlock.getItemStack());
+    assertThat("Same item is returned", enchantableBlock.getItemStack(), is(sameInstance(internalStack)));
   }
 
   @DisplayName("Block checks against in-world type.")
@@ -197,7 +214,7 @@ class EnchantableBlockTest {
         })
         .withPreset(Presets.INTELLI_J)
         .withIgnoredFields("registration", "storage", "dirty", "updating")
-        .withValueProvider(ItemStack.class, path -> ItemStackMocks.newItemMock(ItemType.AIR, 1))
+        .withValueProvider(ItemStack.class, path -> new ItemStack(Material.AIR))
         .withFailOnExcludedFields(true).verify();
   }
 

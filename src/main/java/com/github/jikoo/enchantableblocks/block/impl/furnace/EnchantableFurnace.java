@@ -3,7 +3,6 @@ package com.github.jikoo.enchantableblocks.block.impl.furnace;
 import com.github.jikoo.enchantableblocks.block.EnchantableBlock;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import com.github.jikoo.enchantableblocks.util.MathHelper;
-import com.github.jikoo.planarenchanting.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -11,7 +10,7 @@ import org.bukkit.block.Furnace;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
-import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.block.BlockCookEvent;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
@@ -19,6 +18,8 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.lang.reflect.Method;
 
 /**
  * Track and manage effects for enchanted furnace variants.
@@ -144,15 +145,31 @@ public class EnchantableFurnace extends EnchantableBlock {
     ItemStack input;
     ItemStack result;
     CookingRecipe<?> recipe;
-    if (event instanceof FurnaceSmeltEvent smeltEvent) {
-      // Special case FurnaceSmeltEvent: smelt has not completed, input and result are different.
+    if (event instanceof BlockCookEvent cookEvent) {
+      // Special case BlockCookEvent: smelt has not completed, input and result are different.
+      // On Paper, the BlockCookEvent also provides recipes.
+      try {
+        Method getRecipe = BlockCookEvent.class.getDeclaredMethod("getRecipe");
+        recipe = (CookingRecipe<?>) getRecipe.invoke(cookEvent);
+      } catch (ReflectiveOperationException | ClassCastException e) {
+        recipe = null;
+      }
       // Decrease input for post-smelt
-      input = smeltEvent.getSource().clone();
+      input = cookEvent.getSource().clone();
       input.setAmount(input.getAmount() - 1);
       // Use post-smelt result
-      result = smeltEvent.getResult();
-      // FurnaceSmeltEvent is the only pause event that provides the active recipe.
-      recipe = smeltEvent.getRecipe();
+      result = cookEvent.getResult();
+      ItemStack output = furnace.getInventory().getResult();
+      if (output != null && output.getType() != Material.AIR) {
+        // There's an edge case where a plugin messes with the event and the existing result might mismatch.
+        // This will cause undefined implementation-specific behavior. Just let it go.
+        if (!output.isSimilar(result)) {
+          return false;
+        }
+        // Otherwise, clone and add up amounts.
+        result = result.clone();
+        result.setAmount(result.getAmount() + output.getAmount());
+      }
     } else {
       // In all other cases use current contents of furnace.
       FurnaceInventory inventory = furnace.getInventory();
@@ -198,13 +215,13 @@ public class EnchantableFurnace extends EnchantableBlock {
       @Nullable CookingRecipe<?> recipe
   ) {
     // Is there no input?
-    if (ItemUtil.isEmpty(input)) {
+    if (input == null || input.getType() == Material.AIR || input.getAmount() <= 0) {
       return true;
     }
 
     // Is the result slot too full for more product?
-    if (!ItemUtil.isEmpty(result)) {
-      int stack = result.getType().getMaxStackSize();
+    if (result != null && result.getType() != Material.AIR) {
+      int stack = result.getMaxStackSize();
       if (result.getAmount() >= stack) {
         return true;
       }
@@ -278,9 +295,12 @@ public class EnchantableFurnace extends EnchantableBlock {
       return false;
     }
 
-    furnace.setBurnTime(
-        MathHelper.clampPositiveShort(((long) furnace.getBurnTime()) + this.getFrozenTicks()));
-    furnace.update(true);
+    // If the furnace is burning for longer than the client can display correctly, don't clamp it.
+    // Whoever caused the problem should probably deal with it.
+    if (furnace.getBurnTime() < Short.MAX_VALUE) {
+      furnace.setBurnTime(MathHelper.clampPositiveShort(furnace.getBurnTime() + this.getFrozenTicks()));
+      furnace.update(true);
+    }
     this.setFrozenTicks((short) 0);
     return true;
   }

@@ -1,31 +1,34 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.registry.EnchantableBlockManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Server;
 import org.bukkit.block.BlastFurnace;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.block.Smoker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CampfireRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.SmokingRecipe;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
-import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.MockedStatic;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,37 +54,46 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @DisplayName("Feature: Registration for EnchantableFurnace.")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EnchantableFurnaceRegistrationTest {
 
+  private MockedStatic<Bukkit> bukkit;
   private Plugin plugin;
   private EnchantableFurnaceRegistration registration;
   private FurnaceInventory[] furnaces;
 
   @BeforeAll
   void beforeAll() {
-    var server = ServerMocks.mockServer();
+    bukkit = mockStatic();
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> registry = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+      }
+      return registry;
+    });
+    ItemFactory factory = ItemFactoryMocks.mockFactory();
+    bukkit.when(Bukkit::getItemFactory).thenReturn(factory);
 
+    Server server = mock();
     var pluginManager = mock(PluginManager.class);
-    when(server.getPluginManager()).thenReturn(pluginManager);
-    var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+    doReturn(pluginManager).when(server).getPluginManager();
 
     plugin = mock(Plugin.class);
-    when(plugin.getName()).thenReturn(getClass().getSimpleName());
-    doReturn(plugin.getName().toLowerCase()).when(plugin).namespace();
-    when(plugin.getConfig()).thenReturn(new YamlConfiguration());
-    when(plugin.getServer()).thenReturn(server);
+    doReturn(getClass().getSimpleName()).when(plugin).getName();
+    doReturn(new YamlConfiguration()).when(plugin).getConfig();
+    doReturn(server).when(plugin).getServer();
     var logger = mock(Logger.class);
-    when(plugin.getLogger()).thenReturn(logger);
+    doReturn(logger).when(plugin).getLogger();
 
     // Add some sample recipes to ensure tests actually cover code
     List<Recipe> recipes = new ArrayList<>();
@@ -101,7 +114,12 @@ class EnchantableFurnaceRegistrationTest {
     recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "smores1"), new ItemStack(Material.DIRT), Material.DIAMOND, 0f, 0));
     recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "hotdog2"), new ItemStack(Material.OAK_LOG), Material.COAL, 0f, 0));
     recipes.add(new CampfireRecipe(new NamespacedKey(plugin, "beancan3"), new ItemStack(Material.COAL_ORE), Material.COAL_BLOCK, 0f, 0));
-    when(server.recipeIterator()).thenAnswer(invocation -> recipes.iterator());
+    bukkit.when(Bukkit::recipeIterator).thenReturn(recipes.iterator());
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @BeforeEach
@@ -111,13 +129,13 @@ class EnchantableFurnaceRegistrationTest {
 
     var furnaceInventory = InventoryMocks.newFurnaceMock();
     var furnace = mock(Furnace.class);
-    when(furnaceInventory.getHolder()).thenReturn(furnace);
+    doReturn(furnace).when(furnaceInventory).getHolder();
     var blastFurnaceInventory = InventoryMocks.newFurnaceMock(InventoryType.BLAST_FURNACE);
     var blastFurnace = mock(BlastFurnace.class);
-    when(blastFurnaceInventory.getHolder()).thenReturn(blastFurnace);
+    doReturn(blastFurnace).when(blastFurnaceInventory).getHolder();
     var smokerInventory = InventoryMocks.newFurnaceMock(InventoryType.SMOKER);
     var smoker = mock(Smoker.class);
-    when(smokerInventory.getHolder()).thenReturn(smoker);
+    doReturn(smoker).when(smokerInventory).getHolder();
 
     furnaces = new FurnaceInventory[] { furnaceInventory, blastFurnaceInventory, smokerInventory };
   }
@@ -125,10 +143,10 @@ class EnchantableFurnaceRegistrationTest {
   @DisplayName("Listeners are registered as required.")
   @Test
   void testRegisterEvents() {
-    var server = Bukkit.getServer();
     // Reset PluginManager so we can verify event registrations properly.
     var pluginManager = mock(PluginManager.class);
-    when(server.getPluginManager()).thenReturn(pluginManager);
+    Server server = plugin.getServer();
+    doReturn(pluginManager).when(server).getPluginManager();
 
     var manager = mock(EnchantableBlockManager.class);
 
@@ -211,17 +229,8 @@ class EnchantableFurnaceRegistrationTest {
 
   static Stream<ItemStack> getModernItems() {
     return Stream.of(Material.values())
-        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR && material.isItem())
-        .map(material -> new ItemStack(material) {
-          @Override
-          public @NotNull ItemStack clone() {
-            super.clone(); // Shh, IDE.
-            // Because these are backed by mocks, each clone results in a new backing mock.
-            // As mocks override equals, toString, and hashCode, we cannot mock those.
-            // Instead, we bypass the attempt to not alter the original when getting the cache key.
-            return this;
-          }
-        });
+        .filter(material -> !material.name().startsWith("LEGACY_") && material != Material.AIR)
+        .map(ItemStack::new);
   }
 
   @DisplayName("Recipe lookup ignores null tile.")

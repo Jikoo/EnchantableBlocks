@@ -1,6 +1,5 @@
 package com.github.jikoo.enchantableblocks.block.impl.furnace;
 
-import com.github.jikoo.enchantableblocks.mock.ServerMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.InventoryMocks;
 import com.github.jikoo.enchantableblocks.mock.inventory.ItemFactoryMocks;
 import com.github.jikoo.enchantableblocks.mock.world.BlockMocks;
@@ -10,9 +9,12 @@ import com.github.jikoo.enchantableblocks.registry.EnchantableBlockRegistry;
 import com.github.jikoo.planarwrappers.util.StringConverters;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Registry;
+import org.bukkit.Server;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
@@ -30,11 +32,11 @@ import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ItemType;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,7 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -71,29 +75,46 @@ import static org.mockito.Mockito.when;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FurnaceListenerTest {
 
+  private MockedStatic<Bukkit> bukkit;
+  private Server server;
   private CookingRecipe<?> recipe;
   private ItemStack input;
 
   @BeforeAll
-  void beforeAll() {
-    var server = ServerMocks.mockServer();
+  void setUp() {
+    bukkit = mockStatic();
+    bukkit.when(() -> Bukkit.getRegistry(any())).thenAnswer(invocation -> {
+      Registry<?> registry = mock(Registry.class);
+      if (Enchantment.class.isAssignableFrom(invocation.getArgument(0))) {
+        doAnswer(invocation1 -> mock(Enchantment.class)).when(registry).getOrThrow(any());
+      }
+      return registry;
+    });
 
     // Set up item factory for ItemMeta generation and comparison.
     var factory = ItemFactoryMocks.mockFactory();
-    when(server.getItemFactory()).thenReturn(factory);
+    bukkit.when(Bukkit::getItemFactory).thenReturn(factory);
+
+    server = mock();
 
     // Add furnace recipe dirt -> coarse dirt
     recipe = new FurnaceRecipe(
         Objects.requireNonNull(StringConverters.toNamespacedKey("sample:text")),
-        new ItemStack(Material.COARSE_DIRT), Material.DIRT, 0, 200);
+        new ItemStack(Material.COARSE_DIRT) {
+          // Set up max stack size for result.
+          @Override
+          public int getMaxStackSize() {
+            return 64;
+          }
+        }, Material.DIRT,
+        0,
+        200
+    );
     // Set up recipe iterator
     when(server.recipeIterator()).thenAnswer(invocation -> Set.of((Recipe) recipe).iterator());
 
-    // Set up max stack size for result.
-    doReturn(64).when(ItemType.COARSE_DIRT).getMaxStackSize();
-
     // Create input stack.
-    input = ItemType.DIRT.createItemStack();
+    input = new ItemStack(Material.DIRT);
 
     // Set up scheduler to run tasks immediately.
     var scheduler = mock(BukkitScheduler.class);
@@ -102,6 +123,11 @@ class FurnaceListenerTest {
       return null;
     });
     when(server.getScheduler()).thenReturn(scheduler);
+  }
+
+  @AfterAll
+  void tearDown() {
+    bukkit.close();
   }
 
   @DisplayName("Furnace-specific events")
@@ -115,8 +141,6 @@ class FurnaceListenerTest {
 
     @BeforeEach
     void beforeEach() {
-      var server = Bukkit.getServer();
-
       var plugin = mock(Plugin.class);
       when(plugin.getServer()).thenReturn(server);
       when(plugin.getName()).thenReturn(getClass().getSimpleName());
@@ -208,7 +232,7 @@ class FurnaceListenerTest {
     @Test
     void testFurnaceStartSmeltInvalid() {
       when(manager.getBlock(block)).thenReturn(null);
-      var event = new FurnaceStartSmeltEvent(block, input, recipe, recipe.getCookingTime());
+      var event = new FurnaceStartSmeltEvent(block, input, recipe);
       assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
       assertThat(
           "Cook time must not be modified",
@@ -220,7 +244,7 @@ class FurnaceListenerTest {
     @Test
     void testFurnaceStartSmeltModifier() {
       when(enchantableFurnace.applyCookTimeModifiers(anyDouble())).thenAnswer(invocation -> (short) (invocation.getArgument(0, Double.class) + 10));
-      var event = new FurnaceStartSmeltEvent(block, input, recipe, recipe.getCookingTime());
+      var event = new FurnaceStartSmeltEvent(block, input, recipe);
       assertDoesNotThrow(() -> listener.onFurnaceStartSmelt(event));
       assertThat(
           "Cook time must be modified",
@@ -232,7 +256,7 @@ class FurnaceListenerTest {
     @Test
     void testFurnaceSmeltInvalid() {
       when(manager.getBlock(block)).thenReturn(null);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       assertThat("Event is never cancelled", !event.isCancelled());
       assertThat("Result must not be modified", event.getResult(), isItem(recipe.getResult()));
@@ -243,7 +267,7 @@ class FurnaceListenerTest {
     @Test
     void testFurnaceSmeltInvalidTile() {
       when(enchantableFurnace.getFurnaceTile()).thenReturn(null);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       assertThat("Event is never cancelled", !event.isCancelled());
       assertThat("Result must not be modified", event.getResult(), isItem(recipe.getResult()));
@@ -255,7 +279,7 @@ class FurnaceListenerTest {
     void testFurnaceSmeltUnbreakingEfficiency() {
       when(enchantableFurnace.getCookModifier()).thenReturn(10);
       when(enchantableFurnace.getBurnModifier()).thenReturn(10);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       assertThat("Event is never cancelled", !event.isCancelled());
       assertThat("Result must not be modified", event.getResult(), isItem(recipe.getResult()));
@@ -265,8 +289,8 @@ class FurnaceListenerTest {
     @Test
     void testApplyFortuneFull() {
       var result = recipe.getResult();
-      result.setAmount(result.getType().getMaxStackSize());
-      var event = new FurnaceSmeltEvent(block, input, result, recipe);
+      result.setAmount(result.getMaxStackSize());
+      var event = new FurnaceSmeltEvent(block, input, result);
       var supplier = mock(IntSupplier.class);
       listener.applyFortune(event, supplier);
       verify(supplier, times(0)).getAsInt();
@@ -277,7 +301,7 @@ class FurnaceListenerTest {
     @ParameterizedTest
     @ValueSource(ints = { -1, 0 })
     void testApplyFortuneBelowOne(int value) {
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener.applyFortune(event, () -> value);
       assertThat("Result must not be modified", event.getResult(), isItem(recipe.getResult()));
     }
@@ -286,7 +310,7 @@ class FurnaceListenerTest {
     @ParameterizedTest
     @ValueSource(ints = { 1, 2, 3 })
     void testApplyFortunePositive(int value) {
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener.applyFortune(event, () -> value);
       assertThat("Result must be similar", event.getResult(), isSimilar(recipe.getResult()));
       assertThat("Result must be modified", event.getResult(), not(isItem(recipe.getResult())));
@@ -300,14 +324,14 @@ class FurnaceListenerTest {
     void testApplyFortuneReducedSpace(int value) {
       // Set up event for stack with 1 free slot.
       var result = recipe.getResult();
-      result.setAmount(result.getType().getMaxStackSize() - 1);
-      var event = new FurnaceSmeltEvent(block, input, result, recipe);
+      result.setAmount(result.getMaxStackSize() - 1);
+      var event = new FurnaceSmeltEvent(block, input, result);
 
       listener.applyFortune(event, () -> value);
 
       // Expect max stack.
       var expected = recipe.getResult();
-      expected.setAmount(result.getType().getMaxStackSize());
+      expected.setAmount(result.getMaxStackSize());
       assertThat("Result must be full", event.getResult(), isItem(expected));
     }
 
@@ -317,7 +341,7 @@ class FurnaceListenerTest {
       var config = new EnchantableFurnaceConfig(new YamlConfiguration());
       when(enchantableFurnace.getConfig()).thenReturn(config);
       when(enchantableFurnace.getFortune()).thenReturn(10);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener = spy(listener);
 
       listener.onFurnaceSmelt(event);
@@ -334,7 +358,7 @@ class FurnaceListenerTest {
       var config = new EnchantableFurnaceConfig(yaml);
       when(enchantableFurnace.getConfig()).thenReturn(config);
       when(enchantableFurnace.getFortune()).thenReturn(10);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener = spy(listener);
 
       listener.onFurnaceSmelt(event);
@@ -352,7 +376,7 @@ class FurnaceListenerTest {
       var config = new EnchantableFurnaceConfig(yaml);
       when(enchantableFurnace.getConfig()).thenReturn(config);
       when(enchantableFurnace.getFortune()).thenReturn(10);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener = spy(listener);
 
       listener.onFurnaceSmelt(event);
@@ -369,7 +393,7 @@ class FurnaceListenerTest {
       var config = new EnchantableFurnaceConfig(yaml);
       when(enchantableFurnace.getConfig()).thenReturn(config);
       when(enchantableFurnace.getFortune()).thenReturn(10);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       listener = spy(listener);
 
       listener.onFurnaceSmelt(event);
@@ -381,7 +405,7 @@ class FurnaceListenerTest {
     @DisplayName("Furnaces that cannot pause do not attempt to.")
     @Test
     void testFurnaceSmeltNoPause() {
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       verify(enchantableFurnace, times(0)).shouldPause(any());
       assertThat("Event is never cancelled", !event.isCancelled());
@@ -391,7 +415,7 @@ class FurnaceListenerTest {
     @Test
     void testFurnaceSmeltTryPause() {
       when(enchantableFurnace.canPause()).thenReturn(true);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       verify(enchantableFurnace).shouldPause(any());
       verify(enchantableFurnace, times(0)).pause();
@@ -403,7 +427,7 @@ class FurnaceListenerTest {
     void testFurnaceSmeltDoPause() {
       when(enchantableFurnace.canPause()).thenReturn(true);
       when(enchantableFurnace.shouldPause(any())).thenReturn(true);
-      var event = new FurnaceSmeltEvent(block, input, recipe.getResult(), recipe);
+      var event = new FurnaceSmeltEvent(block, input, recipe.getResult());
       assertDoesNotThrow(() -> listener.onFurnaceSmelt(event));
       verify(enchantableFurnace).pause();
       assertThat("Event is never cancelled", !event.isCancelled());

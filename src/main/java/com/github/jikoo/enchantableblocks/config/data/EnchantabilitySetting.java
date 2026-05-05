@@ -1,9 +1,8 @@
 package com.github.jikoo.enchantableblocks.config.data;
 
 import com.github.jikoo.planarenchanting.table.Enchantability;
+import com.github.jikoo.planarenchanting.table.EnchantabilityCategory;
 import com.github.jikoo.planarwrappers.config.ParsedSimpleSetting;
-import java.lang.reflect.Field;
-import java.util.Locale;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,17 +30,7 @@ public class EnchantabilitySetting extends ParsedSimpleSetting<Enchantability> {
     } catch (NumberFormatException ignored) {
       // Not a number, may be a field name.
     }
-    value = value.toUpperCase(Locale.ROOT);
-    try {
-      Field field = Enchantability.class.getDeclaredField(value);
-      Object fieldValue = field.get(null);
-      if (fieldValue instanceof Enchantability enchantability) {
-        return enchantability;
-      }
-      return null;
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      return null;
-    }
+    return EnchantabilityCategory.get(value);
   }
 
 }
