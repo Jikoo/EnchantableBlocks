@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <versions.fastutil>8.5.18</versions.fastutil>
+    <versions.fastutil>8.5.19</versions.fastutil>
     <!-- Required so ${argLine} can be evaluated and edited by plugins (i.e. jacoco) before surefire -->
     <argLine/>
   </properties>
